@@ -71,8 +71,17 @@ telemetry.
 
 ## Install
 
-DotnetMove is not on the PowerShell Gallery yet, so install it from GitHub. The installer only
-downloads the latest release and copies the five module folders onto your CurrentUser module path.
+The simplest way is the [PowerShell Gallery](https://www.powershellgallery.com/packages/DotnetMove):
+
+```powershell
+Install-Module DotnetMove -Scope CurrentUser
+```
+
+That pulls the single bundled package (all engines). Update later with `Update-Module DotnetMove`.
+
+Prefer to install straight from GitHub (to read the installer first, or to pin a specific release)?
+It only downloads the latest release and copies the five module folders onto your CurrentUser module
+path.
 
 **Recommended:** download [the installer](https://github.com/kappasims/dotnet-move/blob/master/install.ps1), read it, then run it.
 
@@ -117,10 +126,10 @@ Import-Module ./src/DotnetMove/DotnetMove.psd1     # or import straight from the
 
 ## Updating
 
-Nothing updates automatically. `Test-DotnetMoveUpdate` checks GitHub for a newer release;
-`Update-DotnetMove` (or re-running the installer) applies it in place. The Claude Code skills are
-separate files: refresh them with `git pull` in a clone, or re-sync `.claude/skills` if installed
-globally. (Once on the PowerShell Gallery, `Update-Module DotnetMove` replaces this.)
+Nothing updates automatically. For Gallery installs, `Update-Module DotnetMove` is the one-liner.
+Otherwise `Test-DotnetMoveUpdate` checks GitHub for a newer release and `Update-DotnetMove` (or
+re-running the installer) applies it in place. The Claude Code skills are separate files: refresh
+them with `git pull` in a clone, or re-sync `.claude/skills` if installed globally.
 
 # Usage
 

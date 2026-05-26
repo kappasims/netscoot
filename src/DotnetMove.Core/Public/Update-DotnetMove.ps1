@@ -10,8 +10,8 @@ function Update-DotnetMove {
         git, no clone. Does nothing when already current unless -Force. Honors -WhatIf/-Confirm.
 
         After it runs, reload the module in the current session with `Import-Module DotnetMove -Force`.
-        Needs network access to GitHub. When the module ships on the PowerShell Gallery this is
-        superseded by `Update-Module DotnetMove`.
+        Needs network access to GitHub. For Gallery installs, `Update-Module DotnetMove` is the
+        simpler path; this command updates installer/clone installs in place from the GitHub release.
 
     .PARAMETER Force
         Reinstall the latest release even if the installed version is already current.
