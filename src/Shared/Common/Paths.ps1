@@ -1,11 +1,42 @@
+function Resolve-SymlinkPath {
+    # Resolve symlinked ancestors of an absolute path, segment by segment, over the portion that
+    # exists; any not-yet-existing tail (e.g. a move destination) is appended unchanged. This makes
+    # our paths match the canonical form git and the dotnet CLI use - on macOS the temp/repo root
+    # /var/folders/... is a symlink to /private/var/folders/..., and without this our /var-form
+    # paths diverge from dotnet sln / git bookkeeping, breaking reconciliation on a repo under a
+    # symlinked directory.
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$Full)
+    $sep = [System.IO.Path]::DirectorySeparatorChar
+    $cur = "$sep"
+    foreach ($part in ($Full.Split($sep))) {
+        if ([string]::IsNullOrEmpty($part)) { continue }
+        $cand = [System.IO.Path]::Combine($cur, $part)
+        if (Test-Path -LiteralPath $cand) {
+            $item = Get-Item -LiteralPath $cand -Force
+            $link = $null
+            try { $link = $item.ResolveLinkTarget($true) } catch { $link = $null }
+            $cur = if ($link) { $link.FullName } else { $item.FullName }
+        } else {
+            $cur = $cand   # nothing below here exists yet; keep as typed
+        }
+    }
+    return $cur
+}
+
 function Resolve-FullPath {
-    # Absolute, normalized path. Does not require the path to exist and emits no errors.
+    # Absolute, normalized path. Does not require the path to exist and emits no errors. On Unix it
+    # also resolves symlinked ancestors so the result is canonical (matching git/dotnet); Windows
+    # GetFullPath is sufficient (no /var-style ancestor symlinks).
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$Path)
-    if ([System.IO.Path]::IsPathRooted($Path)) {
-        return [System.IO.Path]::GetFullPath($Path)
+    $full = if ([System.IO.Path]::IsPathRooted($Path)) {
+        [System.IO.Path]::GetFullPath($Path)
+    } else {
+        [System.IO.Path]::GetFullPath((Join-Path (Get-Location).Path $Path))
     }
-    return [System.IO.Path]::GetFullPath((Join-Path (Get-Location).Path $Path))
+    if (Test-IsWindowsHost) { return $full }
+    return (Resolve-SymlinkPath -Full $full)
 }
 
 function Test-PathEqual {
