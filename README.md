@@ -1,3 +1,5 @@
+# Summary
+
 DotnetMove moves a .NET project folder and fixes everything the move would otherwise break: the
 solution file, the references that point at it, and the GUID wiring. Visual Studio does that for you
 when you drag a project in its GUI; DotnetMove does it from the command line, everywhere Visual
@@ -20,13 +22,7 @@ the link settings it cannot safely rewrite rather than guessing at them.
 For AI agents, the repo ships Claude Code skills that run these commands, triggering on phrases
 like "move this project" (see [Skills](#skills)).
 
-# Contents
-
-- For users: [Requirements](#requirements), [Install](#install), [Updating](#updating), [Moving](#moving), [Undoing](#undoing), [Inspecting](#inspecting), [Repairing](#repairing), [PowerShell usage](#powershell-usage), [git usage](#git-usage), [Skills](#skills)
-- For developers: [Build, test, install, docs](#build-test-install-docs), [Modules](#modules), [Layout](#layout)
-- [Reference](#reference): the [command reference](#command-reference) and the [output types](#output-types) the commands return
-
-# For users
+# Setup
 
 ## Requirements
 
@@ -88,6 +84,8 @@ Nothing updates automatically. `Test-DotnetMoveUpdate` checks GitHub for a newer
 `Update-DotnetMove` (or re-running the installer) applies it in place. The Claude Code skills are
 separate files: refresh them with `git pull` in a clone, or re-sync `.claude/skills` if installed
 globally. (Once on the PowerShell Gallery, `Update-Module DotnetMove` replaces this.)
+
+# Tasks
 
 ## Moving
 
@@ -190,6 +188,8 @@ relocatable, missing, or ambiguous (read-only by default).
 To resolve the membership divergence that `Test-SolutionConsistency` reports, `Sync-Solution` adds
 each project to the solutions missing it (via `dotnet sln add`), making membership uniform. It only
 adds, never removes; preview with `-WhatIf` first.
+
+# Interfaces
 
 ## PowerShell usage
 
