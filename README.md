@@ -19,7 +19,7 @@ like "move this project" (see [Skills](#skills)).
 
 ## Contents
 
-- For users: [Requirements](#requirements), [Install](#install), [Quick start](#quick-start), [Moving](#moving), [Inspecting](#inspecting), [Repairing](#repairing), [PowerShell usage](#powershell-usage), [git usage](#git-usage), [Skills](#skills)
+- For users: [Requirements](#requirements), [Install](#install), [Updating](#updating), [Moving](#moving), [Inspecting](#inspecting), [Repairing](#repairing), [PowerShell usage](#powershell-usage), [git usage](#git-usage), [Skills](#skills)
 - For developers: [Build, test, install, docs](#build-test-install-docs), [Modules](#modules), [Layout](#layout)
 - [Reference](#reference): every command, grouped by namespace
 
@@ -30,16 +30,13 @@ like "move this project" (see [Skills](#skills)).
 - PowerShell 7+ (Windows, Linux, macOS), or Windows PowerShell 5.1.
 - The .NET SDK (`dotnet`) on PATH for .NET project moves; .NET 10 for `.slnx` solutions. Moving
   PowerShell or Unity files does not need it.
-- git is optional; with it, moves use `git mv` and keep history, and without it `-Force` falls back
-  to a plain `Move-Item` (the same PowerShell cmdlet on every platform; no history kept).
-
-Run `Get-DotnetMoveCapability` to see which of these (git, dotnet) the current machine has, plus
-the platform and whether `.slnx` is supported.
+- git is optional: with it, moves use `git mv` (history kept); without it, `-Force` does a plain
+  `Move-Item` (no history). `Get-DotnetMoveCapability` reports what the machine has.
 
 ### Install
 
-Not on the PowerShell Gallery yet. The simplest install needs no git or clone, just run the
-hosted installer; re-running it (or `Update-DotnetMove`) is also how you update:
+Not on the PowerShell Gallery yet, so install with the hosted installer (no git or clone): it
+downloads the latest release and copies the modules onto your CurrentUser module path.
 
 ```powershell
 irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 | iex
@@ -48,11 +45,7 @@ Import-Module DotnetMove                   # all engines, by name
 Register-DotnetMvGitAlias -Scope Global    # optional: enable `git dotnetmv` (one git-config line)
 ```
 
-It downloads the latest release, extracts it, and copies the modules onto your CurrentUser module
-path. `Update-DotnetMove` does the same in place for an already-installed copy, and
-`Test-DotnetMoveUpdate` just checks whether you are behind.
-
-From a clone (for working on DotnetMove itself), use the build task instead, or import directly:
+To work on DotnetMove itself, install from a clone instead, or import directly:
 
 ```powershell
 ./build.ps1 -Task Install                          # copy this clone's modules to your module path
@@ -61,41 +54,16 @@ Import-Module ./src/DotnetMove.Core/DotnetMove.Core.psd1   # or import straight 
 
 ### Updating
 
-DotnetMove does not update itself: cutting a release changes nothing already installed until you
-act. `Test-DotnetMoveUpdate` compares the installed module to the latest GitHub release and tells
-you if you are behind. Applying the update differs by how you use it:
-
-- For people (non-agentic): run `Update-DotnetMove` to update in place, or re-run the installer
-  one-liner (`irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 | iex`).
-  Both overwrite the installed modules with the latest release. When DotnetMove reaches the
-  PowerShell Gallery, `Update-Module DotnetMove` becomes the standard path.
-- For agents (the Claude Code skills): the skills are files, separate from the installed module, so
-  they update on their own track. An agent working inside a clone gets both with `git pull` (plus
-  `./build.ps1 -Task Install` to refresh the modules). An agent using globally-installed skills
-  updates the module with `Update-DotnetMove` and re-syncs the `.claude/skills` copies. For
-  automatic reminders, add a Claude Code SessionStart hook that runs `Test-DotnetMoveUpdate` (ask
-  before adding it; it edits `settings.json`).
-
-### Quick start
-
-```powershell
-# Dry-run any move with -WhatIf, then run it for real:
-Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
-Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
-
-# Same move through the git verb:
-git dotnetmv src/Tarragon/Tarragon.csproj libs/Tarragon --whatif
-git dotnetmv src/Tarragon/Tarragon.csproj libs/Tarragon
-```
-
-`Move-Dotnet` detects what you passed and routes to the right engine.
+Nothing updates automatically. `Test-DotnetMoveUpdate` checks GitHub for a newer release;
+`Update-DotnetMove` (or re-running the installer) applies it in place. The Claude Code skills are
+separate files: refresh them with `git pull` in a clone, or re-sync `.claude/skills` if installed
+globally. (Once on the PowerShell Gallery, `Update-Module DotnetMove` replaces this.)
 
 ### Moving
 
-A move recomputes every stored path after the files have moved and delegates each change to the
-tool that owns the format. The move commands, most general first; all are callable directly, with
-full per-parameter docs in the [Reference](#reference) (generated;
-`./build.ps1 -Task Docs` or `Get-Help <command> -Full`).
+Every move recomputes the stored paths after the files move, delegating each change to the tool
+that owns the format. The commands, most general first (full per-parameter docs in the
+[Reference](#reference)):
 
 Level 1, one command for anything:
 
@@ -130,22 +98,17 @@ reference are preserved (nothing to rewrite). `Directory.Build.props/.targets` a
 fix, because it changes with folder depth; the move detects when the nearest inherited file
 changes and reports it.
 
-It is not entirely hands-off where native projects are involved off Windows. When you move a
-shared `.props`/`.targets`, `Move-MSBuildImport` also rewrites the `<Import>` path in any native
-`.vcxproj` that consumes it, on every OS. That is a best-effort, path-only update; a `.vcxproj`'s
-native link settings are never reconciled off Windows, which stays `Move-NativeProject`'s
-Windows-only job.
+Moving a shared `.props`/`.targets` also fixes the `<Import>` path in any consuming `.vcxproj` on
+every OS (path-only); a `.vcxproj`'s native link settings are reconciled only by `Move-NativeProject`
+(Windows). A `Move-DotnetProject` run, step by step:
 
-A `Move-DotnetProject` run, step by step (paths recomputed after the move, never typed by hand):
-
-1. Enumerate the solutions that contain the project, its consumers, and its own references.
+1. Enumerate the solutions, consumers, and own references of the project.
 2. Remove references and solution membership while the old paths still resolve.
-3. Move the directory (`git mv` if tracked, otherwise `Move-Item`).
-4. Re-add membership and references so the CLI computes fresh paths.
-5. Run `dotnet build` and report.
+3. Move the directory (`git mv` if tracked, else `Move-Item`).
+4. Re-add membership and references so the CLI recomputes fresh paths.
+5. Build and report. If any step fails, the move rolls back to the original state.
 
-Every move supports `-WhatIf` and `-Confirm`. `-Force` falls back to a plain `Move-Item` (one
-PowerShell cmdlet, same on every platform) when git is unavailable (no history preserved).
+Every move supports `-WhatIf`/`-Confirm`; `-Force` enables the no-git fallback.
 
 ### Inspecting
 
@@ -154,16 +117,12 @@ DotnetMove can be used purely to inspect a repo. These commands are read-only an
 | Command | Reports |
 |---|---|
 | `Test-SolutionConsistency` | projects with divergent solution membership across solutions |
-| `Get-SolutionInventory` | full solution contents (projects of any type, folders, items) and projects in no solution |
+| `Get-SolutionInventory` | full solution contents beyond `dotnet sln list` (non-CLI types like `.pssproj`, folders, items) + projects in no solution |
 | `Find-PathReference` | path references in build/CI/hook scripts that no move reconciles |
 | `Test-UnityMetaIntegrity` | missing or orphan Unity `.meta` |
 | `Resolve-MoveEngine` | which engine a given path classifies to |
 | `Get-DotnetMoveCapability` | whether git and dotnet are present, plus the platform |
 | `Test-DotnetMoveUpdate` | whether a newer DotnetMove release is available on GitHub |
-
-`Get-SolutionInventory` reads `.sln`/`.slnx` directly (not just `dotnet sln list`), so it surfaces
-non-CLI project types (e.g. `.pssproj`), solution folders, solution items, and any project on disk
-that no solution references.
 
 ### Repairing
 
@@ -228,8 +187,8 @@ Flags: `--whatif` (preview), `--force` (plain `Move-Item` fallback when git is u
 
 ### Skills
 
-For AI coding agents, the repo ships four Claude Code skills under `.claude/skills/`, one per
-engine. They trigger on natural language and run the commands above:
+Four Claude Code skills (`.claude/skills/`), one per engine, trigger on natural language and run
+the commands above:
 
 | Skill | Triggers on |
 |---|---|
@@ -260,14 +219,11 @@ CI (`.github/workflows/ci.yml`) runs the suite on ubuntu-latest and windows-late
 PowerShell 7, plus a Windows PowerShell 5.1 job, so the cross-platform and dual-edition guarantees
 are enforced on every push.
 
-The contract is that moves never hand-**write** solution/project files; every path/GUID mutation
-goes through first-party tooling (`dotnet sln`, `dotnet reference`, `git mv`, `Update-ModuleManifest`).
-The only sanctioned exceptions are formats no first-party tool reconciles, a solution's stored
-project paths, `<Import>` paths, and a script's dot-source paths, which are rewritten through the
-BOM-preserving `Set-Raw*` helpers. Where a first-party **reader** cannot surface what is needed
-(full solution contents), the tool parses read-only. A drift test
-(`tests/FirstPartyDrift.Tests.ps1`) locks down this write surface and fails if a new file starts
-writing content or a new cmdlet calls the raw writers.
+Contract: moves never hand-**write** solution/project files; every path/GUID change goes through
+first-party tooling (`dotnet sln`/`reference`, `git mv`, `Update-ModuleManifest`). The only
+hand-written exceptions are formats no CLI reconciles, solution stored paths, `<Import>` paths, and
+script dot-source paths, via the BOM-preserving `Set-Raw*` helpers; reads parse files directly only
+where no first-party reader suffices. `tests/FirstPartyDrift.Tests.ps1` locks this write surface down.
 
 ### Modules
 
@@ -283,7 +239,7 @@ Split by platform so the cross-platform core never ships native, Windows-only co
 ### Layout
 
 ```
-build.ps1                Test / Analyze / Install / Docs tasks
+build.ps1                Test / Analyze / Install / Docs / Release tasks
 .github/workflows/ci.yml CI: PS7 on Linux + Windows, and Windows PowerShell 5.1
 src/Shared/Common/       cross-cutting helpers (Platform/Paths/Git/Plan/Capability), all modules
 src/Shared/Dotnet/       .NET/MSBuild helpers (Dotnet/Solutions/Projects), Core + Native only
