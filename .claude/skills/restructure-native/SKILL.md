@@ -43,6 +43,10 @@ Import-Module DotnetMove
 Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo -WhatIf
 ```
 
+`-Destination` follows `git mv` rules: an existing directory means move into it keeping the
+folder's name (`./native` puts it at `./native/Aleppo`); otherwise it is the new folder path (a
+rename). It errors if the resulting folder already exists.
+
 It will: update `.sln`/`.slnx` membership via `dotnet sln`, move the folder (`git mv` when
 tracked) including the paired `.vcxproj.filters`, and then **report every relative /
 `$(SolutionDir)`-relative native setting** it could not safely rewrite. It does not silently

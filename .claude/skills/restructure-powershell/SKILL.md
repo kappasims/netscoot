@@ -41,6 +41,10 @@ Move-PowerShell -Path ./tools/Mayo -Destination ./modules/Mayo
 
 You can also call the specialists directly: `Move-PowerShellScript` and `Move-PowerShellModule`.
 
+`-Destination` follows `git mv` rules: an existing directory means move into it keeping the
+item's name (`-Destination ./shared` puts the script at `./shared/helpers.ps1`); otherwise it is
+the new path, a rename (`-Destination ./shared/helpers.ps1`). It errors if the target exists.
+
 ## Heuristic limit: reported, not silently guessed
 
 Script reference fixing is AST-based, so it only resolves what it can prove:

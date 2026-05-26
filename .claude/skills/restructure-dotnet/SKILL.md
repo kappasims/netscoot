@@ -47,7 +47,13 @@ Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/T
 ```
 
 This reconciles: solution membership (`dotnet sln add/remove`, works on `.sln` and `.slnx`),
-consumer `<ProjectReference>`s, and the project's own references, then runs `dotnet build`.
+consumer `<ProjectReference>`s, and the project's own references, then runs `dotnet build`
+(skip it with `-NoBuild`).
+
+`-Destination` follows `git mv` rules: an **existing** directory means move into it keeping the
+folder's name (`-Destination ./libs` puts the project at `./libs/Tarragon`); otherwise it is the
+project's new folder path, a rename (`-Destination ./libs/Tarragon`). It errors if the resulting
+folder already exists, so it never silently overwrites or double-nests.
 
 ## Inspecting and repairing (no move)
 

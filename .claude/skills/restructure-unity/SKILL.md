@@ -37,6 +37,10 @@ Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/T
 Moves the asset/folder + its `.meta` (git mv when tracked). When moving an `.asmdef` it
 reports which asmdefs reference it - informational only, since name/GUID refs survive.
 
+`-Destination` follows `git mv` rules: an existing directory means move into it keeping the
+name (`./Assets/Lib` puts it at `./Assets/Lib/Tarragon`); otherwise it is the new path, a
+rename. It errors if the target exists. The `.meta` follows the asset either way.
+
 Mobile/all targets: asmdef `includePlatforms`/`excludePlatforms` (iOS, Android, ...) are
 plain fields untouched by a move, so platform layouts are preserved.
 
