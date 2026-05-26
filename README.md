@@ -215,9 +215,9 @@ the commands above:
 once that path is on `$env:PSModulePath` you can `Import-Module DotnetMove` by name (the umbrella
 surfaces every engine's commands at once; native only on Windows).
 
-CI (`.github/workflows/ci.yml`) runs the suite on ubuntu-latest and windows-latest under
-PowerShell 7, plus a Windows PowerShell 5.1 job, so the cross-platform and dual-edition guarantees
-are enforced on every push.
+Per-push CI (`.github/workflows/ci.yml`) runs the suite on windows-latest (PowerShell 7) and
+Windows PowerShell 5.1, plus lint. Linux and macOS are on-demand (`platforms.yml`, via
+`tools/Invoke-PlatformCI.ps1`) - run them before a release.
 
 Contract: moves never hand-**write** solution/project files; every path/GUID change goes through
 first-party tooling (`dotnet sln`/`reference`, `git mv`, `Update-ModuleManifest`). The only
@@ -240,7 +240,7 @@ Split by platform so the cross-platform core never ships native, Windows-only co
 
 ```
 build.ps1                Test / Analyze / Install / Docs / Release tasks
-.github/workflows/ci.yml CI: PS7 on Linux + Windows, and Windows PowerShell 5.1
+.github/workflows/      ci.yml (push: Windows + PS 5.1 + lint); platforms.yml (on-demand: Linux + macOS)
 src/Shared/Common/       cross-cutting helpers (Platform/Paths/Git/Plan/Capability), all modules
 src/Shared/Dotnet/       .NET/MSBuild helpers (Dotnet/Solutions/Projects), Core + Native only
 src/DotnetMove/          umbrella module (loads every available engine)

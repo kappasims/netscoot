@@ -1,0 +1,31 @@
+name: Platforms (manual)
+
+# Linux and macOS are not in per-push CI (that runs Windows + Windows PowerShell 5.1). Run this
+# on demand before a release - via tools/Invoke-PlatformCI.ps1 or the Actions tab ("Run workflow") -
+# to confirm the cross-platform engines pass on Ubuntu and macOS too.
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # Ubuntu/macOS runners ship pwsh; build.ps1 no longer auto-installs Pester.
+      - name: Install Pester
+        shell: pwsh
+        run: Install-Module Pester -MinimumVersion 5.0 -Scope CurrentUser -Force -SkipPublisherCheck
+
+      - name: Run tests
+        shell: pwsh
+        run: ./build.ps1 -Task Test

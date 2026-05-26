@@ -4,14 +4,13 @@ on:
   push:
   pull_request:
 
+# Per-push CI runs on Windows (PS7 + Windows PowerShell 5.1) plus lint. Linux and macOS are
+# on-demand (.github/workflows/platforms.yml, via tools/Invoke-PlatformCI.ps1) - run them before a
+# release. The cross-platform code rarely regresses per-OS, and this keeps every push fast.
 jobs:
   test:
-    name: Test (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    name: Test (windows-latest)
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 

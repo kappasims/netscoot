@@ -1,12 +1,13 @@
 #requires -Version 7.0
 <#
 .SYNOPSIS
-    Trigger and watch the manual macOS test workflow (.github/workflows/macos.yml).
+    Trigger and watch the on-demand Linux + macOS test workflow (.github/workflows/platforms.yml).
 
 .DESCRIPTION
-    macOS is not part of normal CI; this script dispatches the workflow_dispatch run on
-    demand, waits for the new run to register, then streams it to completion. Needs the
-    GitHub CLI (gh) authenticated for this repo. Exits non-zero if the run fails.
+    Linux and macOS are not in per-push CI (which runs Windows + Windows PowerShell 5.1); run this
+    before a release to confirm them. It dispatches the workflow_dispatch run, waits for it to
+    register, then streams it to completion. Needs the GitHub CLI (gh) authenticated for this repo.
+    Exits non-zero if the run fails.
 
 .PARAMETER Ref
     Branch or tag to run against. Defaults to the current branch.
@@ -15,11 +16,11 @@
     Dispatch the run and return immediately without streaming it.
 
 .EXAMPLE
-    ./tools/Invoke-MacOSCI.ps1
-    Runs the macOS tests against the current branch and waits for the result.
+    ./tools/Invoke-PlatformCI.ps1
+    Runs the Linux + macOS tests against the current branch and waits for the result.
 
 .EXAMPLE
-    ./tools/Invoke-MacOSCI.ps1 -Ref master -NoWatch
+    ./tools/Invoke-PlatformCI.ps1 -Ref master -NoWatch
     Kicks off a run on master and returns without waiting.
 #>
 [CmdletBinding()]
@@ -29,7 +30,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$workflow = 'macos.yml'
+$workflow = 'platforms.yml'
 
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
     throw "GitHub CLI (gh) not found on PATH. Install it (https://cli.github.com) and run 'gh auth login'."
