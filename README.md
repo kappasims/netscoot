@@ -1,5 +1,7 @@
 # Summary
 
+[![PowerShell Gallery](https://img.shields.io/powershellgallery/v/DotnetMove?logo=powershell&label=PowerShell%20Gallery)](https://www.powershellgallery.com/packages/DotnetMove) [![Downloads](https://img.shields.io/powershellgallery/dt/DotnetMove?label=downloads)](https://www.powershellgallery.com/packages/DotnetMove)
+
 DotnetMove moves a .NET project folder and fixes everything the move would otherwise break: the
 solution file, the references that point at it, and the GUID wiring. Visual Studio does that for you
 when you drag a project in its GUI; DotnetMove does it from the command line, everywhere Visual
@@ -76,19 +78,29 @@ telemetry.
 
 ## Install
 
-Install from the [PowerShell Gallery](https://www.powershellgallery.com/packages/DotnetMove):
+Install the single bundled package (all engines) from the
+[PowerShell Gallery](https://www.powershellgallery.com/packages/DotnetMove):
 
 ```powershell
-Install-Module DotnetMove -Scope CurrentUser
+Install-Module DotnetMove -Scope CurrentUser     # PowerShellGet (Windows PowerShell 5.1+ / PowerShell 7)
+Install-PSResource DotnetMove                     # PSResourceGet (the newer installer, PowerShell 7.4+)
 ```
 
-This installs the single bundled package (all engines). Update later with `Update-Module DotnetMove`.
+Update with `Update-Module DotnetMove` (or `Update-PSResource DotnetMove`). Then load it, and
+optionally enable the git verb:
 
-Installing from GitHub instead lets you read the installer before running it, or pin a specific
-release. The installer downloads a release and copies the five module folders onto your CurrentUser
-module path.
+```powershell
+Import-Module DotnetMove                   # all engines, by name
+Register-DotnetMvGitAlias -Scope Global    # optional: enable `git dotnetmv` (one git-config line)
+```
 
-**Recommended:** download [the installer](https://github.com/kappasims/dotnet-move/blob/master/install.ps1), read it, then run it.
+### Alternative / offline installation
+
+If you cannot reach the Gallery, want to read the installer before running it, or need to pin a
+specific release, install from the GitHub release instead. It downloads a release and copies the five
+module folders onto your CurrentUser module path.
+
+Download [the installer](https://github.com/kappasims/dotnet-move/blob/master/install.ps1), read it, then run it:
 
 ```powershell
 irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 -OutFile install.ps1
@@ -101,17 +113,10 @@ irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 -
 `DotnetMove.Shared`, `DotnetMove.Core`, `DotnetMove.Unity`, `DotnetMove.Native`, and `DotnetMove`
 folders out of `src/` into any directory on your `$env:PSModulePath`.
 
-Or pipe it straight in for a **YOLO install** (easiest) if you are comfortable running [the install script](https://github.com/kappasims/dotnet-move/blob/master/install.ps1) unread:
+Or pipe it straight in for a **YOLO install** if you are comfortable running [the install script](https://github.com/kappasims/dotnet-move/blob/master/install.ps1) unread:
 
 ```powershell
 irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 | iex
-```
-
-Then load it, and optionally enable the git verb:
-
-```powershell
-Import-Module DotnetMove                   # all engines, by name
-Register-DotnetMvGitAlias -Scope Global    # optional: enable `git dotnetmv` (one git-config line)
 ```
 
 DotnetMove keeps an undo journal inside the git directory so you can reverse a move later (see [Undoing](#undoing)).
