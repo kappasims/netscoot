@@ -92,6 +92,21 @@ Use the raw CLI, never a text editor:
   inheritance changes when folder depth changes (a move detects and warns; it cannot fix it).
 - Hardcoded project paths in CI YAML / scripts.
 
+## Undoing a move
+
+Every move is journaled to a repo-local `.dotnetmove/journal.jsonl`, so you can reverse it later -
+even in a new session - with `Undo-DotnetMove`. It replays the inverse (the same move with source
+and destination swapped), re-reconciling from the current state.
+
+```powershell
+Undo-DotnetMove -List     # what can be undone
+Undo-DotnetMove -WhatIf   # preview reversing the most recent move
+Undo-DotnetMove           # reverse the most recent move (call again to walk back)
+```
+
+Journaling is on by default and self-gitignored (it never touches the repo's `.gitignore`). Opt out
+with `$env:DOTNETMOVE_JOURNAL = 'off'`. See the [README](https://github.com/kappasims/dotnet-move).
+
 ## The `git dotnetmv` verb (optional; ask first)
 
 The same routing is also an opt-in git verb: `git dotnetmv <src> <dst> [--whatif]`. It needs a

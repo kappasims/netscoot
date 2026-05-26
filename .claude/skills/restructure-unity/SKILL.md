@@ -63,6 +63,21 @@ Unity analog of dangling references.
 - Hand-edit generated `Assembly-CSharp*.csproj` / the `.sln` - Unity regenerates them.
 - Move only the `.cs`/asset and leave the `.meta` (or vice versa).
 
+## Undoing a move
+
+Every move is journaled to a repo-local `.dotnetmove/journal.jsonl`, so you can reverse it later -
+even in a new session - with `Undo-DotnetMove`. It replays the inverse (the asset and its `.meta`
+move back together).
+
+```powershell
+Undo-DotnetMove -List     # what can be undone
+Undo-DotnetMove -WhatIf   # preview reversing the most recent move
+Undo-DotnetMove           # reverse the most recent move (call again to walk back)
+```
+
+Journaling is on by default and self-gitignored (it never touches the repo's `.gitignore`). Opt out
+with `$env:DOTNETMOVE_JOURNAL = 'off'`. See the [README](https://github.com/kappasims/dotnet-move).
+
 ## The `git dotnetmv` verb (optional; ask first)
 
 The same routing is also an opt-in git verb: `git dotnetmv <src> <dst> [--whatif]`. It needs a

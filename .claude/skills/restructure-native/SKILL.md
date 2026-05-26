@@ -66,6 +66,22 @@ warnings) tells you exactly what to verify or hand-fix afterward.
 - Rebuild the native + C++/CLI projects in Visual Studio / MSBuild (not `dotnet build`).
 - Confirm the `.vcxproj.filters` has no broken `..\` entries.
 
+## Undoing a move
+
+Every move is journaled to a repo-local `.dotnetmove/journal.jsonl`, so you can reverse it later -
+even in a new session - with `Undo-DotnetMove`. It replays the inverse (moves the `.vcxproj` folder
+and its `.vcxproj.filters` back, re-doing solution membership); re-check the native link settings
+it reports, the same as for a forward move.
+
+```powershell
+Undo-DotnetMove -List     # what can be undone
+Undo-DotnetMove -WhatIf   # preview reversing the most recent move
+Undo-DotnetMove           # reverse the most recent move (call again to walk back)
+```
+
+Journaling is on by default and self-gitignored (it never touches the repo's `.gitignore`). Opt out
+with `$env:DOTNETMOVE_JOURNAL = 'off'`. See the [README](https://github.com/kappasims/dotnet-move).
+
 ## The `git dotnetmv` verb (optional; ask first)
 
 The same routing is also an opt-in git verb: `git dotnetmv <src> <dst> [--whatif]`. It needs a

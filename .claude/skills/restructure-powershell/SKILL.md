@@ -73,6 +73,21 @@ Treat the result as "fixed what could be proven," not "guaranteed complete."
 - Hand-edit the `.psd1` to repoint paths; let `Update-ModuleManifest` do it.
 - Move a `.ps1` with a plain `git mv` and assume its callers still work; references break silently.
 
+## Undoing a move
+
+Every move is journaled to a repo-local `.dotnetmove/journal.jsonl`, so you can reverse it later -
+even in a new session - with `Undo-DotnetMove`. It replays the inverse (the same move with source
+and destination swapped), re-reconciling references from the current state.
+
+```powershell
+Undo-DotnetMove -List     # what can be undone
+Undo-DotnetMove -WhatIf   # preview reversing the most recent move
+Undo-DotnetMove           # reverse the most recent move (call again to walk back)
+```
+
+Journaling is on by default and self-gitignored (it never touches the repo's `.gitignore`). Opt out
+with `$env:DOTNETMOVE_JOURNAL = 'off'`. See the [README](https://github.com/kappasims/dotnet-move).
+
 ## The `git dotnetmv` verb (optional; ask first)
 
 The same routing is also an opt-in git verb: `git dotnetmv <src> <dst> [--whatif]`. It needs a
