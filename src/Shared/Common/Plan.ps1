@@ -95,12 +95,12 @@ function Invoke-MovePlan {
         [scriptblock]$Rollback,
         [object[]]$RollbackArgs = @()
     )
-    Write-Verbose "Reconciling $($Items.Count) reference(s) around: $Caption"
+    Write-Verbose "Reconciling $(@($Items).Count) reference(s) around: $Caption"
 
     # Snapshot the files the reconciliation will edit, keyed by their original path.
     $snapDir = $null
     $snap = [ordered]@{}
-    if ($BackupPath.Count) {
+    if (@($BackupPath).Count) {
         $snapDir = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_snap_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
         New-Item -ItemType Directory -Path $snapDir | Out-Null
         $n = 0
@@ -146,5 +146,5 @@ function Invoke-MovePlan {
     }
     if ($snapDir) { Remove-Item -LiteralPath $snapDir -Recurse -Force -ErrorAction SilentlyContinue }
 
-    [pscustomobject]@{ Applied = $Items.Count; Skipped = 0 }
+    [pscustomobject]@{ Applied = @($Items).Count; Skipped = 0 }
 }
