@@ -38,7 +38,8 @@ function Move-Dotnet {
         move does not preserve git history. Forwarded to the engine.
 
     .OUTPUTS
-        The move-result object from the engine it routes to (see that engine's command for its shape).
+        A single move-result object from the engine it routes to (its concrete type and properties
+        vary by engine; see that engine's command for the exact shape).
 
     .EXAMPLE
         Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf

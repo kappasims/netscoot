@@ -27,7 +27,8 @@ function Move-PowerShell {
         move does not preserve git history.
 
     .OUTPUTS
-        DotnetMove.ScriptMoveResult (.ps1) or DotnetMove.ModuleMoveResult (module); see Move-PowerShellScript / Move-PowerShellModule for the shape.
+        A single result object: a DotnetMove.ScriptMoveResult (.ps1) or DotnetMove.ModuleMoveResult
+        (module); see Move-PowerShellScript / Move-PowerShellModule for the exact shape.
 
     .EXAMPLE
         Move-PowerShell -Path ./tools/Mayo -Destination ./modules/Mayo -WhatIf

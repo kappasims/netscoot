@@ -18,8 +18,9 @@ function Test-DotnetMoveUpdate {
         owner/name of the GitHub repository to check. Defaults to the project repository.
 
     .OUTPUTS
-        A pscustomobject with Installed (version), Latest (version), Tag, UpdateAvailable (bool),
-        and Url.
+        A single pscustomobject: Installed ([version]), Latest ([version], or $null if the tag
+        could not be parsed), Tag (string), UpdateAvailable (bool), and Url (string). Returns
+        nothing (writes a non-terminating error) when the release cannot be fetched.
 
     .EXAMPLE
         Test-DotnetMoveUpdate

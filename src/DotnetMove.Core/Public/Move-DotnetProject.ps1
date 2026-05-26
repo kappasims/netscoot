@@ -37,7 +37,9 @@ function Move-DotnetProject {
         move does not preserve git history.
 
     .OUTPUTS
-        DotnetMove.MoveResult with Engine, Source, Destination, Performed, SkippedCount, Solutions, ConsumerCount, OwnRefCount, and Built.
+        A single DotnetMove.MoveResult object: Engine, Source, Destination (strings), Performed
+        (bool), SkippedCount, ConsumerCount, OwnRefCount (ints), Solutions (string[], the solution
+        names updated), and Built (bool, or $null with -NoBuild).
 
     .EXAMPLE
         Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf

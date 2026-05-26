@@ -29,7 +29,9 @@ function Move-DotnetFile {
         move does not preserve git history.
 
     .OUTPUTS
-        The result object from the .NET specialist it routes to (see Move-DotnetProject, Move-Solution, or Move-MSBuildImport for its shape).
+        A single result object from the .NET specialist it routes to: a DotnetMove.MoveResult,
+        DotnetMove.SolutionMoveResult, or DotnetMove.ImportMoveResult (see Move-DotnetProject,
+        Move-Solution, or Move-MSBuildImport for the exact shape).
 
     .EXAMPLE
         Move-DotnetFile -Path ./Demo.slnx -Destination ./build/Demo.slnx

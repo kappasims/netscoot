@@ -27,7 +27,9 @@ function Move-Solution {
         move does not preserve git history.
 
     .OUTPUTS
-        DotnetMove.SolutionMoveResult with Engine, Source, Destination, Performed, SkippedCount, and ProjectsRebased.
+        A single DotnetMove.SolutionMoveResult object: Engine, Source, Destination (strings),
+        Performed (bool), SkippedCount (int), and ProjectsRebased (int, count of stored paths
+        rewritten).
 
     .EXAMPLE
         Move-Solution -Path ./Demo.slnx -Destination ./build/Demo.slnx

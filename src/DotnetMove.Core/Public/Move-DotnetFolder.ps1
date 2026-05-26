@@ -29,7 +29,9 @@ function Move-DotnetFolder {
         move does not preserve git history.
 
     .OUTPUTS
-        DotnetMove.TreeMoveResult with Engine, Source, Destination, Performed, SkippedCount, ProjectsMoved, ConsumerCount, and Built.
+        A single DotnetMove.TreeMoveResult object (from Move-DotnetProjectTree): Engine, Source,
+        Destination (strings), Performed (bool), SkippedCount, ProjectsMoved, ConsumerCount (ints),
+        and Built (bool, or $null with -NoBuild).
 
     .EXAMPLE
         Move-DotnetFolder -Path ./src/Group -Destination ./libs/Group -WhatIf

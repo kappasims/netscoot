@@ -14,7 +14,7 @@ function Resolve-MoveEngine {
         The item to classify. Accepts pipeline input.
 
     .OUTPUTS
-        [string] one of: dotnet, native, unity, ps-script, ps-module, unknown.
+        A single [string], one of: dotnet, native, unity, ps-script, ps-module, unknown.
 
     .EXAMPLE
         Resolve-MoveEngine ./src/Tarragon/Tarragon.csproj      # -> dotnet

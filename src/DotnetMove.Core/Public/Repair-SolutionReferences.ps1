@@ -31,7 +31,10 @@ function Repair-SolutionReferences {
         Remove entries whose project cannot be found anywhere in the repo. Honors -WhatIf.
 
     .OUTPUTS
-        One pscustomobject per dangling entry with Kind, Resolution, Missing, NewPath, and Container.
+        Emits zero or more pscustomobjects, one per dangling entry (a caller collects them as an
+        array). Each has: Kind, Resolution, Missing, NewPath, Container, MissingAbs (all strings),
+        and Candidates (string[], the same-named project files found, used to resolve NewPath).
+        Returns nothing when there are no dangling entries.
 
     .EXAMPLE
         Repair-SolutionReferences -RepoRoot .

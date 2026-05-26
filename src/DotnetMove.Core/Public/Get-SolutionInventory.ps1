@@ -19,9 +19,10 @@ function Get-SolutionInventory {
         property). Defaults to the enclosing git repo root. Nested git worktrees are skipped.
 
     .OUTPUTS
-        One pscustomobject per item with Solution (repo-relative, or '(none)'), Kind
-        (Project | SolutionFolder | SolutionItem | UnreferencedProject), Type (project extension
-        without the dot, else empty), Name, and Path (as stored in the solution, or repo-relative).
+        Emits zero or more pscustomobjects, one per item (a caller collects them as an array).
+        Each has (all strings): Solution (repo-relative, or '(none)'), Kind (Project |
+        SolutionFolder | SolutionItem | UnreferencedProject), Type (project extension without the
+        dot, else empty), Name, and Path (as stored in the solution, or repo-relative).
 
     .EXAMPLE
         Get-SolutionInventory -RepoRoot . | Format-Table -AutoSize

@@ -11,7 +11,9 @@ function Get-DotnetMoveCapability {
         preserved).
 
     .OUTPUTS
-        DotnetMove.Capability with Platform, PSEdition, Git, Dotnet, and DotnetSupportsSlnx.
+        A single DotnetMove.Capability object: Platform (string), PSEdition (string),
+        DotnetSupportsSlnx (bool), and Git and Dotnet - each itself a nested object with Present
+        (bool), Version (string), and Path (string).
 
     .EXAMPLE
         Get-DotnetMoveCapability

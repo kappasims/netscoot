@@ -38,7 +38,10 @@ function Move-MSBuildImport {
         move does not preserve git history.
 
     .OUTPUTS
-        DotnetMove.ImportMoveResult with Engine, Source, Destination, Performed, SkippedCount, ImportersFixed, OwnImportsFixed, and AutoImported.
+        A single DotnetMove.ImportMoveResult object: Engine, Source, Destination (strings),
+        Performed (bool), SkippedCount, ImportersFixed, OwnImportsFixed (ints, counts of files
+        fixed), and AutoImported (bool, true when the moved file is a by-location import like
+        Directory.Build.props whose inheritance scope changed).
 
     .EXAMPLE
         Move-MSBuildImport -Path ./Shared.props -Destination ./build/Shared.props

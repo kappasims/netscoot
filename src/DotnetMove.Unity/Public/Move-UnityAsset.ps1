@@ -32,7 +32,10 @@ function Move-UnityAsset {
         move does not preserve git history.
 
     .OUTPUTS
-        DotnetMove.UnityMoveResult with Engine, Source, Destination, Performed, SkippedCount, MetaMoved, IsAsmdef, and ReferencedBy.
+        A single DotnetMove.UnityMoveResult object: Engine, Source, Destination (strings),
+        Performed (bool), SkippedCount (int), MetaMoved (bool), IsAsmdef (bool), and ReferencedBy
+        (string[], asmdefs that reference a moved .asmdef - informational, since refs are by
+        name/GUID and survive).
 
     .EXAMPLE
         Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/Tarragon -WhatIf

@@ -28,7 +28,9 @@ function Find-PathReference {
         Extra repo-relative globs to include in the candidate set (e.g. 'deploy/*.sh').
 
     .OUTPUTS
-        pscustomobject with File, Line, Confidence (High|Low), Text.
+        Emits zero or more pscustomobjects, one per matching line (a caller collects them as an
+        array). Each has: File (string), Line (int), Confidence (string, High|Low), and Text
+        (string). Returns nothing when no references are found.
 
     .EXAMPLE
         Find-PathReference -Path ./lib/Tarragon.csproj

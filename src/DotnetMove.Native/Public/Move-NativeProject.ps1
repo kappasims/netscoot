@@ -31,7 +31,10 @@ function Move-NativeProject {
         move does not preserve git history.
 
     .OUTPUTS
-        DotnetMove.NativeMoveResult with Engine, Source, Destination, Performed, SkippedCount, Solutions, UnreconciledSettings, and HadFilters.
+        A single DotnetMove.NativeMoveResult object: Engine, Source, Destination (strings),
+        Performed (bool), SkippedCount (int), HadFilters (bool), Solutions (string[], the solution
+        names updated), and UnreconciledSettings (object[], one per native path setting that must
+        be verified/fixed by hand - each with the setting name and value).
 
     .EXAMPLE
         Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo -WhatIf

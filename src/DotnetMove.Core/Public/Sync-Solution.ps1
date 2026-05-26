@@ -19,8 +19,9 @@ function Sync-Solution {
         worktrees are skipped.
 
     .OUTPUTS
-        One pscustomobject per addition with Solution (repo-relative) and Added (repo-relative
-        project path).
+        Emits zero or more pscustomobjects, one per addition (a caller collects them as an array).
+        Each has (both strings): Solution (repo-relative) and Added (repo-relative project path).
+        Returns nothing when every solution already contains every project.
 
     .EXAMPLE
         Sync-Solution -RepoRoot . -WhatIf

@@ -225,6 +225,8 @@ engine. They trigger on natural language and run the commands above:
 ./build.ps1 -Task Install            # copy modules + Shared into the per-user PowerShell module path
 ./build.ps1 -Task Install -InstallPath D:\Modules
 ./build.ps1 -Task Docs               # regenerate the README Command reference section from the cmdlets' help
+./build.ps1 -Task Release -Version 1.2.0           # stamp ModuleVersion in every manifest; gate on analyze + tests
+./build.ps1 -Task Release -Version 1.2.0 -Publish  # also commit, tag vX.Y.Z, push, and create the GitHub release
 ```
 
 `Install` copies the modules and their `Shared` sibling (the modules dot-source `..\Shared`), so
@@ -234,6 +236,15 @@ surfaces every engine's commands at once; native only on Windows).
 CI (`.github/workflows/ci.yml`) runs the suite on ubuntu-latest and windows-latest under
 PowerShell 7, plus a Windows PowerShell 5.1 job, so the cross-platform and dual-edition guarantees
 are enforced on every push.
+
+The contract is that moves never hand-**write** solution/project files; every path/GUID mutation
+goes through first-party tooling (`dotnet sln`, `dotnet reference`, `git mv`, `Update-ModuleManifest`).
+The only sanctioned exceptions are formats no first-party tool reconciles, a solution's stored
+project paths, `<Import>` paths, and a script's dot-source paths, which are rewritten through the
+BOM-preserving `Set-Raw*` helpers. Where a first-party **reader** cannot surface what is needed
+(full solution contents), the tool parses read-only. A drift test
+(`tests/FirstPartyDrift.Tests.ps1`) locks down this write surface and fails if a new file starts
+writing content or a new cmdlet calls the raw writers.
 
 ### Modules
 
@@ -338,7 +349,9 @@ Run it before a move (to see what will break) or after (searching the old path).
 
 **Output**
 
-pscustomobject with File, Line, Confidence (High|Low), Text.
+Emits zero or more pscustomobjects, one per matching line (a caller collects them as an
+array). Each has: File (string), Line (int), Confidence (string, High|Low), and Text
+(string). Returns nothing when no references are found.
 
 **Examples**
 
@@ -366,7 +379,9 @@ preserved).
 
 **Output**
 
-DotnetMove.Capability with Platform, PSEdition, Git, Dotnet, and DotnetSupportsSlnx.
+A single DotnetMove.Capability object: Platform (string), PSEdition (string),
+DotnetSupportsSlnx (bool), and Git and Dotnet - each itself a nested object with Present
+(bool), Version (string), and Path (string).
 
 **Examples**
 
@@ -404,9 +419,10 @@ Read-only: one record per item, so you can group, filter, or format it however y
 
 **Output**
 
-One pscustomobject per item with Solution (repo-relative, or '(none)'), Kind
-(Project | SolutionFolder | SolutionItem | UnreferencedProject), Type (project extension
-without the dot, else empty), Name, and Path (as stored in the solution, or repo-relative).
+Emits zero or more pscustomobjects, one per item (a caller collects them as an array).
+Each has (all strings): Solution (repo-relative, or '(none)'), Kind (Project |
+SolutionFolder | SolutionItem | UnreferencedProject), Type (project extension without the
+dot, else empty), Name, and Path (as stored in the solution, or repo-relative).
 
 **Examples**
 
@@ -462,7 +478,8 @@ target's engine accepts them.
 
 **Output**
 
-The move-result object from the engine it routes to (see that engine's command for its shape).
+A single move-result object from the engine it routes to (its concrete type and properties
+vary by engine; see that engine's command for the exact shape).
 
 **Examples**
 
@@ -504,7 +521,9 @@ Move-UnityAsset. -WhatIf/-Confirm/-Verbose propagate to the specialist; -Force a
 
 **Output**
 
-The result object from the .NET specialist it routes to (see Move-DotnetProject, Move-Solution, or Move-MSBuildImport for its shape).
+A single result object from the .NET specialist it routes to: a DotnetMove.MoveResult,
+DotnetMove.SolutionMoveResult, or DotnetMove.ImportMoveResult (see Move-DotnetProject,
+Move-Solution, or Move-MSBuildImport for the exact shape).
 
 **Examples**
 
@@ -546,7 +565,9 @@ propagate; -Force/-RepoRoot/-NoBuild are forwarded.
 
 **Output**
 
-DotnetMove.TreeMoveResult with Engine, Source, Destination, Performed, SkippedCount, ProjectsMoved, ConsumerCount, and Built.
+A single DotnetMove.TreeMoveResult object (from Move-DotnetProjectTree): Engine, Source,
+Destination (strings), Performed (bool), SkippedCount, ProjectsMoved, ConsumerCount (ints),
+and Built (bool, or `$null` with -NoBuild).
 
 **Examples**
 
@@ -593,7 +614,9 @@ terminating error honoring -ErrorAction).
 
 **Output**
 
-DotnetMove.MoveResult with Engine, Source, Destination, Performed, SkippedCount, Solutions, ConsumerCount, OwnRefCount, and Built.
+A single DotnetMove.MoveResult object: Engine, Source, Destination (strings), Performed
+(bool), SkippedCount, ConsumerCount, OwnRefCount (ints), Solutions (string[], the solution
+names updated), and Built (bool, or `$null` with -NoBuild).
 
 **Examples**
 
@@ -647,7 +670,9 @@ confirmed plain-move fallback via -Force / ShouldContinue); supports -WhatIf.
 
 **Output**
 
-DotnetMove.TreeMoveResult with Engine, Source, Destination, Performed, SkippedCount, ProjectsMoved, ConsumerCount, and Built.
+A single DotnetMove.TreeMoveResult object: Engine, Source, Destination (strings),
+Performed (bool), SkippedCount, ProjectsMoved, ConsumerCount (ints), and Built (bool, or
+`$null` with -NoBuild).
 
 **Examples**
 
@@ -700,7 +725,10 @@ fallback via -Force). Supports -WhatIf.
 
 **Output**
 
-DotnetMove.ImportMoveResult with Engine, Source, Destination, Performed, SkippedCount, ImportersFixed, OwnImportsFixed, and AutoImported.
+A single DotnetMove.ImportMoveResult object: Engine, Source, Destination (strings),
+Performed (bool), SkippedCount, ImportersFixed, OwnImportsFixed (ints, counts of files
+fixed), and AutoImported (bool, true when the moved file is a by-location import like
+Directory.Build.props whose inheritance scope changed).
 
 **Examples**
 
@@ -740,7 +768,8 @@ Dispatches by target type:
 
 **Output**
 
-DotnetMove.ScriptMoveResult (.ps1) or DotnetMove.ModuleMoveResult (module); see Move-PowerShellScript / Move-PowerShellModule for the shape.
+A single result object: a DotnetMove.ScriptMoveResult (.ps1) or DotnetMove.ModuleMoveResult
+(module); see Move-PowerShellScript / Move-PowerShellModule for the exact shape.
 
 **Examples**
 
@@ -780,7 +809,8 @@ and any path computed at runtime, cannot be reconciled automatically.
 
 **Output**
 
-DotnetMove.ModuleMoveResult with Engine, Source, Destination, Performed, SkippedCount, and Manifest.
+A single DotnetMove.ModuleMoveResult object: Engine, Source, Destination (strings),
+Performed (bool), SkippedCount (int), and Manifest (string, the manifest file name).
 
 **Examples**
 
@@ -829,7 +859,9 @@ supported; dotnet not required.
 
 **Output**
 
-DotnetMove.ScriptMoveResult with Engine, Source, Destination, Performed, SkippedCount, ReferencersFixed, OwnRefsFixed, and UnresolvedRefs.
+A single DotnetMove.ScriptMoveResult object: Engine, Source, Destination (strings),
+Performed (bool), SkippedCount, ReferencersFixed, OwnRefsFixed, and UnresolvedRefs - all
+ints (UnresolvedRefs is a count of possible dynamic references to verify, not a list).
 
 **Examples**
 
@@ -873,7 +905,9 @@ supported. dotnet is not required.
 
 **Output**
 
-DotnetMove.SolutionMoveResult with Engine, Source, Destination, Performed, SkippedCount, and ProjectsRebased.
+A single DotnetMove.SolutionMoveResult object: Engine, Source, Destination (strings),
+Performed (bool), SkippedCount (int), and ProjectsRebased (int, count of stored paths
+rewritten).
 
 **Examples**
 
@@ -911,7 +945,8 @@ Unregister-DotnetMvGitAlias. Use -WhatIf to see the exact `git config` command.
 
 **Output**
 
-DotnetMove.GitAlias with Alias, Scope, Forwarder, and the git config Command.
+A single DotnetMove.GitAlias object: Alias, Scope, Forwarder, and Command (all strings; the
+last is the git config command that was/would be run).
 
 **Examples**
 
@@ -959,7 +994,10 @@ CLI. -Prune never touches Relocatable or Ambiguous entries. -Fix and -Prune can 
 
 **Output**
 
-One pscustomobject per dangling entry with Kind, Resolution, Missing, NewPath, and Container.
+Emits zero or more pscustomobjects, one per dangling entry (a caller collects them as an
+array). Each has: Kind, Resolution, Missing, NewPath, Container, MissingAbs (all strings),
+and Candidates (string[], the same-named project files found, used to resolve NewPath).
+Returns nothing when there are no dangling entries.
 
 **Examples**
 
@@ -1005,7 +1043,7 @@ classify regardless); folder cases require the directory.
 
 **Output**
 
-[string] one of: dotnet, native, unity, ps-script, ps-module, unknown.
+A single [string], one of: dotnet, native, unity, ps-script, ps-module, unknown.
 
 **Examples**
 
@@ -1044,8 +1082,9 @@ this against the whole repo; preview with -WhatIf first and add specific project
 
 **Output**
 
-One pscustomobject per addition with Solution (repo-relative) and Added (repo-relative
-project path).
+Emits zero or more pscustomobjects, one per addition (a caller collects them as an array).
+Each has (both strings): Solution (repo-relative) and Added (repo-relative project path).
+Returns nothing when every solution already contains every project.
 
 **Examples**
 
@@ -1089,8 +1128,9 @@ rate-limited, or no releases yet).
 
 **Output**
 
-A pscustomobject with Installed (version), Latest (version), Tag, UpdateAvailable (bool),
-and Url.
+A single pscustomobject: Installed ([version]), Latest ([version], or `$null` if the tag
+could not be parsed), Tag (string), UpdateAvailable (bool), and Url (string). Returns
+nothing (writes a non-terminating error) when the release cannot be fetched.
 
 **Examples**
 
@@ -1127,7 +1167,10 @@ full membership matrix of every solution and its projects.
 
 **Output**
 
-One pscustomobject per divergent project with Project, PresentIn, and AbsentFrom.
+Emits zero or more pscustomobjects to the pipeline, one per divergent project (a caller
+collects them as an array). Each has: Project (string, the project path), PresentIn
+(string[], solution paths that list it), and AbsentFrom (string[], solution paths that
+do not). Returns nothing when membership is consistent.
 
 **Examples**
 
@@ -1209,7 +1252,10 @@ MSBuild paths yet - surfacing them beats silently mis-editing them.
 
 **Output**
 
-DotnetMove.NativeMoveResult with Engine, Source, Destination, Performed, SkippedCount, Solutions, UnreconciledSettings, and HadFilters.
+A single DotnetMove.NativeMoveResult object: Engine, Source, Destination (strings),
+Performed (bool), SkippedCount (int), HadFilters (bool), Solutions (string[], the solution
+names updated), and UnreconciledSettings (object[], one per native path setting that must
+be verified/fixed by hand - each with the setting name and value).
 
 **Examples**
 
@@ -1256,7 +1302,10 @@ Android, etc.) are plain fields untouched by a move, so mobile layouts are prese
 
 **Output**
 
-DotnetMove.UnityMoveResult with Engine, Source, Destination, Performed, SkippedCount, MetaMoved, IsAsmdef, and ReferencedBy.
+A single DotnetMove.UnityMoveResult object: Engine, Source, Destination (strings),
+Performed (bool), SkippedCount (int), MetaMoved (bool), IsAsmdef (bool), and ReferencedBy
+(string[], asmdefs that reference a moved .asmdef - informational, since refs are by
+name/GUID and survive).
 
 **Examples**
 
@@ -1296,7 +1345,9 @@ and the Library/Temp/obj caches.
 
 **Output**
 
-pscustomobject with Kind (MissingMeta | OrphanMeta) and Path.
+Emits zero or more pscustomobjects, one per problem (a caller collects them as an array).
+Each has (both strings): Kind (MissingMeta | OrphanMeta) and Path. Returns nothing when
+integrity is intact.
 
 **Examples**
 

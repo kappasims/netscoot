@@ -20,7 +20,10 @@ function Test-SolutionConsistency {
         Escalate divergences from warnings to non-terminating errors.
 
     .OUTPUTS
-        One pscustomobject per divergent project with Project, PresentIn, and AbsentFrom.
+        Emits zero or more pscustomobjects to the pipeline, one per divergent project (a caller
+        collects them as an array). Each has: Project (string, the project path), PresentIn
+        (string[], solution paths that list it), and AbsentFrom (string[], solution paths that
+        do not). Returns nothing when membership is consistent.
 
     .EXAMPLE
         Test-SolutionConsistency -RepoRoot . -Debug

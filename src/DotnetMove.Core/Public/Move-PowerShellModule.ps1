@@ -23,7 +23,8 @@ function Move-PowerShellModule {
         move does not preserve git history.
 
     .OUTPUTS
-        DotnetMove.ModuleMoveResult with Engine, Source, Destination, Performed, SkippedCount, and Manifest.
+        A single DotnetMove.ModuleMoveResult object: Engine, Source, Destination (strings),
+        Performed (bool), SkippedCount (int), and Manifest (string, the manifest file name).
 
     .EXAMPLE
         Move-PowerShellModule -ModulePath ./tools/Mayo -Destination ./modules/Mayo

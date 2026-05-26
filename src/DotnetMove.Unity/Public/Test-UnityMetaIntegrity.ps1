@@ -23,7 +23,9 @@ function Test-UnityMetaIntegrity {
         Escalate problems from warnings to non-terminating errors.
 
     .OUTPUTS
-        pscustomobject with Kind (MissingMeta | OrphanMeta) and Path.
+        Emits zero or more pscustomobjects, one per problem (a caller collects them as an array).
+        Each has (both strings): Kind (MissingMeta | OrphanMeta) and Path. Returns nothing when
+        integrity is intact.
 
     .EXAMPLE
         Test-UnityMetaIntegrity -Root ./Assets -Strict

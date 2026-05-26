@@ -34,7 +34,9 @@ function Move-PowerShellScript {
         move does not preserve git history.
 
     .OUTPUTS
-        DotnetMove.ScriptMoveResult with Engine, Source, Destination, Performed, SkippedCount, ReferencersFixed, OwnRefsFixed, and UnresolvedRefs.
+        A single DotnetMove.ScriptMoveResult object: Engine, Source, Destination (strings),
+        Performed (bool), SkippedCount, ReferencersFixed, OwnRefsFixed, and UnresolvedRefs - all
+        ints (UnresolvedRefs is a count of possible dynamic references to verify, not a list).
 
     .EXAMPLE
         Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1

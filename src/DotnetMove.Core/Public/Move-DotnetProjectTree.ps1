@@ -35,7 +35,9 @@ function Move-DotnetProjectTree {
         move does not preserve git history.
 
     .OUTPUTS
-        DotnetMove.TreeMoveResult with Engine, Source, Destination, Performed, SkippedCount, ProjectsMoved, ConsumerCount, and Built.
+        A single DotnetMove.TreeMoveResult object: Engine, Source, Destination (strings),
+        Performed (bool), SkippedCount, ProjectsMoved, ConsumerCount (ints), and Built (bool, or
+        $null with -NoBuild).
 
     .EXAMPLE
         Move-DotnetProjectTree -Path ./src/Group -Destination ./libs/Group
