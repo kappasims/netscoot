@@ -375,10 +375,12 @@ function Invoke-DocsTask {
         $def = $typeDefs[$name]
         [void]$sb.AppendLine("### $name")
         [void]$sb.AppendLine()
+        # Cross-references as a compact bracketed list (no label), one font size down. The link
+        # text - a command name or a DotnetMove.* type - is self-describing.
         $refs = @()
-        if ($emittedBy[$name]) { $refs += 'emitted by ' + ((@($emittedBy[$name]) | Sort-Object -Unique | ForEach-Object { "[$_](#$($_.ToLower()))" }) -join ', ') }
-        if ($nestedIn[$name]) { $refs += 'nested in ' + ((@($nestedIn[$name]) | Sort-Object -Unique | ForEach-Object { Format-TypeLink $_ }) -join ', ') }
-        if ($refs.Count) { [void]$sb.AppendLine('(' + ($refs -join '; ') + ')'); [void]$sb.AppendLine() }
+        if ($emittedBy[$name]) { $refs += @(@($emittedBy[$name]) | Sort-Object -Unique | ForEach-Object { "[$_](#$($_.ToLower()))" }) }
+        if ($nestedIn[$name]) { $refs += @(@($nestedIn[$name]) | Sort-Object -Unique | ForEach-Object { Format-TypeLink $_ }) }
+        if ($refs.Count) { [void]$sb.AppendLine((Format-Small ('[ ' + ($refs -join ', ') + ' ]'))); [void]$sb.AppendLine() }
         if ($def.Summary) { [void]$sb.AppendLine((ConvertTo-MdText $def.Summary)); [void]$sb.AppendLine() }
         [void]$sb.AppendLine('```text')
         [void]$sb.AppendLine((Format-TypeCodeView $name $def))

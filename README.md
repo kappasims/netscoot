@@ -1588,7 +1588,7 @@ Each type below is one `pscustomobject` with the fields shown. A command may ret
 
 ### DotnetMove.Capability
 
-(emitted by [Get-DotnetMoveCapability](#get-dotnetmovecapability))
+<small>[ [Get-DotnetMoveCapability](#get-dotnetmovecapability) ]</small>
 
 DotnetMove's resolved external-tool capabilities and platform - the 'what can I do here' probe.
 
@@ -1603,7 +1603,7 @@ DotnetMove.Capability
 
 ### DotnetMove.ConsistencyResult
 
-(emitted by [Test-SolutionConsistency](#test-solutionconsistency))
+<small>[ [Test-SolutionConsistency](#test-solutionconsistency) ]</small>
 
 One project whose solution membership diverges across the repo.
 
@@ -1616,7 +1616,7 @@ DotnetMove.ConsistencyResult
 
 ### DotnetMove.GitAlias
 
-(emitted by [Register-DotnetMvGitAlias](#register-dotnetmvgitalias))
+<small>[ [Register-DotnetMvGitAlias](#register-dotnetmvgitalias) ]</small>
 
 The git dotnetmv alias registration (or what would be registered).
 
@@ -1630,7 +1630,7 @@ DotnetMove.GitAlias
 
 ### DotnetMove.ImportMoveResult
 
-(emitted by [Move-Dotnet](#move-dotnet), [Move-DotnetFile](#move-dotnetfile), [Move-MSBuildImport](#move-msbuildimport))
+<small>[ [Move-Dotnet](#move-dotnet), [Move-DotnetFile](#move-dotnetfile), [Move-MSBuildImport](#move-msbuildimport) ]</small>
 
 Result of moving a shared MSBuild .props/.targets file and fixing its importers.
 
@@ -1648,7 +1648,7 @@ DotnetMove.ImportMoveResult
 
 ### DotnetMove.MetaIntegrity
 
-(emitted by [Test-UnityMetaIntegrity](#test-unitymetaintegrity))
+<small>[ [Test-UnityMetaIntegrity](#test-unitymetaintegrity) ]</small>
 
 One Unity .meta integrity problem: an asset missing a .meta, or an orphan .meta.
 
@@ -1660,7 +1660,7 @@ DotnetMove.MetaIntegrity
 
 ### DotnetMove.ModuleMoveResult
 
-(emitted by [Move-Dotnet](#move-dotnet), [Move-PowerShell](#move-powershell), [Move-PowerShellModule](#move-powershellmodule))
+<small>[ [Move-Dotnet](#move-dotnet), [Move-PowerShell](#move-powershell), [Move-PowerShellModule](#move-powershellmodule) ]</small>
 
 Result of moving a PowerShell module folder and reconciling its manifest.
 
@@ -1676,7 +1676,7 @@ DotnetMove.ModuleMoveResult
 
 ### DotnetMove.MoveResult
 
-(emitted by [Move-Dotnet](#move-dotnet), [Move-DotnetFile](#move-dotnetfile), [Move-DotnetProject](#move-dotnetproject))
+<small>[ [Move-Dotnet](#move-dotnet), [Move-DotnetFile](#move-dotnetfile), [Move-DotnetProject](#move-dotnetproject) ]</small>
 
 Result of moving a .NET project folder and reconciling solutions and project references.
 
@@ -1695,7 +1695,7 @@ DotnetMove.MoveResult
 
 ### DotnetMove.NativeMoveResult
 
-(emitted by [Move-Dotnet](#move-dotnet), [Move-NativeProject](#move-nativeproject))
+<small>[ [Move-Dotnet](#move-dotnet), [Move-NativeProject](#move-nativeproject) ]</small>
 
 Result of moving a native / C++/CLI project (.vcxproj).
 
@@ -1713,7 +1713,7 @@ DotnetMove.NativeMoveResult
 
 ### DotnetMove.PathReference
 
-(emitted by [Find-PathReference](#find-pathreference))
+<small>[ [Find-PathReference](#find-pathreference) ]</small>
 
 One build/CI/hook/container line that hardcodes a moved path and that no first-party tool reconciles.
 
@@ -1727,7 +1727,7 @@ DotnetMove.PathReference
 
 ### DotnetMove.RepairResult
 
-(emitted by [Repair-SolutionReferences](#repair-solutionreferences))
+<small>[ [Repair-SolutionReferences](#repair-solutionreferences) ]</small>
 
 One dangling solution-membership or ProjectReference entry that was (or would be) repaired.
 
@@ -1744,7 +1744,7 @@ DotnetMove.RepairResult
 
 ### DotnetMove.ScriptMoveResult
 
-(emitted by [Move-Dotnet](#move-dotnet), [Move-PowerShell](#move-powershell), [Move-PowerShellScript](#move-powershellscript))
+<small>[ [Move-Dotnet](#move-dotnet), [Move-PowerShell](#move-powershell), [Move-PowerShellScript](#move-powershellscript) ]</small>
 
 Result of moving a standalone .ps1 and fixing dot-source/call paths.
 
@@ -1762,7 +1762,7 @@ DotnetMove.ScriptMoveResult
 
 ### DotnetMove.SolutionItem
 
-(emitted by [Get-SolutionInventory](#get-solutioninventory))
+<small>[ [Get-SolutionInventory](#get-solutioninventory) ]</small>
 
 One entry in the full contents of a solution (or a project on disk that no solution references).
 
@@ -1777,7 +1777,7 @@ DotnetMove.SolutionItem
 
 ### DotnetMove.SolutionMoveResult
 
-(emitted by [Move-Dotnet](#move-dotnet), [Move-DotnetFile](#move-dotnetfile), [Move-Solution](#move-solution))
+<small>[ [Move-Dotnet](#move-dotnet), [Move-DotnetFile](#move-dotnetfile), [Move-Solution](#move-solution) ]</small>
 
 Result of moving a solution file and rebasing the relative project paths it stores.
 
@@ -1793,7 +1793,7 @@ DotnetMove.SolutionMoveResult
 
 ### DotnetMove.SyncResult
 
-(emitted by [Sync-Solution](#sync-solution))
+<small>[ [Sync-Solution](#sync-solution) ]</small>
 
 One project added to a solution that was missing it, to resolve membership divergence.
 
@@ -1805,7 +1805,7 @@ DotnetMove.SyncResult
 
 ### DotnetMove.ToolInfo
 
-(nested in [DotnetMove.Capability](#dotnetmovecapability))
+<small>[ [DotnetMove.Capability](#dotnetmovecapability) ]</small>
 
 Presence and version of one external tool (git or dotnet).
 
@@ -1818,7 +1818,7 @@ DotnetMove.ToolInfo
 
 ### DotnetMove.TreeMoveResult
 
-(emitted by [Move-Dotnet](#move-dotnet), [Move-DotnetFolder](#move-dotnetfolder), [Move-DotnetProjectTree](#move-dotnetprojecttree))
+<small>[ [Move-Dotnet](#move-dotnet), [Move-DotnetFolder](#move-dotnetfolder), [Move-DotnetProjectTree](#move-dotnetprojecttree) ]</small>
 
 Result of moving a folder of one or more .NET projects in one operation.
 
@@ -1836,7 +1836,7 @@ DotnetMove.TreeMoveResult
 
 ### DotnetMove.UnityMoveResult
 
-(emitted by [Move-Dotnet](#move-dotnet), [Move-UnityAsset](#move-unityasset))
+<small>[ [Move-Dotnet](#move-dotnet), [Move-UnityAsset](#move-unityasset) ]</small>
 
 Result of moving a Unity asset/folder while keeping its paired .meta file(s).
 
@@ -1854,7 +1854,7 @@ DotnetMove.UnityMoveResult
 
 ### DotnetMove.Update
 
-(emitted by [Test-DotnetMoveUpdate](#test-dotnetmoveupdate), [Update-DotnetMove](#update-dotnetmove))
+<small>[ [Test-DotnetMoveUpdate](#test-dotnetmoveupdate), [Update-DotnetMove](#update-dotnetmove) ]</small>
 
 Whether the installed DotnetMove is behind the latest GitHub release.
 
