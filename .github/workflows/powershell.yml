@@ -7,7 +7,10 @@
 # For more information on PSScriptAnalyzer in general, see
 # https://github.com/PowerShell/PSScriptAnalyzer
 
-name: PSScriptAnalyzer
+# Supplementary security scan: runs the Microsoft PSScriptAnalyzer action over the whole repo and
+# uploads SARIF to the Security tab. The gating lint (full PSScriptAnalyzer via build.ps1) lives in
+# ci.yml; this is named distinctly so it does NOT collide with that required "PSScriptAnalyzer" check.
+name: PowerShell security scan
 
 on:
   push:
@@ -26,7 +29,7 @@ jobs:
       contents: read # for actions/checkout to fetch code
       security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
-    name: PSScriptAnalyzer
+    name: Security scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +39,9 @@ jobs:
         with:
           # Check https://github.com/microsoft/action-psscriptanalyzer for more info about the options.
           # The below set up runs PSScriptAnalyzer to your entire repository and runs some basic security rules.
-          path: .\
+          # Use a POSIX path: this runs on ubuntu-latest, where the starter's Windows-style ".\" matches
+          # nothing and the scan silently sees zero files.
+          path: .
           recurse: true
           # Include your own basic security rules. Removing this option will run all the rules
           includeRule: '"PSAvoidGlobalAliases", "PSAvoidUsingConvertToSecureStringWithPlainText"'
