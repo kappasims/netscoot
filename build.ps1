@@ -271,7 +271,9 @@ function Invoke-DocsTask {
                     $pdText = (Format-HelpText $p.description) -replace '\r?\n', ' '
                     if (-not $pdText -and $commonDesc.ContainsKey($p.name)) { $pdText = $commonDesc[$p.name] }
                     $pd = (ConvertTo-MdText $pdText).Replace('|', '\|')
-                    $cells = @(('-' + $p.name), "$($p.type.name)", "$($p.required)", "$($p.pipelineInput)", $pd) | ForEach-Object { Format-Small $_ }
+                    # Backtick the name so the leading '-' stays glued to it (a bare '-Name' wraps
+                    # after the hyphen in a table cell).
+                    $cells = @(('`-' + $p.name + '`'), "$($p.type.name)", "$($p.required)", "$($p.pipelineInput)", $pd) | ForEach-Object { Format-Small $_ }
                     [void]$sb.AppendLine('| ' + ($cells -join ' | ') + ' |')
                 }
                 [void]$sb.AppendLine()
