@@ -1,18 +1,23 @@
 # DotnetMove
 
-Move and restructure .NET projects from the command line without breaking their references.
+Moving a .NET project to a new folder breaks the solution file, the project references that point
+at it, and the GUID wiring underneath. Visual Studio repairs all of that when you drag a project in
+the GUI. DotnetMove does the same from the command line, everywhere Visual Studio is not. That
+covers VS Code, Rider, CI, Linux, macOS, and AI coding agents.
+
+It moves the files and repairs the wiring in one step, delegating each change to first-party tooling
+(the dotnet CLI, git mv, Update-ModuleManifest).
 
 ```powershell
-# fixes the .sln, references, and GUIDs
+# moves the files and fixes the .sln, references, and GUIDs
 Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
 
-# the same reference-fixing move (not a plain git mv), exposed as a git verb; --whatif previews it
+# the same move as a git verb (not a plain git mv); --whatif previews it
 git dotnetmv src/Tarragon/Tarragon.csproj libs/Tarragon --whatif
 ```
 
-Visual Studio reconciles a moved project for you. DotnetMove does it everywhere Visual Studio
-is not (AI agents, VS Code, Rider, CLI, CI, Linux and macOS), and for what it never did:
-PowerShell modules, Unity `.meta` GUIDs, Native C++ link paths.
+It also handles what the Visual Studio GUI never did for you. It fixes PowerShell module manifests,
+Unity `.meta` GUIDs, and native C++ `.vcxproj` link paths.
 
 For AI agents, the repo ships Claude Code skills that run these commands, triggering on phrases
 like "move this project" (see [Skills](#skills)).
