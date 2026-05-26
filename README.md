@@ -22,21 +22,6 @@ the link settings it cannot safely rewrite rather than guessing at them.
 For AI agents, the repo ships Claude Code skills that run these commands, triggering on phrases
 like "move this project" (see [Skills](#skills)).
 
-# Contents
-
-<dl>
-  <dt><strong>Setup</strong></dt>
-  <dd><a href="#requirements">Requirements</a>, <a href="#footprint">Footprint</a>, <a href="#install">Install</a>, <a href="#updating">Updating</a></dd>
-  <dt><strong>Usage</strong></dt>
-  <dd><a href="#moving">Moving</a>, <a href="#undoing">Undoing</a>, <a href="#inspecting">Inspecting</a>, <a href="#repairing">Repairing</a></dd>
-  <dt><strong>Interfaces</strong></dt>
-  <dd><a href="#powershell-usage">PowerShell usage</a>, <a href="#git-usage">git usage</a>, <a href="#skills">Skills</a></dd>
-  <dt><strong>For developers</strong></dt>
-  <dd><a href="#building">Building</a>, <a href="#modules">Modules</a>, <a href="#layout">Layout</a></dd>
-  <dt><strong>Reference</strong></dt>
-  <dd><a href="#command-reference">Command reference</a>, <a href="#output-types">Output types</a></dd>
-</dl>
-
 # Setup
 
 ## Requirements
