@@ -136,6 +136,7 @@ DotnetMove can be used purely to inspect a repo. These commands are read-only an
 | `Test-UnityMetaIntegrity` | missing or orphan Unity `.meta` |
 | `Resolve-MoveEngine` | which engine a given path classifies to |
 | `Get-DotnetMoveCapability` | whether git and dotnet are present, plus the platform |
+| `Test-DotnetMoveUpdate` | whether a newer DotnetMove release is available on GitHub |
 
 `Get-SolutionInventory` reads `.sln`/`.slnx` directly (not just `dotnet sln list`), so it surfaces
 non-CLI project types (e.g. `.pssproj`), solution folders, solution items, and any project on disk
@@ -286,6 +287,7 @@ tests/                   Pester tests + fixtures
 | [Repair-SolutionReferences](#repair-solutionreferences) | Scan a repo for broken solution membership and dangling ProjectReferences and repair them by re-pointing each entry at the project's new location. |
 | [Resolve-MoveEngine](#resolve-moveengine) | Classify a path to the reconciliation engine that should move it: dotnet, native, unity, ps-script, ps-module, or unknown. |
 | [Sync-Solution](#sync-solution) | Resolve solution-membership divergence by adding each project to the solutions that are missing it, so every solution in the repo lists the same projects. |
+| [Test-DotnetMoveUpdate](#test-dotnetmoveupdate) | Check GitHub for a newer DotnetMove release and report whether the installed version is behind. |
 | [Test-SolutionConsistency](#test-solutionconsistency) | Report projects whose membership diverges across the solution files in a repo (present in some solutions but absent from others). |
 | [Unregister-DotnetMvGitAlias](#unregister-dotnetmvgitalias) | Remove the `git dotnetmv` alias registered by Register-DotnetMvGitAlias. |
 
@@ -1058,6 +1060,45 @@ Sync-Solution -RepoRoot .
 ```
 
 Adds every divergent project to the solutions missing it.
+
+### Test-DotnetMoveUpdate
+
+Check GitHub for a newer DotnetMove release and report whether the installed version is
+behind. On-demand and read-only: it never updates anything itself.
+
+**Syntax**
+
+```powershell
+Test-DotnetMoveUpdate [[-Repository] <string>] [<CommonParameters>]
+```
+
+DotnetMove is installed from a clone (not yet on the PowerShell Gallery), so there is no
+automatic update channel. This is the pull-based check: it GETs the latest GitHub release
+and compares its tag (the "available" version) against the installed module's ModuleVersion
+(the "installed" version). It prints what to do when behind, but performs no update - an
+agent or user runs it when they want to know.
+
+Needs network access to api.github.com. Honors -ErrorAction if the request fails (offline,
+rate-limited, or no releases yet).
+
+**Parameters**
+
+| Name | Type | Required | Pipeline | Description |
+|---|---|---|---|---|
+| `Repository` | String | false | false | owner/name of the GitHub repository to check. Defaults to the project repository. |
+
+**Output**
+
+A pscustomobject with Installed (version), Latest (version), Tag, UpdateAvailable (bool),
+and Url.
+
+**Examples**
+
+```powershell
+Test-DotnetMoveUpdate
+```
+
+Reports whether a newer release exists and, if so, how to update.
 
 ### Test-SolutionConsistency
 

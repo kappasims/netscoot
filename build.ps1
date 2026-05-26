@@ -12,6 +12,10 @@
                           path so `Import-Module DotnetMove.Core` works by name.
       Docs              - regenerate the "Command reference" section of README.md from the
                           cmdlets' comment-based help.
+      Release -Version  - stamp a semver into every module manifest (ModuleVersion), then gate on
+                          static analysis (PSScriptAnalyzer, required + clean) and the tests; with
+                          -Publish also commit, tag vX.Y.Z, push, and create the GitHub release -
+                          keeping the installed ModuleVersion equal to the tag.
 
 .EXAMPLE
     ./build.ps1                       # run the tests
@@ -19,12 +23,19 @@
     ./build.ps1 -Task Install         # into the per-user module path
     ./build.ps1 -Task Install -InstallPath D:\Modules
     ./build.ps1 -Task Docs            # regenerate the README Command reference section
+    ./build.ps1 -Task Release -Version 1.1.0           # stamp manifests, run tests (no publish)
+    ./build.ps1 -Task Release -Version 1.1.0 -Publish  # also commit, tag, push, gh release
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('Test', 'Analyze', 'Install', 'Docs')]
+    [ValidateSet('Test', 'Analyze', 'Install', 'Docs', 'Release')]
     [string]$Task = 'Test',
-    [string]$InstallPath
+    [string]$InstallPath,
+    # Release: the semver to stamp into every module manifest (keeps ModuleVersion == the tag).
+    [string]$Version,
+    # Release: also commit, tag vX.Y.Z, push, and create the GitHub release. Without it, Release
+    # only stamps the manifests locally so you can review the bump before publishing.
+    [switch]$Publish
 )
 
 $ErrorActionPreference = 'Stop'
@@ -228,9 +239,58 @@ function Invoke-DocsTask {
     Write-Host "Wrote the Command reference section of README.md ($((Get-Command -Module $modules -CommandType Function).Count) cmdlets)." -ForegroundColor Green
 }
 
+function Invoke-ReleaseTask {
+    # The single source of truth for a release: stamp $Version into every manifest so the
+    # installed module's ModuleVersion always equals the git tag, then (with -Publish) tag and
+    # release it. GitHub releases / tags are the "available version"; ModuleVersion is the
+    # "installed version"; this task is what keeps the two in lockstep.
+    if (-not $Version) { throw "Release needs -Version, e.g. ./build.ps1 -Task Release -Version 1.1.0" }
+    if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw "Version must be semver (x.y.z): '$Version'" }
+
+    $manifests = foreach ($m in ($modules + $umbrella)) { Join-Path $root (Join-Path 'src' (Join-Path $m "$m.psd1")) }
+    foreach ($mf in $manifests) {
+        $text = [System.IO.File]::ReadAllText($mf)
+        $new = [regex]::Replace($text, "(?m)^(\s*ModuleVersion\s*=\s*')[^']*(')", "`${1}$Version`$2")
+        if ($new -cne $text) {
+            [System.IO.File]::WriteAllText($mf, $new)
+            Write-Host "Stamped $Version into $(Split-Path -Leaf $mf)" -ForegroundColor Green
+        } else {
+            Write-Warning "No ModuleVersion change in $(Split-Path -Leaf $mf) (already $Version?)"
+        }
+    }
+
+    # Static analysis is a hard release gate: it must be installed AND clean (unlike the everyday
+    # Analyze task, a release will not silently skip when PSScriptAnalyzer is absent).
+    Write-Host 'Static analysis (release prerequisite)...' -ForegroundColor Cyan
+    if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) {
+        throw 'Release requires PSScriptAnalyzer. Install it: Install-Module PSScriptAnalyzer -Scope CurrentUser'
+    }
+    Invoke-AnalyzeTask   # throws on any finding
+
+    Write-Host 'Running the test suite before release...' -ForegroundColor Cyan
+    Invoke-TestTask
+
+    if (-not $Publish) {
+        Write-Host "Manifests stamped to $Version. Review, then re-run with -Publish to tag + release." -ForegroundColor Yellow
+        return
+    }
+
+    $tag = "v$Version"
+    & git -C $root add (($modules + $umbrella) | ForEach-Object { "src/$_/$_.psd1" })
+    & git -C $root commit -m "release: $tag"
+    if ($LASTEXITCODE -ne 0) { throw 'git commit failed' }
+    & git -C $root tag -a $tag -m "DotnetMove $Version"
+    if ($LASTEXITCODE -ne 0) { throw "git tag $tag failed" }
+    & git -C $root push
+    & git -C $root push origin $tag
+    & gh release create $tag --title "DotnetMove $Version" --generate-notes
+    Write-Host "Released $tag." -ForegroundColor Green
+}
+
 switch ($Task) {
     'Test' { Invoke-TestTask }
     'Analyze' { Invoke-AnalyzeTask }
     'Install' { Invoke-InstallTask }
     'Docs' { Invoke-DocsTask }
+    'Release' { Invoke-ReleaseTask }
 }

@@ -1,6 +1,6 @@
 @{
     RootModule           = 'DotnetMove.psm1'
-    ModuleVersion        = '0.1.0'
+    ModuleVersion        = '1.1.0'
     GUID                 = 'e5b2d8a3-7c41-49f6-bd0e-9a3c2f6b1e57'
     Author               = 'kappasims'
     Description          = 'Umbrella bootstrap for DotnetMove. A single Import-Module DotnetMove loads every engine: the cross-platform .NET/PowerShell core and Unity extensions always, and the Windows-only native C++ (.vcxproj) extension on Windows. Each engine remains independently importable.'
