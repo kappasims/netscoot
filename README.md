@@ -338,7 +338,7 @@ Returns zero or more [DotnetMove.PathReference](#dotnetmovepathreference), colle
 One per matching line.
 
 ```text
-DotnetMove.PathReference[]
+DotnetMove.PathReference
   File        string  repo-relative file containing the line
   Line        int     1-based line number
   Confidence  string  High | Low
@@ -421,7 +421,7 @@ Returns zero or more [DotnetMove.SolutionItem](#dotnetmovesolutionitem), collect
 One per item.
 
 ```text
-DotnetMove.SolutionItem[]
+DotnetMove.SolutionItem
   Solution  string  repo-relative, or '(none)' for an unreferenced project
   Kind      string  Project | SolutionFolder | SolutionItem | UnreferencedProject
   Type      string  project extension without the dot, else empty
@@ -1087,7 +1087,7 @@ Returns zero or more [DotnetMove.RepairResult](#dotnetmoverepairresult), collect
 One per dangling entry.
 
 ```text
-DotnetMove.RepairResult[]
+DotnetMove.RepairResult
   Kind        string
   Resolution  string
   Missing     string
@@ -1193,7 +1193,7 @@ Returns zero or more [DotnetMove.SyncResult](#dotnetmovesyncresult), collected a
 One per project added.
 
 ```text
-DotnetMove.SyncResult[]
+DotnetMove.SyncResult
   Solution  string  repo-relative
   Added     string  repo-relative project path
 ```
@@ -1291,7 +1291,7 @@ Returns zero or more [DotnetMove.ConsistencyResult](#dotnetmoveconsistencyresult
 One per divergent project.
 
 ```text
-DotnetMove.ConsistencyResult[]
+DotnetMove.ConsistencyResult
   Project     string
   PresentIn   string[]  solution paths that list it
   AbsentFrom  string[]  solution paths that do not
@@ -1548,7 +1548,7 @@ Returns zero or more [DotnetMove.MetaIntegrity](#dotnetmovemetaintegrity), colle
 One per problem.
 
 ```text
-DotnetMove.MetaIntegrity[]
+DotnetMove.MetaIntegrity
   Kind  string  MissingMeta | OrphanMeta
   Path  string
 ```
@@ -1563,7 +1563,7 @@ Reports MissingMeta and OrphanMeta under Assets, one non-terminating error each.
 
 ## Type reference
 
-The shapes the commands return. Each is a single `pscustomobject`; a trailing `[]` on the type line means a command emits zero or more of them (a collection, `$null` when empty) - the object itself is not an array. In a field, `type[]` is an array-valued field, `type?` may be `$null`, and a `DotnetMove.*` field is itself one of these types.
+Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several (and some types are also used as a field on another); whether a given command returns one or a collection is stated in that command's Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `DotnetMove.*` field is itself one of these types.
 
 | <small>Type</small> | <small>Represents</small> |
 |:---|:---|
@@ -1608,7 +1608,7 @@ DotnetMove.Capability
 One project whose solution membership diverges across the repo.
 
 ```text
-DotnetMove.ConsistencyResult[]
+DotnetMove.ConsistencyResult
   Project     string
   PresentIn   string[]  solution paths that list it
   AbsentFrom  string[]  solution paths that do not
@@ -1653,7 +1653,7 @@ DotnetMove.ImportMoveResult
 One Unity .meta integrity problem: an asset missing a .meta, or an orphan .meta.
 
 ```text
-DotnetMove.MetaIntegrity[]
+DotnetMove.MetaIntegrity
   Kind  string  MissingMeta | OrphanMeta
   Path  string
 ```
@@ -1718,7 +1718,7 @@ DotnetMove.NativeMoveResult
 One build/CI/hook/container line that hardcodes a moved path and that no first-party tool reconciles.
 
 ```text
-DotnetMove.PathReference[]
+DotnetMove.PathReference
   File        string  repo-relative file containing the line
   Line        int     1-based line number
   Confidence  string  High | Low
@@ -1732,7 +1732,7 @@ DotnetMove.PathReference[]
 One dangling solution-membership or ProjectReference entry that was (or would be) repaired.
 
 ```text
-DotnetMove.RepairResult[]
+DotnetMove.RepairResult
   Kind        string
   Resolution  string
   Missing     string
@@ -1767,7 +1767,7 @@ DotnetMove.ScriptMoveResult
 One entry in the full contents of a solution (or a project on disk that no solution references).
 
 ```text
-DotnetMove.SolutionItem[]
+DotnetMove.SolutionItem
   Solution  string  repo-relative, or '(none)' for an unreferenced project
   Kind      string  Project | SolutionFolder | SolutionItem | UnreferencedProject
   Type      string  project extension without the dot, else empty
@@ -1798,7 +1798,7 @@ DotnetMove.SolutionMoveResult
 One project added to a solution that was missing it, to resolve membership divergence.
 
 ```text
-DotnetMove.SyncResult[]
+DotnetMove.SyncResult
   Solution  string  repo-relative
   Added     string  repo-relative project path
 ```

@@ -176,14 +176,15 @@ function Invoke-DocsTask {
     function Get-TypeAnchor { param([string]$Name) (($Name.ToLower() -replace '[^a-z0-9 -]', '') -replace ' ', '-') }
     function Format-TypeLink { param([string]$Name) "[$Name](#$(Get-TypeAnchor $Name))" }
 
-    # Terse, monospaced rendering of a type's structure: a header line (the type name, with [] when
-    # the commands emit an array) then one aligned line per field: name, type, optional note.
+    # Terse, monospaced rendering of a type's structure: a header line (the type name) then one
+    # aligned line per field: name, type, optional note. The header is always the singular object;
+    # whether a command returns one or many is a per-command fact, stated in that command's Output.
     function Format-TypeCodeView {
         param([string]$Name, [hashtable]$Def)
         $fields = @($Def.Fields)
         $nameW = ($fields | ForEach-Object { $_.Name.Length } | Measure-Object -Maximum).Maximum
         $typeW = ($fields | ForEach-Object { $_.Type.Length } | Measure-Object -Maximum).Maximum
-        $lines = @($Name + $(if ($Def.Array) { '[]' } else { '' }))
+        $lines = @($Name)
         foreach ($f in $fields) {
             $line = '  ' + $f.Name.PadRight($nameW) + '  ' + $f.Type.PadRight($typeW)
             if ($f.Note) { $line += '  ' + $f.Note }
@@ -360,7 +361,7 @@ function Invoke-DocsTask {
     }
     [void]$sb.AppendLine('## Type reference')
     [void]$sb.AppendLine()
-    [void]$sb.AppendLine('The shapes the commands return. Each is a single `pscustomobject`; a trailing `[]` on the type line means a command emits zero or more of them (a collection, `$null` when empty) - the object itself is not an array. In a field, `type[]` is an array-valued field, `type?` may be `$null`, and a `DotnetMove.*` field is itself one of these types.')
+    [void]$sb.AppendLine('Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several (and some types are also used as a field on another); whether a given command returns one or a collection is stated in that command''s Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `DotnetMove.*` field is itself one of these types.')
     [void]$sb.AppendLine()
     $sortedTypes = @($typeDefs.Keys | Sort-Object)
     [void]$sb.AppendLine('| ' + (Format-Small 'Type') + ' | ' + (Format-Small 'Represents') + ' |')
