@@ -167,8 +167,12 @@ function Move-DotnetProject {
                 -OldProj $projFull -NewProj $newProj
             $move = { param($UseGit, $Src, $Dst, $Repo) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repo }
 
+            # Files the reconciliation edits (for rollback): each solution, each consumer project,
+            # and the moved project's own file. Reverse-move returns the folder to its old place.
+            $backup = @($solutions | ForEach-Object { $_.FullName }) + @($consumers) + @($projFull)
             $planResult = Invoke-MovePlan -Caption "Move $projFile" -Items $items -Move $move `
-                -MoveArgs @($ctx.UseGit, $oldDir, $newDir, $repoFull)
+                -MoveArgs @($ctx.UseGit, $oldDir, $newDir, $repoFull) `
+                -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $oldDir, $repoFull)
             $performed = $true
             $skippedCount = $planResult.Skipped
 

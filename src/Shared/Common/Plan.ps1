@@ -77,25 +77,74 @@ function Invoke-MovePlan {
     # Run the move transaction: detach all reconciliation items (old paths still resolve),
     # perform the move, reattach all items. Confirmation/-WhatIf is the caller's ShouldProcess
     # gate - this only runs once approved.
+    #
+    # Rollback: any step that fails throws (Invoke-Dotnet throws on non-zero exit; Move-PathTracked
+    # throws on a failed move). To avoid leaving a half-reconciled repo, the caller passes the files
+    # the reconciliation edits (-BackupPath) and a move-reversing scriptblock (-Rollback). On any
+    # failure this restores those files from a snapshot and reverses the move, returning the repo to
+    # its pre-move state. This is the safety net for the -Force (no-git) path, which otherwise has
+    # no git history to recover from; with git it complements (does not replace) `git restore`.
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
         [Parameter(Mandatory)][string]$Caption,
         [AllowEmptyCollection()][object[]]$Items = @(),
         [Parameter(Mandatory)][scriptblock]$Move,
-        [object[]]$MoveArgs = @()
+        [object[]]$MoveArgs = @(),
+        [string[]]$BackupPath = @(),
+        [scriptblock]$Rollback,
+        [object[]]$RollbackArgs = @()
     )
     Write-Verbose "Reconciling $($Items.Count) reference(s) around: $Caption"
 
-    # NOTE: @var is the splat operator (needs a bare variable); @(expr) is array-subexpression
-    # and would pass the whole array as one argument. So copy to a local, then splat.
-    foreach ($it in $Items) {
-        if ($it.Detach) { $da = @($it.DetachArgs); & $it.Detach @da }
+    # Snapshot the files the reconciliation will edit, keyed by their original path.
+    $snapDir = $null
+    $snap = [ordered]@{}
+    if ($BackupPath.Count) {
+        $snapDir = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_snap_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        New-Item -ItemType Directory -Path $snapDir | Out-Null
+        $n = 0
+        foreach ($p in (@($BackupPath) | Select-Object -Unique)) {
+            if ($p -and (Test-Path -LiteralPath $p -PathType Leaf)) {
+                $copy = Join-Path $snapDir ("f{0}" -f $n); $n++
+                Copy-Item -LiteralPath $p -Destination $copy -Force
+                $snap[$p] = $copy
+            }
+        }
     }
-    $ma = @($MoveArgs); & $Move @ma
-    foreach ($it in $Items) {
-        if ($it.Reattach) { $ra = @($it.ReattachArgs); & $it.Reattach @ra }
+
+    $moved = $false
+    try {
+        # NOTE: @var is the splat operator (needs a bare variable); @(expr) is array-subexpression
+        # and would pass the whole array as one argument. So copy to a local, then splat.
+        foreach ($it in $Items) {
+            if ($it.Detach) { $da = @($it.DetachArgs); & $it.Detach @da }
+        }
+        $ma = @($MoveArgs); & $Move @ma
+        $moved = $true
+        foreach ($it in $Items) {
+            if ($it.Reattach) { $ra = @($it.ReattachArgs); & $it.Reattach @ra }
+        }
+    } catch {
+        $cause = $_
+        $rollbackOk = $true
+        # Reverse the move first (so files return to where the snapshot expects them)...
+        if ($moved -and $Rollback) {
+            try { $rba = @($RollbackArgs); & $Rollback @rba }
+            catch { $rollbackOk = $false; Write-Warning "Rollback move-back failed: $($_.Exception.Message)" }
+        }
+        # ...then restore every edited file's original content.
+        foreach ($orig in $snap.Keys) {
+            try { Copy-Item -LiteralPath $snap[$orig] -Destination $orig -Force }
+            catch { $rollbackOk = $false; Write-Warning "Rollback restore failed for ${orig}: $($_.Exception.Message)" }
+        }
+        if ($snapDir) { Remove-Item -LiteralPath $snapDir -Recurse -Force -ErrorAction SilentlyContinue }
+        if ($rollbackOk) {
+            throw "Move failed and was rolled back to the original state. Cause: $($cause.Exception.Message)"
+        }
+        throw "Move failed AND rollback was incomplete - the repo may be in a partial state, check git status. Cause: $($cause.Exception.Message)"
     }
+    if ($snapDir) { Remove-Item -LiteralPath $snapDir -Recurse -Force -ErrorAction SilentlyContinue }
 
     [pscustomobject]@{ Applied = $Items.Count; Skipped = 0 }
 }

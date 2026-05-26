@@ -150,8 +150,17 @@ function Move-DotnetProjectTree {
             }
             $move = { param($UseGit, $Src, $Dst, $Repo) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repo }
 
+            # Files the reconciliation edits (for rollback): every touched solution, every external
+            # consumer, and each moved project's own file. Reverse-move returns the whole tree.
+            $backup = @()
+            foreach ($item in $plan) {
+                $backup += @($item.Solutions | ForEach-Object { $_.FullName })
+                $backup += @($item.ExtConsumers)
+            }
+            $backup += @($moved)
             $planResult = Invoke-MovePlan -Caption "Move tree $(Split-Path -Leaf $srcDir)" -Items $items -Move $move `
-                -MoveArgs @($ctx.UseGit, $srcDir, $newDir, $repoFull)
+                -MoveArgs @($ctx.UseGit, $srcDir, $newDir, $repoFull) `
+                -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $srcDir, $repoFull)
             $performed = $true
             $skippedCount = $planResult.Skipped
 
