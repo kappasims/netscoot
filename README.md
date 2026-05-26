@@ -230,7 +230,7 @@ Per-push CI (`.github/workflows/ci.yml`) runs the suite on windows-latest (Power
 Windows PowerShell 5.1, plus lint. Linux and macOS are on-demand (`platforms.yml`, via
 `tools/Invoke-PlatformCI.ps1`); run them before a release.
 
-Contract: moves never hand-**write** solution/project files; every path/GUID change goes through
+Contract: moves never hand-write solution/project files; every path/GUID change goes through
 first-party tooling (`dotnet sln`/`reference`, `git mv`, `Update-ModuleManifest`). The unavoidable
 hand-writes - formats no CLI reconciles, solution stored paths, `<Import>` paths, script dot-source
 paths - go through the BOM-preserving `Set-Raw*` helpers, which `tests/FirstPartyDrift.Tests.ps1`
