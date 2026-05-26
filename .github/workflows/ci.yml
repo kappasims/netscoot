@@ -15,8 +15,16 @@ permissions:
 # release. The cross-platform code rarely regresses per-OS, and this keeps every push fast.
 jobs:
   test:
-    name: Test (windows-latest)
+    # Sharded into parallel jobs (separate processes): the suite shares process-global state
+    # (current dir, env vars, the module table), so it cannot be parallelized in-process. Each shard
+    # runs a disjoint slice of the test files. The shard count is duplicated in -ShardCount below; if
+    # you change it, update the matrix AND the required status checks in branch protection.
+    name: Test (windows-latest) [${{ matrix.shard }}/3]
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
 
@@ -32,7 +40,7 @@ jobs:
 
       - name: Run tests
         shell: pwsh
-        run: ./build.ps1 -Task Test
+        run: ./build.ps1 -Task Test -ShardIndex ${{ matrix.shard }} -ShardCount 3
 
   lint:
     name: PSScriptAnalyzer
@@ -45,8 +53,12 @@ jobs:
 
   # The cross-platform managed cmdlets must ALSO work on Windows PowerShell 5.1 (Desktop).
   test-windows-powershell:
-    name: Test (Windows PowerShell 5.1)
+    name: Test (Windows PowerShell 5.1) [${{ matrix.shard }}/3]
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -60,4 +72,4 @@ jobs:
           Install-Module Pester -MinimumVersion 5.0 -Scope CurrentUser -Force -SkipPublisherCheck
       - name: Run tests on Windows PowerShell 5.1
         shell: powershell
-        run: ./build.ps1 -Task Test
+        run: ./build.ps1 -Task Test -ShardIndex ${{ matrix.shard }} -ShardCount 3

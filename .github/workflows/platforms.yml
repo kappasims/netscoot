@@ -13,11 +13,14 @@ permissions:
 
 jobs:
   test:
-    name: Test (${{ matrix.os }})
+    # Sharded per OS (separate processes), matching ci.yml: the suite shares process-global state so
+    # it parallelizes across jobs, not in-process.
+    name: Test (${{ matrix.os }}) [${{ matrix.shard }}/3]
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        shard: [1, 2, 3]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -33,4 +36,4 @@ jobs:
 
       - name: Run tests
         shell: pwsh
-        run: ./build.ps1 -Task Test
+        run: ./build.ps1 -Task Test -ShardIndex ${{ matrix.shard }} -ShardCount 3

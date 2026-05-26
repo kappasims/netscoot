@@ -42,7 +42,12 @@ param(
     [string]$Version,
     # Release: also commit, tag vX.Y.Z, push, and create the GitHub release. Without it, Release
     # only stamps the manifests locally so you can review the bump before publishing.
-    [switch]$Publish
+    [switch]$Publish,
+    # Test: split the test files into -ShardCount slices and run only the -ShardIndex'th (1-based).
+    # Used by CI to run the suite as parallel jobs (separate processes - the tests share process-
+    # global state, so they cannot be parallelized in-process). The default runs the whole suite.
+    [int]$ShardIndex = 0,
+    [int]$ShardCount = 1
 )
 
 $ErrorActionPreference = 'Stop'
@@ -73,9 +78,24 @@ function Invoke-TestTask {
     Write-Host "Imported: $((Get-Command -Module $modules).Count) cmdlets across $($modules.Count) modules." -ForegroundColor Green
 
     $cfg = New-PesterConfiguration
-    $cfg.Run.Path = Join-Path $root 'tests'
     $cfg.Run.Exit = $true          # non-zero exit on failure (CI)
     $cfg.Output.Verbosity = 'Detailed'
+
+    if ($ShardCount -gt 1) {
+        # Round-robin the sorted test files into ShardCount slices and run this one. Each shard runs
+        # in its own CI job (process), so there is no shared-state contention between shards.
+        $idx = if ($ShardIndex -lt 1) { 1 } else { $ShardIndex }
+        $all = @(Get-ChildItem -Path (Join-Path $root 'tests') -Recurse -File -Filter '*.Tests.ps1' | Sort-Object FullName)
+        $mine = @(for ($i = 0; $i -lt $all.Count; $i++) { if (($i % $ShardCount) -eq ($idx - 1)) { $all[$i] } })
+        if (-not $mine.Count) {
+            Write-Host "Shard ${idx}/${ShardCount} has no test files; nothing to run." -ForegroundColor Yellow
+            return
+        }
+        Write-Host "Shard ${idx}/${ShardCount}: running $($mine.Count) of $($all.Count) test files." -ForegroundColor Cyan
+        $cfg.Run.Path = $mine.FullName
+    } else {
+        $cfg.Run.Path = Join-Path $root 'tests'
+    }
     Invoke-Pester -Configuration $cfg
 }
 
