@@ -14,24 +14,45 @@ function Test-DotnetMoveUpdate {
         Needs network access to api.github.com. Honors -ErrorAction if the request fails (offline,
         rate-limited, or no releases yet).
 
+        -EnableAutoUpdate makes this the automation/SessionStart entry point: it runs the check ONLY
+        when $env:DOTNETMOVE_AUTOUPDATE is set to a truthy value (1/true/on/yes/enabled), and is a
+        silent no-op otherwise. So a hook can call it unconditionally; nothing happens until a user
+        opts in, and IT can disable it fleet-wide by clearing or setting the variable to false via
+        Group Policy / Intune / a profile. A plain Test-DotnetMoveUpdate (no switch) always checks.
+
     .PARAMETER Repository
         owner/name of the GitHub repository to check. Defaults to the project repository.
 
+    .PARAMETER EnableAutoUpdate
+        Run as the gated auto-check (for a SessionStart hook or other automation): proceed only when
+        $env:DOTNETMOVE_AUTOUPDATE is truthy, otherwise do nothing. Still read-only - it never updates.
+
     .OUTPUTS
-        DotnetMove.Update - none (writes a non-terminating error) when the release cannot be fetched.
+        DotnetMove.Update - none (writes a non-terminating error) when the release cannot be fetched,
+        and nothing at all when -EnableAutoUpdate is set but $env:DOTNETMOVE_AUTOUPDATE is not enabled.
 
     .EXAMPLE
         # Compare the installed module to the latest GitHub release
         Test-DotnetMoveUpdate
         # Check a fork or a different repository (owner/name)
         Test-DotnetMoveUpdate -Repository myfork/dotnet-move
+        # SessionStart hook: checks only if the user/fleet opted in via $env:DOTNETMOVE_AUTOUPDATE
+        Test-DotnetMoveUpdate -EnableAutoUpdate
     #>
     [CmdletBinding()]
     [OutputType('DotnetMove.Update')]
     param(
         [ValidatePattern('^[^/]+/[^/]+$')]
-        [string]$Repository = 'kappasims/dotnet-move'
+        [string]$Repository = 'kappasims/dotnet-move',
+        [switch]$EnableAutoUpdate
     )
+
+    # Gated auto-check: do nothing unless the user/fleet opted in. Default is OFF (no auto-check),
+    # so a hook calling this stays quiet until $env:DOTNETMOVE_AUTOUPDATE is turned on.
+    if ($EnableAutoUpdate -and (("$env:DOTNETMOVE_AUTOUPDATE").Trim().ToLowerInvariant() -notmatch '^(1|true|on|yes|enabled)$')) {
+        Write-Verbose 'Auto-update check skipped: $env:DOTNETMOVE_AUTOUPDATE is not enabled.'
+        return
+    }
 
     # The version of the module that exports this function (all DotnetMove manifests share it).
     $installed = $MyInvocation.MyCommand.Module.Version

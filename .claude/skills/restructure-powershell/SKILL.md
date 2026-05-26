@@ -103,5 +103,5 @@ you update. Check with `Test-DotnetMoveUpdate` (it compares the installed module
 GitHub release). Update in place with `Update-DotnetMove` (no git), or re-run the installer:
 `irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 | iex`. From a dev
 clone instead, `git pull` then `./build.ps1 -Task Install`. For automatic reminders, consider a
-Claude Code SessionStart hook that runs `Test-DotnetMoveUpdate`; ask the user before adding it,
+Claude Code SessionStart hook that runs `Test-DotnetMoveUpdate -EnableAutoUpdate` (gated: it checks only when `$env:DOTNETMOVE_AUTOUPDATE` is truthy, and never updates); ask the user before adding it,
 since it edits their settings.json.

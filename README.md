@@ -142,6 +142,12 @@ Otherwise `Test-DotnetMoveUpdate` checks GitHub for a newer release and `Update-
 re-running the installer) applies it in place. The Claude Code skills are separate files: refresh
 them with `git pull` in a clone, or re-sync `.claude/skills` if installed globally.
 
+**Opt-in auto-check (enterprise):** `Test-DotnetMoveUpdate -EnableAutoUpdate` is the gated entry
+point for a SessionStart hook or other automation. It runs only when `$env:DOTNETMOVE_AUTOUPDATE` is
+truthy (`1`/`true`/`on`), so it stays a silent no-op until a user opts in, and it never updates
+(read-only). IT can disable it fleet-wide, and block `Update-DotnetMove` from self-updating, by
+pushing `DOTNETMOVE_AUTOUPDATE=false` via Group Policy / Intune / a profile (`-Force` overrides).
+
 # Usage
 
 ## Moving
@@ -1617,7 +1623,7 @@ behind. On-demand and read-only: it never updates anything itself.
 **Syntax**
 
 ```powershell
-Test-DotnetMoveUpdate [[-Repository] <string>] [<CommonParameters>]
+Test-DotnetMoveUpdate [[-Repository] <string>] [-EnableAutoUpdate] [<CommonParameters>]
 ```
 
 DotnetMove does not update automatically, however it is installed (PowerShell Gallery,
@@ -1629,16 +1635,23 @@ agent or user runs it when they want to know.
 Needs network access to api.github.com. Honors `-ErrorAction` if the request fails (offline,
 rate-limited, or no releases yet).
 
+`-EnableAutoUpdate` makes this the automation/SessionStart entry point: it runs the check ONLY
+when `$env`:DOTNETMOVE_AUTOUPDATE is set to a truthy value (1/true/on/yes/enabled), and is a
+silent no-op otherwise. So a hook can call it unconditionally; nothing happens until a user
+opts in, and IT can disable it fleet-wide by clearing or setting the variable to false via
+Group Policy / Intune / a profile. A plain Test-DotnetMoveUpdate (no switch) always checks.
+
 **Parameters**
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
 | <small>`‑Repository`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>owner/name of the GitHub repository to check. Defaults to the project repository.</small> |
+| <small>`‑EnableAutoUpdate`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Run as the gated auto-check (for a SessionStart hook or other automation): proceed only when `$env`:DOTNETMOVE_AUTOUPDATE is truthy, otherwise do nothing. Still read-only - it never updates.</small> |
 
 **Output**
 
 Returns a single [DotnetMove.Update](#dotnetmoveupdate).
-None (writes a non-terminating error) when the release cannot be fetched.
+None (writes a non-terminating error) when the release cannot be fetched, and nothing at all when `-EnableAutoUpdate` is set but `$env`:DOTNETMOVE_AUTOUPDATE is not enabled.
 
 ```text
 DotnetMove.Update
@@ -1657,6 +1670,9 @@ Test-DotnetMoveUpdate
 
 # Check a fork or a different repository (owner/name)
 Test-DotnetMoveUpdate -Repository myfork/dotnet-move
+
+# SessionStart hook: checks only if the user/fleet opted in via $env:DOTNETMOVE_AUTOUPDATE
+Test-DotnetMoveUpdate -EnableAutoUpdate
 ```
 
 ---
@@ -1840,11 +1856,15 @@ After it runs, reload the module in the current session with `Import-Module Dotn
 Needs network access to GitHub. For Gallery installs, `Update-Module DotnetMove` is the
 simpler path; this command updates installer/clone installs in place from the GitHub release.
 
+Policy kill-switch: when `$env`:DOTNETMOVE_AUTOUPDATE is set to a falsy value (0/false/off/no/
+disabled) - e.g. pushed by IT via Group Policy / Intune - this refuses to update so machine
+state stays managed. `-Force` overrides the policy (and also reinstalls when already current).
+
 **Parameters**
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Reinstall the latest release even if the installed version is already current.</small> |
+| <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Reinstall the latest release even if already current, and override the `$env`:DOTNETMOVE_AUTOUPDATE policy block.</small> |
 | <small>`‑Repository`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>owner/name of the GitHub repository. Defaults to the project repository.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |

@@ -13,8 +13,13 @@ function Update-DotnetMove {
         Needs network access to GitHub. For Gallery installs, `Update-Module DotnetMove` is the
         simpler path; this command updates installer/clone installs in place from the GitHub release.
 
+        Policy kill-switch: when $env:DOTNETMOVE_AUTOUPDATE is set to a falsy value (0/false/off/no/
+        disabled) - e.g. pushed by IT via Group Policy / Intune - this refuses to update so machine
+        state stays managed. -Force overrides the policy (and also reinstalls when already current).
+
     .PARAMETER Force
-        Reinstall the latest release even if the installed version is already current.
+        Reinstall the latest release even if already current, and override the
+        $env:DOTNETMOVE_AUTOUPDATE policy block.
 
     .PARAMETER Repository
         owner/name of the GitHub repository. Defaults to the project repository.
@@ -37,6 +42,14 @@ function Update-DotnetMove {
         [ValidatePattern('^[^/]+/[^/]+$')]
         [string]$Repository = 'kappasims/dotnet-move'
     )
+
+    # Policy kill-switch (GPO/Intune-friendly): refuse when auto-update is explicitly disabled, so a
+    # managed fleet does not self-update outside its own pipeline. -Force overrides. Checked before
+    # the network call so a disabled fleet makes no request.
+    if ((-not $Force) -and (("$env:DOTNETMOVE_AUTOUPDATE").Trim().ToLowerInvariant() -match '^(0|false|off|no|disabled)$')) {
+        Write-Warning 'Updates are disabled by policy ($env:DOTNETMOVE_AUTOUPDATE is off). Use -Force to override, or have IT clear the setting.'
+        return
+    }
 
     $check = Test-DotnetMoveUpdate -Repository $Repository
     if (-not $check) { return }   # connection error already surfaced by Test-DotnetMoveUpdate
