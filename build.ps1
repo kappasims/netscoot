@@ -138,6 +138,21 @@ function Invoke-DocsTask {
     $docModules = @($modules | Where-Object { $_ -ne 'DotnetMove.Shared' })
 
     function Format-HelpText { param($Field) (($Field | ForEach-Object { $_.Text }) -join "`n").Trim() }
+
+    # Space out a commented-one-liner example: a blank line before each comment that follows a code
+    # line, so the block reads as comment / code / gap / comment / code rather than a dense wall.
+    # (Source .EXAMPLE blocks can't carry the blanks themselves - Get-Help would split the example
+    # into code + remarks at the first blank line.)
+    function Format-ExampleCode {
+        param([string]$Code)
+        $out = [System.Collections.Generic.List[string]]::new()
+        foreach ($line in (($Code -replace "`r", '') -split "`n")) {
+            $prev = if ($out.Count) { $out[$out.Count - 1] } else { '' }
+            if ($line -match '^\s*#' -and $prev.Trim() -and $prev -notmatch '^\s*#') { $out.Add('') }
+            $out.Add($line)
+        }
+        ($out -join "`n").Trim()
+    }
     # Escape characters that markdown would otherwise eat in prose: '<...>' renders as an HTML
     # tag, and '$...$' as math. Applied to help prose only, never to fenced code blocks.
     function ConvertTo-MdText {
@@ -365,7 +380,7 @@ function Invoke-DocsTask {
                 [void]$sb.AppendLine()
                 foreach ($e in $examples) {
                     [void]$sb.AppendLine('```powershell')
-                    [void]$sb.AppendLine(("$($e.code)").Trim())
+                    [void]$sb.AppendLine((Format-ExampleCode "$($e.code)"))
                     [void]$sb.AppendLine('```')
                     $rem = Format-HelpText $e.remarks
                     if ($rem) { [void]$sb.AppendLine(); [void]$sb.AppendLine((ConvertTo-MdText $rem)) }
