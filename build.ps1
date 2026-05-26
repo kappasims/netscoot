@@ -270,6 +270,9 @@ function Invoke-DocsTask {
             # Get-Help treats the name as a pattern, so 'Move-Dotnet' also matches Move-Dotnet*;
             # keep the exact match.
             $h = Get-Help $c.Name -Full | Where-Object { $_.Name -eq $c.Name } | Select-Object -First 1
+            # Horizontal rule before each command so the entries read as distinct blocks.
+            [void]$sb.AppendLine('---')
+            [void]$sb.AppendLine()
             [void]$sb.AppendLine("### $($c.Name)")
             [void]$sb.AppendLine()
             $syn = "$($h.Synopsis)".Trim()

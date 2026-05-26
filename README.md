@@ -24,11 +24,13 @@ like "move this project" (see [Skills](#skills)).
 
 # Contents
 
-- [Setup](#setup): [Requirements](#requirements), [Footprint](#footprint), [Install](#install), [Updating](#updating)
-- [Usage](#usage): [Moving](#moving), [Undoing](#undoing), [Inspecting](#inspecting), [Repairing](#repairing)
-- [Interfaces](#interfaces): [PowerShell usage](#powershell-usage), [git usage](#git-usage), [Skills](#skills)
-- [For developers](#for-developers): [Build, test, install, docs](#build-test-install-docs), [Modules](#modules), [Layout](#layout)
-- [Reference](#reference): [command reference](#command-reference), [output types](#output-types)
+|  |  |
+|---|---|
+| **[Setup](#setup)** | [Requirements](#requirements), [Footprint](#footprint), [Install](#install), [Updating](#updating) |
+| **[Usage](#usage)** | [Moving](#moving), [Undoing](#undoing), [Inspecting](#inspecting), [Repairing](#repairing) |
+| **[Interfaces](#interfaces)** | [PowerShell usage](#powershell-usage), [git usage](#git-usage), [Skills](#skills) |
+| **[For developers](#for-developers)** | [Build, test, install, docs](#build-test-install-docs), [Modules](#modules), [Layout](#layout) |
+| **[Reference](#reference)** | [Command reference](#command-reference), [Output types](#output-types) |
 
 # Setup
 
@@ -409,6 +411,8 @@ tests/                   Pester tests + fixtures
 | <small>[Move-UnityAsset](#move-unityasset)</small> | <small>Move a Unity asset or folder while keeping its paired .meta file(s), so the GUIDs that scene/prefab/asmdef references depend on survive the move.</small> |
 | <small>[Test-UnityMetaIntegrity](#test-unitymetaintegrity)</small> | <small>Report Unity .meta integrity problems under a root: assets missing a .meta, and orphan .meta files whose asset is gone.</small> |
 
+---
+
 ### Find-PathReference
 
 Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/
@@ -465,6 +469,8 @@ Find-PathReference -Path ./libs/Tarragon/Tarragon.csproj
 Find-PathReference -Path ./lib/Tarragon.csproj -AdditionalGlob 'deploy/*.sh','*.psake.ps1'
 ```
 
+---
+
 ### Get-DotnetMoveCapability
 
 Resolve DotnetMove's external-tool capabilities (git, dotnet) and platform. This is the
@@ -500,6 +506,8 @@ Get-DotnetMoveCapability
 ```
 
 Returns an object with Platform, PSEdition, Git, Dotnet, and DotnetSupportsSlnx.
+
+---
 
 ### Get-SolutionInventory
 
@@ -553,6 +561,8 @@ Get-SolutionInventory | Where-Object Kind -eq 'SolutionItem'
 # Kind is the [DotnetMove.SolutionItemKind] enum, so this also works
 Get-SolutionInventory | Where-Object Kind -eq ([DotnetMove.SolutionItemKind]::UnreferencedProject)
 ```
+
+---
 
 ### Move-Dotnet
 
@@ -617,6 +627,8 @@ Move-Dotnet -Path ./tools/Mayo -Destination ./modules/Mayo
 Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -Force
 ```
 
+---
+
 ### Move-DotnetFile
 
 Move a single managed .NET file and reconcile references, routing by extension to the
@@ -666,6 +678,8 @@ Move-DotnetFile -Path ./Demo.slnx -Destination ./build/Demo.slnx
 # A shared import routes to Move-MSBuildImport (fixes <Import> in consumers)
 Move-DotnetFile -Path ./Shared.props -Destination ./build/Shared.props
 ```
+
+---
 
 ### Move-DotnetFolder
 
@@ -722,6 +736,8 @@ Move-DotnetFolder -Path ./src/Group -Destination ./libs/Group -WhatIf
 # Move into an existing folder (lands at ./libs/Group)
 Move-DotnetFolder -Path ./src/Group -Destination ./libs
 ```
+
+---
 
 ### Move-DotnetProject
 
@@ -792,6 +808,8 @@ Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/T
 Get-Item ./src/Tarragon/Tarragon.csproj | Move-DotnetProject -Destination ./libs/Tarragon
 ```
 
+---
+
 ### Move-DotnetProjectTree
 
 Move a folder that contains one or more managed .NET projects, reconciling solution
@@ -856,6 +874,8 @@ Move-DotnetProjectTree -Path ./src/Group -Destination ./libs
 # Skip the verifying build
 Move-DotnetProjectTree -Path ./src/Group -Destination ./libs/Group -NoBuild
 ```
+
+---
 
 ### Move-MSBuildImport
 
@@ -925,6 +945,8 @@ Move-MSBuildImport -Path ./Shared.props -Destination ./build
 Move-MSBuildImport -Path ./src/Directory.Build.props -Destination ./Directory.Build.props
 ```
 
+---
+
 ### Move-PowerShell
 
 Move a PowerShell item and reconcile references, routing by type to the right
@@ -972,6 +994,8 @@ Move-PowerShell -Path ./tools/Mayo -Destination ./modules/Mayo
 # Destination is an existing folder -> the script lands at ./shared/helpers.ps1
 Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared
 ```
+
+---
 
 ### Move-PowerShellModule
 
@@ -1025,6 +1049,8 @@ Move-PowerShellModule -ModulePath ./tools/Mayo -Destination ./modules/Mayo
 # Point at the .psd1 instead of the folder - same result
 Move-PowerShellModule -ModulePath ./tools/Mayo/Mayo.psd1 -Destination ./modules/Mayo
 ```
+
+---
 
 ### Move-PowerShellScript
 
@@ -1090,6 +1116,8 @@ Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1
 Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -RepoRoot ./lib
 ```
 
+---
+
 ### Move-Solution
 
 Move a solution file (.sln/.slnx) and rebase the relative project paths it stores, so
@@ -1147,6 +1175,8 @@ Move-Solution -Path ./Demo.slnx -Destination ./build
 Move-Solution -Path ./Demo.sln -Destination ./build/Demo.sln
 ```
 
+---
+
 ### Register-DotnetMvGitAlias
 
 Opt-in: register a `git dotnetmv` alias pointing at DotnetMove's forwarder. Sets a single
@@ -1195,6 +1225,8 @@ Register-DotnetMvGitAlias
 # Register globally, in ~/.gitconfig
 Register-DotnetMvGitAlias -Scope Global
 ```
+
+---
 
 ### Repair-SolutionReferences
 
@@ -1259,6 +1291,8 @@ Repair-SolutionReferences -RepoRoot . -Fix
 Repair-SolutionReferences -RepoRoot . -Fix -Prune -WhatIf
 ```
 
+---
+
 ### Resolve-MoveEngine
 
 Classify a path to the reconciliation engine that should move it: dotnet, native,
@@ -1307,6 +1341,8 @@ Resolve-MoveEngine ./tools/build.ps1
 Resolve-MoveEngine ./Aleppo/Aleppo.vcxproj
 ```
 
+---
+
 ### Sync-Solution
 
 Resolve solution-membership divergence by adding each project to the solutions that are
@@ -1354,6 +1390,8 @@ Sync-Solution -RepoRoot . -WhatIf
 # Add each divergent project to the solutions missing it (only adds, never removes)
 Sync-Solution -RepoRoot .
 ```
+
+---
 
 ### Test-DotnetMoveUpdate
 
@@ -1404,6 +1442,8 @@ Test-DotnetMoveUpdate
 Test-DotnetMoveUpdate -Repository myfork/dotnet-move
 ```
 
+---
+
 ### Test-SolutionConsistency
 
 Report projects whose membership diverges across the solution files in a repo
@@ -1453,6 +1493,8 @@ Test-SolutionConsistency -RepoRoot . -Strict
 # Check several repos from the pipeline
 Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
 ```
+
+---
 
 ### Undo-DotnetMove
 
@@ -1505,6 +1547,8 @@ Undo-DotnetMove
 Undo-DotnetMove -Id a1b2c3d4
 ```
 
+---
+
 ### Unregister-DotnetMvGitAlias
 
 Remove the `git dotnetmv` alias registered by Register-DotnetMvGitAlias.
@@ -1535,6 +1579,8 @@ Unregister-DotnetMvGitAlias
 # Remove the global alias from ~/.gitconfig
 Unregister-DotnetMvGitAlias -Scope Global
 ```
+
+---
 
 ### Update-DotnetMove
 
@@ -1588,6 +1634,8 @@ Update-DotnetMove -WhatIf
 # Reinstall the latest even if already up to date
 Update-DotnetMove -Force
 ```
+
+---
 
 ### Move-NativeProject
 
@@ -1650,6 +1698,8 @@ Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo
 Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native
 ```
 
+---
+
 ### Move-UnityAsset
 
 Move a Unity asset or folder while keeping its paired .meta file(s), so the GUIDs
@@ -1711,6 +1761,8 @@ Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/T
 # Destination is an existing folder -> lands at ./Assets/Lib/Tarragon
 Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib
 ```
+
+---
 
 ### Test-UnityMetaIntegrity
 
