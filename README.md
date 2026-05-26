@@ -57,7 +57,7 @@ Everything DotnetMove creates or changes, so there are no surprises:
 
 - Edits the target repo's solution/project files to reconcile the move. That is the operation
   itself, done through first-party tooling (see [the contract](#build-test-install-docs)).
-- Writes a repo-local undo journal at `.dotnetmove/journal.jsonl`, plus a `.dotnetmove/.gitignore`
+- Writes an undo journal to a `.dotnetmove/` folder at the repository root (`.dotnetmove/journal.jsonl`), plus a `.dotnetmove/.gitignore`
   of `*` so git ignores the whole folder and your own `.gitignore` is untouched. On by default; see
   [Undoing](#undoing) to opt out.
 - Snapshots the files it edits to the system temp dir for rollback, and removes the snapshot when
@@ -106,7 +106,7 @@ Import-Module DotnetMove                   # all engines, by name
 Register-DotnetMvGitAlias -Scope Global    # optional: enable `git dotnetmv` (one git-config line)
 ```
 
-DotnetMove keeps a repo-local undo journal so you can reverse a move later (see [Undoing](#undoing)).
+DotnetMove keeps an undo journal in a `.dotnetmove/` folder at the repository root so you can reverse a move later (see [Undoing](#undoing)).
 It is **on by default**. To install with it off, add `-NoJournal` (sets `DOTNETMOVE_JOURNAL=off`
 persistently; updates never turn it back on):
 
@@ -183,8 +183,8 @@ Every move supports `-WhatIf`/`-Confirm`; `-Force` enables the no-git fallback.
 
 ## Undoing
 
-Every move is recorded in a repo-local journal (`.dotnetmove/journal.jsonl`) so you can reverse it
-later, even from a fresh session. `Undo-DotnetMove` replays the recorded inverse (the same move with
+Every move is recorded in a journal under a `.dotnetmove/` folder at the repository root
+(`.dotnetmove/journal.jsonl`) so you can reverse it later, even from a fresh session. `Undo-DotnetMove` replays the recorded inverse (the same move with
 source and destination swapped), re-reconciling from the current state rather than restoring a stale
 snapshot. By default it reverses the most recent move; `-Id` reverses a specific entry, and `-List`
 shows what is available.
@@ -392,7 +392,7 @@ tests/                   Pester tests + fixtures
 | <small>[Sync-Solution](#sync-solution)</small> | <small>Resolve solution-membership divergence by adding each project to the solutions that are missing it, so every solution in the repo lists the same projects.</small> |
 | <small>[Test-DotnetMoveUpdate](#test-dotnetmoveupdate)</small> | <small>Check GitHub for a newer DotnetMove release and report whether the installed version is behind.</small> |
 | <small>[Test-SolutionConsistency](#test-solutionconsistency)</small> | <small>Report projects whose membership diverges across the solution files in a repo (present in some solutions but absent from others).</small> |
-| <small>[Undo-DotnetMove](#undo-dotnetmove)</small> | <small>Reverse a previous DotnetMove move, using the repo-local journal.</small> |
+| <small>[Undo-DotnetMove](#undo-dotnetmove)</small> | <small>Reverse a previous DotnetMove move, using the journal at the repository root.</small> |
 | <small>[Unregister-DotnetMvGitAlias](#unregister-dotnetmvgitalias)</small> | <small>Remove the `git dotnetmv` alias registered by Register-DotnetMvGitAlias.</small> |
 | <small>[Update-DotnetMove](#update-dotnetmove)</small> | <small>Update an installed DotnetMove to the latest GitHub release, in place.</small> |
 
@@ -1456,7 +1456,7 @@ Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
 
 ### Undo-DotnetMove
 
-Reverse a previous DotnetMove move, using the repo-local journal.
+Reverse a previous DotnetMove move, using the journal at the repository root.
 
 **Syntax**
 

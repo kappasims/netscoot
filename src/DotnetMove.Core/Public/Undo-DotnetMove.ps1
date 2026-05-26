@@ -1,7 +1,7 @@
 function Undo-DotnetMove {
     <#
     .SYNOPSIS
-        Reverse a previous DotnetMove move, using the repo-local journal.
+        Reverse a previous DotnetMove move, using the journal at the repository root.
 
     .DESCRIPTION
         Each move is recorded in .dotnetmove/journal.jsonl with its inverse: the same mover run with

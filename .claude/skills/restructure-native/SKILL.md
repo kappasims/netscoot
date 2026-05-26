@@ -68,7 +68,7 @@ warnings) tells you exactly what to verify or hand-fix afterward.
 
 ## Undoing a move
 
-Every move is journaled to a repo-local `.dotnetmove/journal.jsonl`, so you can reverse it later -
+Every move is journaled to `.dotnetmove/journal.jsonl` at the repository root, so you can reverse it later -
 even in a new session - with `Undo-DotnetMove`. It replays the inverse (moves the `.vcxproj` folder
 and its `.vcxproj.filters` back, re-doing solution membership); re-check the native link settings
 it reports, the same as for a forward move.

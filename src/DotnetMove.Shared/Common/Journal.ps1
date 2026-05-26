@@ -1,5 +1,5 @@
-# Retroactive-undo journal. A repo-local .dotnetmove/journal.jsonl records one line per completed
-# move so it can be reversed later - an hour later, or in a fresh session - with Undo-DotnetMove.
+# Retroactive-undo journal. A .dotnetmove/journal.jsonl at the repository root records one line per
+# completed move so it can be reversed later - an hour later, or in a fresh session - with Undo-DotnetMove.
 # The move family is symmetric: each entry's inverse is the same mover run with source/destination
 # swapped, which re-reconciles from the CURRENT state (more robust than restoring a stale snapshot).
 #

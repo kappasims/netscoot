@@ -65,7 +65,7 @@ Unity analog of dangling references.
 
 ## Undoing a move
 
-Every move is journaled to a repo-local `.dotnetmove/journal.jsonl`, so you can reverse it later -
+Every move is journaled to `.dotnetmove/journal.jsonl` at the repository root, so you can reverse it later -
 even in a new session - with `Undo-DotnetMove`. It replays the inverse (the asset and its `.meta`
 move back together).
 
