@@ -89,7 +89,7 @@ irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 -
 `DotnetMove.Shared`, `DotnetMove.Core`, `DotnetMove.Unity`, `DotnetMove.Native`, and `DotnetMove`
 folders out of `src/` into any directory on your `$env:PSModulePath`.
 
-Or pipe it straight in for a *YOLO install* (easiest) if you are comfortable running [the install script](https://github.com/kappasims/dotnet-move/blob/master/install.ps1) unread:
+Or pipe it straight in for a **YOLO install** (easiest) if you are comfortable running [the install script](https://github.com/kappasims/dotnet-move/blob/master/install.ps1) unread:
 
 ```powershell
 irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 | iex
