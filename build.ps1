@@ -28,9 +28,12 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('Test', 'Analyze', 'Install', 'Docs', 'Release')]
+    [ValidateSet('Test', 'Analyze', 'Install', 'Docs', 'Release', 'Publish')]
     [string]$Task = 'Test',
     [string]$InstallPath,
+    # Publish: PowerShell Gallery NuGet API key. Without it, Publish only stages + validates the
+    # bundled package (dry run) - it does not publish.
+    [string]$ApiKey,
     # Release: the semver to stamp into every module manifest (keeps ModuleVersion == the tag).
     [string]$Version,
     # Release: also commit, tag vX.Y.Z, push, and create the GitHub release. Without it, Release
@@ -287,10 +290,46 @@ function Invoke-ReleaseTask {
     Write-Host "Released $tag." -ForegroundColor Green
 }
 
+function Invoke-PublishTask {
+    # Assemble the SINGLE bundled DotnetMove package and publish it to the PowerShell Gallery. The
+    # shipped package is one module folder: the umbrella at the root, with Shared + each engine as
+    # subfolders the umbrella's RootModule loads (-Global; native only on Windows, best-effort). No
+    # separate Shared/Core/Unity/Native packages. Without -ApiKey this only stages + validates.
+    $stage = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_pkg_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+    $pkg = Join-Path $stage 'DotnetMove'
+    New-Item -ItemType Directory -Path $pkg -Force | Out-Null
+
+    # Umbrella files (manifest + RootModule) at the package root...
+    Copy-Item -Path (Join-Path $root (Join-Path 'src' (Join-Path 'DotnetMove' '*'))) -Destination $pkg -Recurse -Force
+    # ...then Shared + the engines as subfolders the umbrella loads.
+    foreach ($name in 'DotnetMove.Shared', 'DotnetMove.Core', 'DotnetMove.Unity', 'DotnetMove.Native') {
+        Copy-Item -Path (Join-Path $root (Join-Path 'src' $name)) -Destination (Join-Path $pkg $name) -Recurse -Force
+    }
+
+    $manifest = Join-Path $pkg 'DotnetMove.psd1'
+    Write-Host "Validating bundled manifest: $manifest" -ForegroundColor Cyan
+    $null = Test-ModuleManifest -Path $manifest
+
+    # Smoke-import in a clean child pwsh to prove the single package self-loads with no separate
+    # modules on the path (this is what catches missing-bundle / load-order bugs).
+    Write-Host 'Smoke-importing the bundled package in a clean session...' -ForegroundColor Cyan
+    & pwsh -NoProfile -Command "Import-Module '$manifest' -Force; if (-not (Get-Command Move-Dotnet -ErrorAction SilentlyContinue)) { throw 'Move-Dotnet was not surfaced by the bundled package.' }; 'bundled import OK'"
+    if ($LASTEXITCODE -ne 0) { throw 'The bundled package failed to import in a clean session.' }
+
+    Write-Host "Staged single package at: $pkg" -ForegroundColor Green
+    if (-not $ApiKey) {
+        Write-Host 'No -ApiKey given: staged + validated only (dry run). Re-run with -ApiKey to publish.' -ForegroundColor Yellow
+        return
+    }
+    Publish-Module -Path $pkg -NuGetApiKey $ApiKey -Repository PSGallery
+    Write-Host 'Published DotnetMove to the PowerShell Gallery.' -ForegroundColor Green
+}
+
 switch ($Task) {
     'Test' { Invoke-TestTask }
     'Analyze' { Invoke-AnalyzeTask }
     'Install' { Invoke-InstallTask }
     'Docs' { Invoke-DocsTask }
     'Release' { Invoke-ReleaseTask }
+    'Publish' { Invoke-PublishTask }
 }

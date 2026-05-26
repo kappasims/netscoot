@@ -6,7 +6,8 @@
     Description          = 'Cross-platform (PowerShell 7) cmdlets to move/restructure managed .NET and PowerShell projects by delegating path/GUID changes to first-party tooling (dotnet sln, dotnet reference, Update-ModuleManifest). Native C++ (.vcxproj) handling lives in the Windows-only DotnetMove.Native module.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Core', 'Desktop')
-    RequiredModules      = @('DotnetMove.Shared')
+    # No RequiredModules: shipped as one bundled DotnetMove package; the umbrella loads the bundled
+    # DotnetMove.Shared (-Global) before this engine. (In dev, tests/build/the forwarder do the same.)
     FunctionsToExport    = @(
         'Find-PathReference',
         'Get-DotnetMoveCapability',

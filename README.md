@@ -209,6 +209,8 @@ the commands above:
 ./build.ps1 -Task Docs               # regenerate the README Command reference section from the cmdlets' help
 ./build.ps1 -Task Release -Version 1.2.0           # stamp ModuleVersion in every manifest; gate on analyze + tests
 ./build.ps1 -Task Release -Version 1.2.0 -Publish  # also commit, tag vX.Y.Z, push, and create the GitHub release
+./build.ps1 -Task Publish                          # stage + validate the single bundled package (dry run)
+./build.ps1 -Task Publish -ApiKey <key>            # publish that one DotnetMove package to the PowerShell Gallery
 ```
 
 `Install` copies the modules and their `Shared` sibling (the modules dot-source `..\Shared`), so
