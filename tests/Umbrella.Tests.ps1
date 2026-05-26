@@ -1,6 +1,7 @@
 #requires -Modules Pester
 
 BeforeAll {
+    . (Join-Path $PSScriptRoot 'TestHelpers.ps1')
     # Start from a clean module state so this verifies what the UMBRELLA loads, not what an
     # earlier test file left imported (e.g. DotnetMove.Native, which loads on any OS and would
     # otherwise make the non-Windows "native absent" assertion fail).

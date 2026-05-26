@@ -21,6 +21,8 @@ function script:Import-EngineSibling {
     else { Import-Module $Name -Force -Global -ErrorAction Stop }
 }
 
+# Shared first: the engines declare it in RequiredModules, so it must be loadable when they import.
+Import-EngineSibling -Name 'DotnetMove.Shared'
 Import-EngineSibling -Name 'DotnetMove.Core'
 Import-EngineSibling -Name 'DotnetMove.Unity'
 if (Test-IsWindowsHost) { Import-EngineSibling -Name 'DotnetMove.Native' }

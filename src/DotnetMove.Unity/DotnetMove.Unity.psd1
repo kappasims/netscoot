@@ -6,7 +6,7 @@
     Description          = 'Cross-platform extension of DotnetMove for Unity projects. Moves assets/folders while preserving their paired .meta files (and the GUIDs that asset/asmdef references depend on), and validates .meta integrity. Supports mobile and all Unity targets - asmdef platform fields are preserved by the move.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Core', 'Desktop')
-    RequiredModules      = @('DotnetMove.Core')
+    RequiredModules      = @('DotnetMove.Shared')
     FunctionsToExport    = @(
         'Move-UnityAsset',
         'Test-UnityMetaIntegrity'

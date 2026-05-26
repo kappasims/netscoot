@@ -229,24 +229,26 @@ where no first-party reader suffices. `tests/FirstPartyDrift.Tests.ps1` locks th
 
 Split by platform so the cross-platform core never ships native, Windows-only code:
 
+- `DotnetMove.Shared`: cross-platform support module of path/git/MSBuild/solution helpers that the
+  engines require. Not used directly.
 - `DotnetMove.Core`: cross-platform (PowerShell 7 and Windows PowerShell 5.1). The .NET and
-  PowerShell engines, the `Move-Dotnet` dispatcher, and the utilities. Depends only on the dotnet
-  CLI and git.
-- `DotnetMove.Unity`: cross-platform (`RequiredModules = DotnetMove.Core`). The Unity engine.
-- `DotnetMove.Native`: Windows only (`RequiredModules = DotnetMove.Core`). The native C++ engine.
+  PowerShell engines, the `Move-Dotnet` dispatcher, and the utilities.
+- `DotnetMove.Unity`: cross-platform Unity engine.
+- `DotnetMove.Native`: Windows-only native C++ engine.
 - `DotnetMove`: umbrella that imports every available engine in one `Import-Module`.
+
+Each engine declares `RequiredModules = DotnetMove.Shared`.
 
 ### Layout
 
 ```
 build.ps1                Test / Analyze / Install / Docs / Release tasks
 .github/workflows/      ci.yml (push: Windows + PS 5.1 + lint); platforms.yml (on-demand: Linux + macOS)
-src/Shared/Common/       cross-cutting helpers (Platform/Paths/Git/Plan/Capability), all modules
-src/Shared/Dotnet/       .NET/MSBuild helpers (Dotnet/Solutions/Projects), Core + Native only
+src/DotnetMove.Shared/   shared helpers module (Common/ + Dotnet/); the engines require it
 src/DotnetMove/          umbrella module (loads every available engine)
 src/DotnetMove.Core/     cross-platform module; Private/ = helpers, Public/ = cmdlets
-src/DotnetMove.Native/   Windows-only native module (Private/ + Public/; loads Common + Dotnet)
-src/DotnetMove.Unity/    cross-platform Unity module (Private/ + Public/; loads Common only)
+src/DotnetMove.Native/   Windows-only native module (RequiredModules: DotnetMove.Shared)
+src/DotnetMove.Unity/    cross-platform Unity module (RequiredModules: DotnetMove.Shared)
 tests/                   Pester tests + fixtures
 .claude/skills/          restructure-dotnet / -powershell / -unity / -native
 ```

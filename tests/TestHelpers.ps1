@@ -4,6 +4,11 @@
 # Mirrors `dotnet new <tmpl> -n <Name> -o <Directory>`: creates <Directory>/<Name>.csproj and
 # returns that path.
 
+# The engine modules declare DotnetMove.Shared in RequiredModules; load it (by path) up front so a
+# test that imports an engine from src can resolve that dependency. Dot-source this helper before
+# importing any engine module.
+Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'DotnetMove.Shared', 'DotnetMove.Shared.psd1')) -Force -Global
+
 function New-TempRoot {
     # Create a throwaway temp directory and return its CANONICAL path. On macOS the temp root
     # /var/folders/... is a symlink to /private/var/folders/...; if a fixture used the /var form,

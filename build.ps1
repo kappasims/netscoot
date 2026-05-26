@@ -40,7 +40,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
-$modules = 'DotnetMove.Core', 'DotnetMove.Native', 'DotnetMove.Unity'
+# Shared first: the engines require it (RequiredModules), so it must import/install before them.
+$modules = 'DotnetMove.Shared', 'DotnetMove.Core', 'DotnetMove.Native', 'DotnetMove.Unity'
 # The umbrella bootstrap imports the engines above; it ships but is not in the per-engine
 # import/test loop (importing it would pull the engines in a second time).
 $umbrella = 'DotnetMove'
@@ -103,8 +104,7 @@ function Invoke-InstallTask {
         }
     }
     New-Item -ItemType Directory -Path $InstallPath -Force | Out-Null
-    # The modules dot-source ..\Shared, so Shared must sit beside them in the target.
-    foreach ($name in ($modules + $umbrella + 'Shared')) {
+    foreach ($name in ($modules + $umbrella)) {
         $dest = Join-Path $InstallPath $name
         if (Test-Path $dest) { Remove-Item -LiteralPath $dest -Recurse -Force }
         Copy-Item -LiteralPath (Join-Path $root (Join-Path 'src' ($name))) -Destination $dest -Recurse -Force

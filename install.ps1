@@ -76,8 +76,8 @@ try {
     }
     New-Item -ItemType Directory -Path $InstallPath -Force | Out-Null
 
-    # The modules dot-source ..\Shared, so Shared must sit beside them in the target.
-    foreach ($name in 'DotnetMove.Core', 'DotnetMove.Unity', 'DotnetMove.Native', 'DotnetMove', 'Shared') {
+    # DotnetMove.Shared is the required dependency of the engines; install it alongside them.
+    foreach ($name in 'DotnetMove.Shared', 'DotnetMove.Core', 'DotnetMove.Unity', 'DotnetMove.Native', 'DotnetMove') {
         $dest = Join-Path $InstallPath $name
         if (Test-Path -LiteralPath $dest) { Remove-Item -LiteralPath $dest -Recurse -Force }
         Copy-Item -LiteralPath (Join-Path $srcRoot $name) -Destination $dest -Recurse -Force

@@ -1,6 +1,7 @@
 #requires -Modules Pester
 
 BeforeAll {
+    . (Join-Path $PSScriptRoot 'TestHelpers.ps1')
     # Core must load before Native (Native declares RequiredModules = DotnetMove.Core).
     Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'DotnetMove.Core' ('DotnetMove.Core.psd1'))))) -Force
     Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'DotnetMove.Native' ('DotnetMove.Native.psd1'))))) -Force
@@ -64,7 +65,7 @@ Describe 'Native project handling' {
 
 Describe 'OS-aware path comparison' {
     It 'matches Windows case-insensitivity / non-Windows case-sensitivity' {
-        InModuleScope DotnetMove.Core {
+        InModuleScope DotnetMove.Shared {
             # Test-IsWindowsHost is 5.1-safe; a bare $IsWindows throws here under the module's
             # StrictMode on Windows PowerShell 5.1 (where $IsWindows is not an automatic variable).
             $expected = [bool](Test-IsWindowsHost)

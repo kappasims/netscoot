@@ -6,7 +6,7 @@
     Description          = 'Windows-only extension of DotnetMove for native / C++/CLI (.vcxproj) projects. Delegates solution membership + the folder move, and reports the native MSBuild path settings the dotnet CLI cannot reconcile.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Core', 'Desktop')
-    RequiredModules      = @('DotnetMove.Core')
+    RequiredModules      = @('DotnetMove.Shared')
     FunctionsToExport    = @(
         'Move-NativeProject'
     )
