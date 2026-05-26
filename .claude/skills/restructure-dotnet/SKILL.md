@@ -22,14 +22,19 @@ the user to the project's install steps and let them run them; never auto-instal
 To understand a repo before touching it, use these; do not parse solution/project files by hand:
 
 - `Test-SolutionConsistency` - projects whose membership diverges across solutions (`-Debug` for
-  the full solution/project matrix). To resolve a reported divergence, add the project where it is
-  missing with `dotnet sln <solution> add <project>` (DotnetMove does not add membership for you).
+  the full solution/project matrix).
+- `Get-SolutionInventory` - the full contents of every solution: projects of any type (including
+  non-CLI ones like `.pssproj`), solution folders, and solution items, plus projects on disk that
+  no solution references. Goes beyond `dotnet sln list`, which only lists CLI-buildable projects.
 - `Repair-SolutionReferences` (no flags) - report dangling solution entries / `<ProjectReference>`s.
 - `Find-PathReference` - build/CI/hook scripts that hardcode a path no move reconciles.
 - `Resolve-MoveEngine` - which engine a given path classifies to.
 - `Get-DotnetMoveCapability` - whether git and dotnet are present, plus the platform.
 
-These are the right tools when the task is "audit" or "sync the solutions", not only when moving.
+To resolve a divergence that `Test-SolutionConsistency` reports, run `Sync-Solution` (it adds each
+project to the solutions missing it; preview with `-WhatIf`), or add it by hand with
+`dotnet sln <solution> add <project>`. These are the right tools when the task is "audit" or
+"sync the solutions", not only when moving.
 
 ## Moving a .NET project
 
@@ -49,7 +54,9 @@ consumer `<ProjectReference>`s, and the project's own references, then runs `dot
 These work on an existing repo without moving anything. Inspect first, then repair if needed.
 
 ```powershell
+Get-SolutionInventory     -RepoRoot .          # full contents of every solution + projects in none
 Test-SolutionConsistency  -RepoRoot .          # projects whose solution membership diverges
+Sync-Solution             -RepoRoot . -WhatIf  # resolve divergence: add each project where it is missing
 Repair-SolutionReferences -RepoRoot .          # report dangling entries (relocatable / missing / ambiguous)
 Repair-SolutionReferences -RepoRoot . -Fix     # re-point dangling entries at the project's new location
 Repair-SolutionReferences -RepoRoot . -Prune   # remove entries whose project is gone for good
@@ -57,7 +64,8 @@ Find-PathReference -Path ./src/Tarragon/Tarragon.csproj  # build/CI/hook scripts
 ```
 
 `-Fix` relocates; it does not delete. Removal is only `-Prune`, and only for entries whose
-project cannot be found anywhere. Both honor `-WhatIf`.
+project cannot be found anywhere. `Sync-Solution` only adds membership, never removes. All honor
+`-WhatIf`.
 
 ## If you must do it without the module
 
@@ -68,7 +76,8 @@ Use the raw CLI, never a text editor:
 
 ## Known limits (warn the user; do not silently "fix")
 
-- `Directory.Build.props/.targets` inheritance changes when folder depth changes.
+- `Directory.Build.props/.targets` and `Directory.Packages.props` (Central Package Management)
+  inheritance changes when folder depth changes (a move detects and warns; it cannot fix it).
 - Hardcoded project paths in CI YAML / scripts.
 
 ## The `git dotnetmv` verb (optional; ask first)

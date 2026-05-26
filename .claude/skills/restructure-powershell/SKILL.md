@@ -22,9 +22,11 @@ folder to the module mover. Always dry-run with `-WhatIf` first.
 
 Before moving, use the read-only surface rather than grepping by hand: `Find-PathReference` (the
 build/CI/hook scripts that hardcode a path), `Resolve-MoveEngine` (how a path classifies), and
-`Get-DotnetMoveCapability` (git present? platform?). `Test-SolutionConsistency` and
-`Repair-SolutionReferences` are .NET-solution tools; reach for them when a PowerShell repo also
-carries `.csproj`/`.sln` (e.g. a `.pssproj`).
+`Get-DotnetMoveCapability` (git present? platform?). `Test-SolutionConsistency`,
+`Get-SolutionInventory`, `Repair-SolutionReferences`, and `Sync-Solution` are .NET-solution tools;
+reach for them when a PowerShell repo also carries `.csproj`/`.sln`. `Get-SolutionInventory` in
+particular lists non-CLI project types a PowerShell solution may include, such as a `.pssproj`,
+which `dotnet sln list` does not surface.
 
 ```powershell
 Import-Module DotnetMove
