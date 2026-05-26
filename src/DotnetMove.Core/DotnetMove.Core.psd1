@@ -1,6 +1,6 @@
 @{
     RootModule           = 'DotnetMove.Core.psm1'
-    ModuleVersion        = '1.1.0'
+    ModuleVersion        = '1.1.1'
     GUID                 = 'b3f1c0e2-4a6d-4c8e-9b1a-2f7d8e5c1a90'
     Author               = 'kappasims'
     Description          = 'Cross-platform (PowerShell 7) cmdlets to move/restructure managed .NET and PowerShell projects by delegating path/GUID changes to first-party tooling (dotnet sln, dotnet reference, Update-ModuleManifest). Native C++ (.vcxproj) handling lives in the Windows-only DotnetMove.Native module.'
