@@ -1,6 +1,6 @@
 @{
     RootModule           = 'DotnetMove.Shared.psm1'
-    ModuleVersion        = '1.1.1'
+    ModuleVersion        = '1.2.0'
     GUID                 = 'a7c5e1d4-2b9f-4e63-8a17-0d6c9f3b21e8'
     Author               = 'kappasims'
     Description          = 'Shared cross-platform helpers for the DotnetMove toolkit (path/git/MSBuild/solution primitives). A support module required by DotnetMove.Core/.Unity/.Native; not used directly.'
