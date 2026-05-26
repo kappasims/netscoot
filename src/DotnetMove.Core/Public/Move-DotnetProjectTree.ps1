@@ -67,7 +67,10 @@ function Move-DotnetProjectTree {
     process {
         if (-not (Assert-DotnetAvailable -Cmdlet $PSCmdlet)) { return }
 
-        $srcDir = Resolve-FullPath $Path
+        # Trim any trailing slash: $srcDir is used as a string prefix when rebasing project paths
+        # under the destination (below), so a trailing slash would drop the separator and corrupt
+        # the rebased paths.
+        $srcDir = (Resolve-FullPath $Path).TrimEnd([char]'\', [char]'/')
         if (-not (Test-Path -LiteralPath $srcDir -PathType Container)) {
             $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
                     [System.IO.DirectoryNotFoundException]::new("Folder not found: $Path"),

@@ -151,7 +151,12 @@ function Resolve-MoveTarget {
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$Source,
           [Parameter(Mandatory)][string]$Destination)
+    # Normalize away a trailing slash: GetFullPath keeps it, and it would otherwise leak into the
+    # rename target (and make `git mv src dest/` error where `git mv src dest` renames). A trailing
+    # slash is treated as a no-op here, so './libs' and './libs/' behave identically.
     $dest = [System.IO.Path]::GetFullPath($Destination)
+    $trimmed = $dest.TrimEnd([char]'\', [char]'/')
+    if ($trimmed) { $dest = $trimmed }
     if (Test-Path -LiteralPath $dest -PathType Container) {
         return (Join-Path $dest (Split-Path -Leaf $Source))
     }

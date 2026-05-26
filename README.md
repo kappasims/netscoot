@@ -29,8 +29,8 @@ like "move this project" (see [Skills](#skills)).
 ### Requirements
 
 - PowerShell 7+ (Windows, Linux, macOS), or Windows PowerShell 5.1.
-- The .NET SDK (`dotnet`) on PATH for .NET project moves; .NET 10 for `.slnx` solutions. Moving
-  PowerShell or Unity files does not need it.
+- The .NET SDK (`dotnet`) on PATH for .NET project moves; the .NET 9 SDK or later for `.slnx`
+  solutions. Moving PowerShell or Unity files does not need it.
 - git is optional: with it, moves use `git mv` (history kept); without it, `-Force` does a plain
   `Move-Item` (no history). `Get-DotnetMoveCapability` reports what the machine has.
 
