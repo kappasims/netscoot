@@ -5,6 +5,11 @@ solution file, the references that point at it, and the GUID wiring. Visual Stud
 when you drag a project in its GUI; DotnetMove does it from the command line, everywhere Visual
 Studio is not, including VS Code, Rider, CI, Linux, macOS, and AI coding agents.
 
+> **Not a Microsoft product.** DotnetMove is an independent, community-maintained tool. It is **not
+> affiliated with, sponsored by, or endorsed by Microsoft**. ".NET", "dotnet", and related names are
+> trademarks of Microsoft Corporation, used here only to describe the .NET projects and tooling this
+> works with.
+
 ```powershell
 # moves the files and fixes the .sln, references, and GUIDs
 Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon

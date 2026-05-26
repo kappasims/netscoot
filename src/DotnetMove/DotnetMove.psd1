@@ -3,7 +3,7 @@
     ModuleVersion        = '1.3.1'
     GUID                 = 'e5b2d8a3-7c41-49f6-bd0e-9a3c2f6b1e57'
     Author               = 'kappasims'
-    Description          = 'Move/restructure .NET projects (and PowerShell, Unity, native C++) from the command line without breaking references. A single bundled package: Import-Module DotnetMove loads the .NET/PowerShell and Unity engines everywhere, and the native C++ (.vcxproj) engine on Windows.'
+    Description          = 'Move/restructure .NET projects (and PowerShell, Unity, native C++) from the command line without breaking references. A single bundled package: Import-Module DotnetMove loads the .NET/PowerShell and Unity engines everywhere, and the native C++ (.vcxproj) engine on Windows. Independent community project; not affiliated with or endorsed by Microsoft.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Core', 'Desktop')
     # Single bundled package: the RootModule loads the bundled Shared + engine modules -Global
