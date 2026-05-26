@@ -1,0 +1,8 @@
+# Code owners for dotnet-move.
+#
+# The repository owner is the sole code owner: every path requires their review. This is enforced on
+# `develop` through branch protection (require_code_owner_reviews), so contributor branches off
+# develop merge only after an owner approval. The owner retains an admin bypass (enforce_admins is
+# off on develop) for their own work and the release prepare step, which they cannot self-approve.
+
+* @kappasims
