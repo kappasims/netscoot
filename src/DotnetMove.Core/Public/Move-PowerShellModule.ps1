@@ -16,7 +16,8 @@ function Move-PowerShellModule {
         Path to the module folder, or directly to its .psd1 manifest.
 
     .PARAMETER Destination
-        New module folder.
+        Where to move the module folder, following `git mv` rules: an existing directory means move
+        into it (keeping the name); otherwise it is the module's new folder path. Errors if it exists.
 
     .PARAMETER Force
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
@@ -55,7 +56,9 @@ function Move-PowerShellModule {
         $manifestName = $manifest.Name
     }
 
-    $newDir = [System.IO.Path]::GetFullPath($Destination)
+    # git mv semantics: an existing destination directory means "move the module folder into it";
+    # otherwise Destination is the module's new folder path.
+    $newDir = Resolve-MoveTarget -Source $moduleDir -Destination $Destination
     if (Test-Path -LiteralPath $newDir) { throw "Destination already exists: $newDir" }
 
     Write-Verbose "Plan: move module $manifestName  $moduleDir -> $newDir"

@@ -22,7 +22,8 @@ function Move-DotnetProjectTree {
         The folder to move. Accepts pipeline input.
 
     .PARAMETER Destination
-        The new folder path.
+        Where to move the folder, following `git mv` rules: an existing directory means move into
+        it (keeping the name); otherwise it is the folder's new path. Errors if the result exists.
 
     .PARAMETER RepoRoot
         Root to scan. Defaults to the enclosing git repo root.
@@ -68,7 +69,9 @@ function Move-DotnetProjectTree {
                     'FolderNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, $Path))
             return
         }
-        $newDir = [System.IO.Path]::GetFullPath($Destination)
+        # git mv semantics: an existing destination directory means "move the tree into it";
+        # otherwise Destination is the tree's new path (a rename).
+        $newDir = Resolve-MoveTarget -Source $srcDir -Destination $Destination
         if (Test-Path -LiteralPath $newDir) {
             $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
                     [System.IO.IOException]::new("Destination already exists: $newDir"),

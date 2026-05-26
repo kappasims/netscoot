@@ -21,7 +21,8 @@ function Move-NativeProject {
         Path to the .vcxproj. Accepts pipeline input.
 
     .PARAMETER Destination
-        New folder for the project.
+        Where to move the project folder, following `git mv` rules: an existing directory means
+        move into it (keeping the name); otherwise it is the new folder path. Errors if it exists.
 
     .PARAMETER RepoRoot
         Root to scan for solutions. Defaults to the enclosing git repo root.
@@ -85,8 +86,22 @@ function Move-NativeProject {
         $projFile = Split-Path -Leaf $projFull
         if (-not $RepoRoot) { $RepoRoot = Get-RepoRoot -StartPath $oldDir }
         $repoFull = Resolve-FullPath $RepoRoot
-        $newDir = [System.IO.Path]::GetFullPath($Destination)
+        # git mv semantics: an existing destination directory means "move the project folder into
+        # it"; otherwise Destination is the project's new folder path.
+        $newDir = Resolve-MoveTarget -Source $oldDir -Destination $Destination
         $newProj = Join-Path $newDir $projFile
+        if (Test-Path -LiteralPath $newDir) {
+            $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
+                    [System.IO.IOException]::new("Destination already exists: $newDir"),
+                    'DestinationExists', [System.Management.Automation.ErrorCategory]::ResourceExists, $newDir))
+            return
+        }
+        if (Test-PathOverlap $newDir $oldDir) {
+            $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
+                    [System.InvalidOperationException]::new("Destination '$newDir' overlaps the source '$oldDir'; a project folder cannot be moved into itself or its own subtree."),
+                    'PathOverlap', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Destination))
+            return
+        }
 
         $allSolutions = @(Find-Solutions -Root $repoFull)
         $solutions = @(Get-SolutionsReferencing -ProjectFile $projFull -Candidates $allSolutions)

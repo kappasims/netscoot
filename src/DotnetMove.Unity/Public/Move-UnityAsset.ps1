@@ -22,7 +22,8 @@ function Move-UnityAsset {
         Asset file or folder to move (under Assets/ or a package). Accepts pipeline input.
 
     .PARAMETER Destination
-        New path for the asset/folder.
+        Where to move the asset/folder, following `git mv` rules: an existing directory means move
+        into it (keeping the name); otherwise it is the new path. Errors if it exists.
 
     .PARAMETER RepoRoot
         Root to scan for asmdef referencers. Defaults to the enclosing git repo root.
@@ -64,7 +65,8 @@ function Move-UnityAsset {
 
         $srcMeta = "$src.meta"
         $hasMeta = Test-Path -LiteralPath $srcMeta -PathType Leaf
-        $dst = [System.IO.Path]::GetFullPath($Destination)
+        # git mv semantics (shared by every mover): existing dir -> move into it; else rename.
+        $dst = Resolve-MoveTarget -Source $src -Destination $Destination
         $dstMeta = "$dst.meta"
         if (Test-Path -LiteralPath $dst) {
             $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(

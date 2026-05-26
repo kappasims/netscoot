@@ -33,6 +33,7 @@
         'Resolve-FullPath',
         'Resolve-GitUsage',
         'Resolve-MoveContext',
+        'Resolve-MoveTarget',
         'Resolve-SymlinkPath',
         'Select-BestSuffixMatch',
         'Test-DirectoryBuildInheritance',

@@ -21,7 +21,10 @@ function Move-DotnetProject {
         path string or any object with a FullName/Path property (e.g. Get-Item output).
 
     .PARAMETER Destination
-        New folder for the project. The project file and its sibling contents move here.
+        Where to move the project folder, following `git mv` rules: if Destination is an existing
+        directory the folder moves into it (keeping its name, e.g. './libs' -> './libs/Tarragon');
+        otherwise Destination is the project's new folder path (a rename, './libs/Tarragon'). The
+        project file and its sibling contents move as one. Errors if the resulting folder exists.
 
     .PARAMETER RepoRoot
         Root to scan for solutions/consumers. Defaults to the enclosing git repo root.
@@ -94,12 +97,14 @@ function Move-DotnetProject {
         if (-not $RepoRoot) { $RepoRoot = Get-RepoRoot -StartPath $oldDir }
         $repoFull = Resolve-FullPath $RepoRoot
 
-        $newDir = [System.IO.Path]::GetFullPath($Destination)
+        # git mv semantics: an existing destination directory means "move the project folder into
+        # it" (libs -> libs/Tarragon); otherwise Destination is the project's new folder path.
+        $newDir = Resolve-MoveTarget -Source $oldDir -Destination $Destination
         $newProj = Join-Path $newDir $projFile
-        if (Test-Path -LiteralPath $newProj) {
+        if (Test-Path -LiteralPath $newDir) {
             $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
-                    [System.IO.IOException]::new("Destination already has a project: $newProj"),
-                    'DestinationExists', [System.Management.Automation.ErrorCategory]::ResourceExists, $newProj))
+                    [System.IO.IOException]::new("Destination already exists: $newDir"),
+                    'DestinationExists', [System.Management.Automation.ErrorCategory]::ResourceExists, $newDir))
             return
         }
         if (Test-PathOverlap $newDir $oldDir) {

@@ -140,3 +140,20 @@ function Test-PathUnder {
     $dn = ($d -replace '/', '\') + '\'
     return $pn.StartsWith($dn, $script:PathComparison)
 }
+
+function Resolve-MoveTarget {
+    # Resolve a move's final target path the way `git mv` does, so every mover behaves the same:
+    #   - Destination is an existing directory -> move INTO it, keeping the source's leaf name
+    #     (git mv src/Tarragon libs  ->  libs/Tarragon).
+    #   - otherwise -> Destination IS the new path (a rename: git mv src/Tarragon libs/Tarragon).
+    # Returns the absolute final path. Does not check for conflicts - the caller errors if the
+    # returned path already exists (mirroring git mv, which refuses without -f).
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$Source,
+          [Parameter(Mandatory)][string]$Destination)
+    $dest = [System.IO.Path]::GetFullPath($Destination)
+    if (Test-Path -LiteralPath $dest -PathType Container) {
+        return (Join-Path $dest (Split-Path -Leaf $Source))
+    }
+    return $dest
+}

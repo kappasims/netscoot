@@ -83,6 +83,38 @@ Describe 'Move-DotnetProject' {
         $errs[0].FullyQualifiedErrorId | Should -Match 'ProjectNotFound'
     }
 
+    It 'moves into an existing destination directory, keeping the folder name (git mv semantics)' {
+        $root = New-Fixture
+        try {
+            $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
+            $libsDir = Join-Path $root 'libs'
+            New-Item -ItemType Directory -Path $libsDir | Out-Null   # destination already exists
+            $sln = (Get-ChildItem -LiteralPath $root -File -Include '*.sln', '*.slnx').FullName
+
+            Move-DotnetProject -Project $lib -Destination $libsDir -RepoRoot $root -NoBuild -Confirm:$false
+
+            # Moved INTO libs/, under its own leaf name (libs/Lib), not merged into libs/ directly.
+            (Join-Path $libsDir (Join-Path 'Lib' ('Lib.csproj'))) | Should -Exist
+            (Join-Path $libsDir 'Lib.csproj') | Should -Not -Exist
+            $lib | Should -Not -Exist
+            # Reconciliation points at the real new location.
+            ((& dotnet sln $sln list) -join "`n") | Should -Match 'libs[\\/]Lib[\\/]Lib\.csproj'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'errors (no mutation) when the resolved destination already exists' {
+        $root = New-Fixture
+        try {
+            $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
+            New-Item -ItemType Directory -Path (Join-Path $root (Join-Path 'libs' ('Lib'))) -Force | Out-Null
+            # Destination 'libs' is a dir -> resolves to libs/Lib, which already exists -> refuse.
+            Move-DotnetProject -Project $lib -Destination (Join-Path $root 'libs') -RepoRoot $root -NoBuild -Confirm:$false `
+                -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
+            $errs[0].FullyQualifiedErrorId | Should -Match 'DestinationExists'
+            $lib | Should -Exist   # nothing moved
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
     It 'refuses to move a project into its own subtree (no mutation)' {
         $root = New-Fixture
         try {

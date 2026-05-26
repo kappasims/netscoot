@@ -65,8 +65,8 @@ function Move-Solution {
         }
 
         $name = Split-Path -Leaf $src
-        $newPath = [System.IO.Path]::GetFullPath($Destination)
-        if (Test-Path -LiteralPath $newPath -PathType Container) { $newPath = Join-Path $newPath $name }
+        # git mv semantics (shared by every mover): existing dir -> move into it; else rename.
+        $newPath = Resolve-MoveTarget -Source $src -Destination $Destination
         if (Test-Path -LiteralPath $newPath) {
             $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
                     [System.IO.IOException]::new("Destination already exists: $newPath"),

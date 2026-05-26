@@ -76,9 +76,9 @@ function Move-MSBuildImport {
         }
 
         $srcName = Split-Path -Leaf $src
-        $newDir = [System.IO.Path]::GetFullPath($Destination)
-        if (Test-Path -LiteralPath $newDir -PathType Container) { $newPath = Join-Path $newDir $srcName }
-        else { $newPath = $newDir; $newDir = Split-Path -Parent $newPath }
+        # git mv semantics (shared by every mover): existing dir -> move into it; else rename.
+        $newPath = Resolve-MoveTarget -Source $src -Destination $Destination
+        $newDir = Split-Path -Parent $newPath
         if (Test-Path -LiteralPath $newPath) {
             $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
                     [System.IO.IOException]::new("Destination already exists: $newPath"),
