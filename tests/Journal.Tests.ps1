@@ -58,6 +58,27 @@ Describe 'Move journal + Undo-DotnetMove' {
         }
     }
 
+    It 'a move with -NoJournal is not recorded even when journaling is on' {
+        $root = New-JournalFixture
+        try {
+            $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
+            Test-MoveJournalEnabled -RepoRoot $root | Should -BeTrue           # on by default
+            Move-DotnetProject -Project $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepoRoot $root -NoBuild -NoJournal -Confirm:$false | Out-Null
+            (Join-Path $root (Join-Path 'libs' (Join-Path 'Lib' ('Lib.csproj')))) | Should -Exist   # the move still happened
+            @(Get-MoveJournalEntries -RepoRoot $root).Count | Should -Be 0                            # but it was not journaled
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'Move-Dotnet -NoJournal forwards the per-call opt-out to the engine' {
+        $root = New-JournalFixture
+        try {
+            $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
+            Move-Dotnet -Path $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepoRoot $root -NoBuild -NoJournal -Confirm:$false | Out-Null
+            (Join-Path $root (Join-Path 'libs' (Join-Path 'Lib' ('Lib.csproj')))) | Should -Exist
+            @(Get-MoveJournalEntries -RepoRoot $root).Count | Should -Be 0
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
     It 'Set-DotnetMoveJournal -Enabled $false (git config) turns journaling off and back on' {
         $root = New-JournalFixture
         try {

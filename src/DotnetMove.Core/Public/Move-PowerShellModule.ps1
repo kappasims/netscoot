@@ -22,6 +22,10 @@ function Move-PowerShellModule {
     .PARAMETER Force
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
+    .PARAMETER NoJournal
+        Skip recording this move in the undo journal for this call, even when journaling is enabled
+        (Undo-DotnetMove will not see this move).
+
     .OUTPUTS
         DotnetMove.PSModuleMoveResult
 
@@ -44,7 +48,8 @@ function Move-PowerShellModule {
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
         [string]$Destination,
-        [switch]$Force
+        [switch]$Force,
+        [switch]$NoJournal
     )
 
     process {
@@ -95,7 +100,7 @@ function Move-PowerShellModule {
         $skippedCount = $planResult.Skipped
         Register-MoveUndo -RepoRoot $repoRoot -Command 'Move-PowerShellModule' -Engine 'powershell' `
             -Source $moduleDir -Destination $newDir `
-            -UndoParams @{ ModulePath = $newDir; Destination = $moduleDir; Force = [bool]$Force }
+            -UndoParams @{ ModulePath = $newDir; Destination = $moduleDir; Force = [bool]$Force } -NoJournal:$NoJournal
 
         Write-Warning "Reminder: dot-sourced relative paths inside .psm1/.ps1 are not auto-fixed. Grep the module for '. \$PSScriptRoot' style references if depth changed."
     }

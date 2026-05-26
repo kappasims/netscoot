@@ -26,6 +26,10 @@ function Move-DotnetFile {
     .PARAMETER Force
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
+    .PARAMETER NoJournal
+        Skip recording this move in the undo journal for this call (forwarded to the specialist),
+        even when journaling is enabled.
+
     .OUTPUTS
         The result object from the .NET specialist it routes to, by file extension.
 
@@ -55,7 +59,8 @@ function Move-DotnetFile {
 
         [string]$RepoRoot,
         [switch]$NoBuild,
-        [switch]$Force
+        [switch]$Force,
+        [switch]$NoJournal
     )
 
     process {
@@ -74,12 +79,14 @@ function Move-DotnetFile {
                 if ($PSBoundParameters.ContainsKey('RepoRoot')) { $fwd.RepoRoot = $RepoRoot }
                 if ($Force) { $fwd.Force = $true }
                 if ($NoBuild) { $fwd.NoBuild = $true }
+                if ($NoJournal) { $fwd.NoJournal = $true }
                 Write-Verbose "Routing $ext -> Move-DotnetProject"
                 Move-DotnetProject -Project $full @fwd
             }
             '\.slnx?$' {
                 $fwd = @{ Destination = $Destination }
                 if ($Force) { $fwd.Force = $true }
+                if ($NoJournal) { $fwd.NoJournal = $true }
                 Write-Verbose "Routing $ext -> Move-Solution"
                 Move-Solution -Path $full @fwd
             }
@@ -87,6 +94,7 @@ function Move-DotnetFile {
                 $fwd = @{ Destination = $Destination }
                 if ($PSBoundParameters.ContainsKey('RepoRoot')) { $fwd.RepoRoot = $RepoRoot }
                 if ($Force) { $fwd.Force = $true }
+                if ($NoJournal) { $fwd.NoJournal = $true }
                 Write-Verbose "Routing $ext -> Move-MSBuildImport"
                 Move-MSBuildImport -Path $full @fwd
             }

@@ -31,6 +31,10 @@ function Move-Dotnet {
     .PARAMETER Force
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. Forwarded to the engine.
 
+    .PARAMETER NoJournal
+        Skip recording this move in the undo journal for this call (forwarded to the engine), even
+        when journaling is enabled.
+
     .OUTPUTS
         The result object from the engine it routes to; the concrete type varies by engine.
 
@@ -64,7 +68,8 @@ function Move-Dotnet {
 
         [string]$RepoRoot,
         [switch]$NoBuild,
-        [switch]$Force
+        [switch]$Force,
+        [switch]$NoJournal
     )
 
     process {
@@ -89,6 +94,7 @@ function Move-Dotnet {
         # Common forwardables; an engine that lacks a parameter simply isn't given it.
         $common = @{ Destination = $Destination }
         if ($Force) { $common.Force = $true }
+        if ($NoJournal) { $common.NoJournal = $true }
         if ($PSBoundParameters.ContainsKey('RepoRoot')) { $common.RepoRoot = $RepoRoot }
         # Forward -WhatIf/-Confirm explicitly: $ConfirmPreference/$WhatIfPreference do not reliably
         # inherit into cmdlets in the sibling engine modules (Unity/Native), so an unforwarded
@@ -117,6 +123,7 @@ function Move-Dotnet {
                 # Move-UnityAsset handles file and folder; it has no -RepoRoot/-NoBuild.
                 $u = @{ Destination = $Destination }
                 if ($Force) { $u.Force = $true }
+                if ($NoJournal) { $u.NoJournal = $true }
                 foreach ($sw in 'WhatIf', 'Confirm') { if ($common.ContainsKey($sw)) { $u[$sw] = $common[$sw] } }
                 Move-UnityAsset -AssetPath $full @u
             }

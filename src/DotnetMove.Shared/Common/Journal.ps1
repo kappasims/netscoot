@@ -148,13 +148,16 @@ function Register-MoveUndo {
         [Parameter(Mandatory)][string]$Engine,
         [Parameter(Mandatory)][string]$Source,
         [Parameter(Mandatory)][string]$Destination,
-        [Parameter(Mandatory)][hashtable]$UndoParams
+        [Parameter(Mandatory)][hashtable]$UndoParams,
+        # Per-call opt-out: skip journaling this one move (the caller's -NoJournal). Still prints the
+        # one-line undo hint so the inverse invocation is visible, just without recording it.
+        [switch]$NoJournal
     )
     $inv = "$Command " + (($UndoParams.GetEnumerator() | Sort-Object Name | ForEach-Object {
                 if ($_.Value -is [bool]) { if ($_.Value) { "-$($_.Key)" } }
                 else { "-$($_.Key) '$($_.Value)'" }
             }) -join ' ')
-    if (Test-MoveJournalEnabled -RepoRoot $RepoRoot) {
+    if (-not $NoJournal -and (Test-MoveJournalEnabled -RepoRoot $RepoRoot)) {
         Add-MoveJournalEntry -RepoRoot $RepoRoot -Command $Command -Engine $Engine -Source $Source `
             -Destination $Destination -Undo @{ Command = $Command; Params = $UndoParams }
         Write-Host "Undo with: Undo-DotnetMove   (replays: $inv)" -ForegroundColor DarkGray

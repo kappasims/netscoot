@@ -27,6 +27,10 @@ function Move-DotnetFolder {
     .PARAMETER Force
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
+    .PARAMETER NoJournal
+        Skip recording this move in the undo journal for this call (forwarded to the specialist),
+        even when journaling is enabled.
+
     .OUTPUTS
         DotnetMove.TreeMoveResult - from Move-DotnetProjectTree.
 
@@ -54,7 +58,8 @@ function Move-DotnetFolder {
 
         [string]$RepoRoot,
         [switch]$NoBuild,
-        [switch]$Force
+        [switch]$Force,
+        [switch]$NoJournal
     )
 
     process {
@@ -69,6 +74,7 @@ function Move-DotnetFolder {
         if ($PSBoundParameters.ContainsKey('RepoRoot')) { $fwd.RepoRoot = $RepoRoot }
         if ($Force) { $fwd.Force = $true }
         if ($NoBuild) { $fwd.NoBuild = $true }
+        if ($NoJournal) { $fwd.NoJournal = $true }
         Write-Verbose "Routing folder -> Move-DotnetProjectTree"
         Move-DotnetProjectTree -Path $full @fwd
     }

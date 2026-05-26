@@ -25,6 +25,10 @@ function Move-PowerShell {
     .PARAMETER Force
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
+    .PARAMETER NoJournal
+        Skip recording this move in the undo journal for this call (forwarded to the specialist),
+        even when journaling is enabled.
+
     .OUTPUTS
         The result object from the PowerShell specialist it routes to, by item type.
 
@@ -53,7 +57,8 @@ function Move-PowerShell {
         [string]$Destination,
 
         [string]$RepoRoot,
-        [switch]$Force
+        [switch]$Force,
+        [switch]$NoJournal
     )
 
     process {
@@ -72,12 +77,14 @@ function Move-PowerShell {
             $fwd = @{ Destination = $Destination }
             if ($PSBoundParameters.ContainsKey('RepoRoot')) { $fwd.RepoRoot = $RepoRoot }
             if ($Force) { $fwd.Force = $true }
+            if ($NoJournal) { $fwd.NoJournal = $true }
             Write-Verbose 'Routing .ps1 -> Move-PowerShellScript'
             Move-PowerShellScript -Path $full @fwd
         }
         elseif ($isContainer -or $ext -eq '.psd1') {
             $fwd = @{ Destination = $Destination }
             if ($Force) { $fwd.Force = $true }
+            if ($NoJournal) { $fwd.NoJournal = $true }
             Write-Verbose 'Routing module -> Move-PowerShellModule'
             Move-PowerShellModule -ModulePath $full @fwd
         }

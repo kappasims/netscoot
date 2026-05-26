@@ -36,6 +36,10 @@ function Move-MSBuildImport {
     .PARAMETER Force
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
 
+    .PARAMETER NoJournal
+        Skip recording this move in the undo journal for this call, even when journaling is enabled
+        (Undo-DotnetMove will not see this move).
+
     .OUTPUTS
         DotnetMove.ImportMoveResult
 
@@ -60,7 +64,8 @@ function Move-MSBuildImport {
         [string]$Destination,
 
         [string]$RepoRoot,
-        [switch]$Force
+        [switch]$Force,
+        [switch]$NoJournal
     )
 
     process {
@@ -151,7 +156,7 @@ function Move-MSBuildImport {
             $skippedCount = $planResult.Skipped
             Register-MoveUndo -RepoRoot $repoFull -Command 'Move-MSBuildImport' -Engine 'dotnet' `
                 -Source $src -Destination $newPath `
-                -UndoParams @{ Path = $newPath; Destination = $src; Force = [bool]$Force }
+                -UndoParams @{ Path = $newPath; Destination = $src; Force = [bool]$Force } -NoJournal:$NoJournal
         }
 
         New-MoveResult -TypeName 'DotnetMove.ImportMoveResult' -Engine 'dotnet' -Source $src -Destination $newPath `
