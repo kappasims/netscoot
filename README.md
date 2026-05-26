@@ -186,7 +186,16 @@ Every move supports `-WhatIf`/`-Confirm`; `-Force` enables the no-git fallback.
 Every move is recorded in a repo-local journal (`.dotnetmove/journal.jsonl`) so you can reverse it
 later, even from a fresh session. `Undo-DotnetMove` replays the recorded inverse (the same move with
 source and destination swapped), re-reconciling from the current state rather than restoring a stale
-snapshot. Moves only, for now (not `Sync-Solution`/`Repair-SolutionReferences`).
+snapshot. By default it reverses the most recent move; `-Id` reverses a specific entry, and `-List`
+shows what is available.
+
+A successful undo removes that entry from the journal, and the reversing move is not itself recorded,
+so repeated calls walk the history backwards rather than toggling one move on and off. Reversing an
+entry other than the most recent is allowed, but a later move may have built on it, so prefer reverse
+order.
+
+Undo applies to the move commands. `Sync-Solution` and `Repair-SolutionReferences` are not journaled;
+both take `-WhatIf` to preview before they change anything.
 
 ```powershell
 Undo-DotnetMove -List          # what can be undone (oldest first)
