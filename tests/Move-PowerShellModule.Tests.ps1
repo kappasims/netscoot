@@ -2,10 +2,10 @@
 
 BeforeAll {
     . (Join-Path $PSScriptRoot 'TestHelpers.ps1')
-    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'DotnetMove.Core' ('DotnetMove.Core.psd1'))))) -Force
+    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Core' ('Netscoot.Core.psd1'))))) -Force
 
     function New-ModuleFixture {
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_mod_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_mod_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
         $mod = Join-Path $root 'MyMod'
         New-Item -ItemType Directory -Path $mod -Force | Out-Null
         Set-Content -LiteralPath (Join-Path $mod 'MyMod.psm1') -Value 'function Get-X { 1 }; Export-ModuleMember -Function Get-X' -Encoding UTF8
@@ -27,7 +27,7 @@ Describe 'Move-PowerShellModule' {
             $mod | Should -Not -Exist
             (Test-ModuleManifest -Path (Join-Path $dest 'MyMod.psd1') -ErrorAction SilentlyContinue).Name | Should -Be 'MyMod'
             # Now emits a result with the common base shape (audit #4).
-            $r.PSObject.TypeNames[0] | Should -Be 'DotnetMove.PSModuleMoveResult'
+            $r.PSObject.TypeNames[0] | Should -Be 'Netscoot.PSModuleMoveResult'
             $r.Engine | Should -Be 'powershell'
             $r.Performed | Should -BeTrue
             foreach ($f in 'Engine', 'Source', 'Destination', 'Performed', 'SkippedCount') { $r.PSObject.Properties.Name | Should -Contain $f }

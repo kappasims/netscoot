@@ -3,10 +3,10 @@
 BeforeAll {
     . (Join-Path $PSScriptRoot 'TestHelpers.ps1')
     # Start from a clean module state so this verifies what the UMBRELLA loads, not what an
-    # earlier test file left imported (e.g. DotnetMove.Native, which loads on any OS and would
+    # earlier test file left imported (e.g. Netscoot.Native, which loads on any OS and would
     # otherwise make the non-Windows "native absent" assertion fail).
-    Remove-Module DotnetMove, DotnetMove.Core, DotnetMove.Unity, DotnetMove.Native -Force -ErrorAction SilentlyContinue
-    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'DotnetMove' ('DotnetMove.psd1'))))) -Force
+    Remove-Module Netscoot, Netscoot.Core, Netscoot.Unity, Netscoot.Native -Force -ErrorAction SilentlyContinue
+    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot' ('Netscoot.psd1'))))) -Force
 
     function Test-IsWindowsHost {
         if ($PSVersionTable.PSEdition -eq 'Desktop') { return $true }
@@ -15,7 +15,7 @@ BeforeAll {
     }
 }
 
-Describe 'DotnetMove umbrella' {
+Describe 'Netscoot umbrella' {
     It 'surfaces the core engine cmdlets' {
         Get-Command Move-DotnetProject -ErrorAction SilentlyContinue | Should -Not -BeNullOrEmpty
         Get-Command Resolve-MoveEngine -ErrorAction SilentlyContinue | Should -Not -BeNullOrEmpty
@@ -35,5 +35,5 @@ Describe 'DotnetMove umbrella' {
 }
 
 AfterAll {
-    Remove-Module DotnetMove, DotnetMove.Core, DotnetMove.Unity, DotnetMove.Native -Force -ErrorAction SilentlyContinue
+    Remove-Module Netscoot, Netscoot.Core, Netscoot.Unity, Netscoot.Native -Force -ErrorAction SilentlyContinue
 }

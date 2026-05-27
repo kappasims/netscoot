@@ -2,10 +2,10 @@
 
 BeforeAll {
     . (Join-Path $PSScriptRoot TestHelpers.ps1)
-    Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'DotnetMove.Core', 'DotnetMove.Core.psd1')) -Force
+    Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'Netscoot.Core', 'Netscoot.Core.psd1')) -Force
 
     function New-TempDir {
-        $d = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_st_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $d = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_st_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
         New-Item -ItemType Directory -Path $d | Out-Null
         return $d
     }

@@ -2,10 +2,10 @@
 
 BeforeAll {
     . (Join-Path $PSScriptRoot TestHelpers.ps1)
-    Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'DotnetMove.Core', 'DotnetMove.Core.psd1')) -Force
+    Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'Netscoot.Core', 'Netscoot.Core.psd1')) -Force
 
     function New-TempDir {
-        $d = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_nlr_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $d = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_nlr_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
         New-Item -ItemType Directory -Path $d | Out-Null
         return $d
     }
@@ -31,7 +31,7 @@ Describe 'Reference classification' {
             Add-ProjectReference -ProjectFile $proj -Include '..\plugins\*.csproj'                # wildcard
             Add-ProjectReference -ProjectFile $proj -Include '..\Opt\Opt.csproj' -Condition "'`$(Cfg)'=='Debug'"  # conditional but literal path
 
-            InModuleScope DotnetMove.Shared -Parameters @{ Proj = $proj } {
+            InModuleScope Netscoot.Shared -Parameters @{ Proj = $proj } {
                 param($Proj)
                 $refs = Get-ProjectReferencePaths -ProjectFile $Proj
                 ($refs | Where-Object { $_.Raw -eq '..\Lib\Lib.csproj' }).IsLiteral | Should -BeTrue

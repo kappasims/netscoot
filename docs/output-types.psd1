@@ -1,7 +1,7 @@
 @{
     # Output-type registry (typedefs) for the generated README reference.
     #
-    # Each cmdlet declares the type(s) it emits via [OutputType('DotnetMove.X')]; the Docs task
+    # Each cmdlet declares the type(s) it emits via [OutputType('Netscoot.X')]; the Docs task
     # (build.ps1 -Task Docs) looks the name up here and renders, in the command's Output section,
     # a link to the type's entry plus a terse code-view of its structure. The same entries are
     # collected into the generated "Output types" section. This is the single source of truth for
@@ -15,10 +15,10 @@
     #                  string  int  bool  version  object   scalar types
     #                  string[]                     array of that type
     #                  bool?                        nullable (may be $null)
-    #                  DotnetMove.X                 a nested typedef (also in this registry)
+    #                  Netscoot.X                 a nested typedef (also in this registry)
     #                Note is an optional terse qualifier (allowed values, when-$null, meaning).
 
-    'DotnetMove.PathReference' = @{
+    'Netscoot.PathReference' = @{
         Summary = 'One build/CI/hook/container line that hardcodes a moved path and that no first-party tool reconciles.'
         Array   = $true
         EmptyIsNull = $true
@@ -30,19 +30,19 @@
         )
     }
 
-    'DotnetMove.Capability' = @{
-        Summary = "DotnetMove's resolved external-tool capabilities and platform - the 'what can I do here' probe."
+    'Netscoot.Capability' = @{
+        Summary = "Netscoot's resolved external-tool capabilities and platform - the 'what can I do here' probe."
         Array   = $false
         Fields  = @(
             @{ Name = 'Platform';           Type = 'string';              Note = '' }
             @{ Name = 'PSEdition';          Type = 'string';              Note = '' }
             @{ Name = 'DotnetSupportsSlnx'; Type = 'bool';                Note = '' }
-            @{ Name = 'Git';                Type = 'DotnetMove.ToolInfo'; Note = '' }
-            @{ Name = 'Dotnet';             Type = 'DotnetMove.ToolInfo'; Note = '' }
+            @{ Name = 'Git';                Type = 'Netscoot.ToolInfo'; Note = '' }
+            @{ Name = 'Dotnet';             Type = 'Netscoot.ToolInfo'; Note = '' }
         )
     }
 
-    'DotnetMove.ToolInfo' = @{
+    'Netscoot.ToolInfo' = @{
         Summary = 'Presence and version of one external tool (git or dotnet).'
         Array   = $false
         Fields  = @(
@@ -52,20 +52,20 @@
         )
     }
 
-    'DotnetMove.SolutionItem' = @{
+    'Netscoot.SolutionItem' = @{
         Summary = 'One entry in the full contents of a solution (or a project on disk that no solution references).'
         Array   = $true
         EmptyIsNull = $false
         Fields  = @(
             @{ Name = 'Solution'; Type = 'string';                       Note = "repo-relative, or '(none)' for an unreferenced project" }
-            @{ Name = 'Kind';     Type = 'DotnetMove.SolutionItemKind'; Note = 'enum: Project | SolutionFolder | SolutionItem | UnreferencedProject' }
+            @{ Name = 'Kind';     Type = 'Netscoot.SolutionItemKind'; Note = 'enum: Project | SolutionFolder | SolutionItem | UnreferencedProject' }
             @{ Name = 'Type';     Type = 'string'; Note = 'project extension without the dot, else empty' }
             @{ Name = 'Name';     Type = 'string'; Note = '' }
             @{ Name = 'Path';     Type = 'string'; Note = 'as stored in the solution, or repo-relative' }
         )
     }
 
-    'DotnetMove.MoveResult' = @{
+    'Netscoot.MoveResult' = @{
         Summary = 'Result of moving a .NET project folder and reconciling solutions and project references.'
         Array   = $false
         Fields  = @(
@@ -81,7 +81,7 @@
         )
     }
 
-    'DotnetMove.TreeMoveResult' = @{
+    'Netscoot.TreeMoveResult' = @{
         Summary = 'Result of moving a folder of one or more .NET projects in one operation.'
         Array   = $false
         Fields  = @(
@@ -96,7 +96,7 @@
         )
     }
 
-    'DotnetMove.ImportMoveResult' = @{
+    'Netscoot.ImportMoveResult' = @{
         Summary = 'Result of moving a shared MSBuild .props/.targets file and fixing its importers.'
         Array   = $false
         Fields  = @(
@@ -111,7 +111,7 @@
         )
     }
 
-    'DotnetMove.PSModuleMoveResult' = @{
+    'Netscoot.PSModuleMoveResult' = @{
         Summary = 'Result of moving a PowerShell module folder and reconciling its manifest.'
         Array   = $false
         Fields  = @(
@@ -124,7 +124,7 @@
         )
     }
 
-    'DotnetMove.ScriptMoveResult' = @{
+    'Netscoot.ScriptMoveResult' = @{
         Summary = 'Result of moving a standalone .ps1 and fixing dot-source/call paths.'
         Array   = $false
         Fields  = @(
@@ -139,7 +139,7 @@
         )
     }
 
-    'DotnetMove.SolutionMoveResult' = @{
+    'Netscoot.SolutionMoveResult' = @{
         Summary = 'Result of moving a solution file and rebasing the relative project paths it stores.'
         Array   = $false
         Fields  = @(
@@ -152,7 +152,7 @@
         )
     }
 
-    'DotnetMove.NativeMoveResult' = @{
+    'Netscoot.NativeMoveResult' = @{
         Summary = 'Result of moving a native / C++/CLI project (.vcxproj).'
         Array   = $false
         Fields  = @(
@@ -167,7 +167,7 @@
         )
     }
 
-    'DotnetMove.UnityMoveResult' = @{
+    'Netscoot.UnityMoveResult' = @{
         Summary = 'Result of moving a Unity asset/folder while keeping its paired .meta file(s).'
         Array   = $false
         Fields  = @(
@@ -182,8 +182,8 @@
         )
     }
 
-    'DotnetMove.GitAlias' = @{
-        Summary = 'The git dotnetmv alias registration (or what would be registered).'
+    'Netscoot.GitAlias' = @{
+        Summary = 'The git netscoot alias registration (or what would be registered).'
         Array   = $false
         Fields  = @(
             @{ Name = 'Alias';     Type = 'string'; Note = '' }
@@ -193,7 +193,7 @@
         )
     }
 
-    'DotnetMove.RepairResult' = @{
+    'Netscoot.RepairResult' = @{
         Summary = 'One dangling solution-membership or ProjectReference entry that was (or would be) repaired.'
         Array   = $true
         EmptyIsNull = $true
@@ -208,7 +208,7 @@
         )
     }
 
-    'DotnetMove.SyncResult' = @{
+    'Netscoot.SyncResult' = @{
         Summary = 'One project added to a solution that was missing it, to resolve membership divergence.'
         Array   = $true
         EmptyIsNull = $true
@@ -218,7 +218,7 @@
         )
     }
 
-    'DotnetMove.ConsistencyResult' = @{
+    'Netscoot.ConsistencyResult' = @{
         Summary = 'One project whose solution membership diverges across the repo.'
         Array   = $true
         EmptyIsNull = $true
@@ -229,8 +229,8 @@
         )
     }
 
-    'DotnetMove.Update' = @{
-        Summary = 'Whether the installed DotnetMove is behind the latest GitHub release.'
+    'Netscoot.Update' = @{
+        Summary = 'Whether the installed Netscoot is behind the latest GitHub release.'
         Array   = $false
         Fields  = @(
             @{ Name = 'Installed';       Type = 'version';  Note = '' }
@@ -241,7 +241,7 @@
         )
     }
 
-    'DotnetMove.MetaIntegrity' = @{
+    'Netscoot.MetaIntegrity' = @{
         Summary = 'One Unity .meta integrity problem: an asset missing a .meta, or an orphan .meta.'
         Array   = $true
         EmptyIsNull = $true

@@ -4,16 +4,16 @@
 # Mirrors `dotnet new <tmpl> -n <Name> -o <Directory>`: creates <Directory>/<Name>.csproj and
 # returns that path.
 
-# The engine modules declare DotnetMove.Shared in RequiredModules; load it (by path) up front so a
+# The engine modules declare Netscoot.Shared in RequiredModules; load it (by path) up front so a
 # test that imports an engine from src can resolve that dependency. Dot-source this helper before
 # importing any engine module.
-Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'DotnetMove.Shared', 'DotnetMove.Shared.psd1')) -Force -Global
+Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'Netscoot.Shared', 'Netscoot.Shared.psd1')) -Force -Global
 
 # Redirect the per-user undo journal to a throwaway temp dir for the whole test session, so moves in
 # the suite never write into the real LocalAppData/Application Support store. Each test file
 # dot-sources this; set it once.
-if (-not $env:DOTNETMOVE_JOURNAL_HOME) {
-    $env:DOTNETMOVE_JOURNAL_HOME = Join-Path ([System.IO.Path]::GetTempPath()) ('dnm-jhome-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+if (-not $env:NETSCOOT_JOURNAL_HOME) {
+    $env:NETSCOOT_JOURNAL_HOME = Join-Path ([System.IO.Path]::GetTempPath()) ('dnm-jhome-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
 }
 
 function New-TempRoot {
@@ -21,7 +21,7 @@ function New-TempRoot {
     # /var/folders/... is a symlink to /private/var/folders/...; if a fixture used the /var form,
     # git and `dotnet sln` (which canonicalize) would store cross-boundary relative paths and the
     # reconciliation would mismatch. Resolving it up front keeps every path in one form.
-    param([string]$Prefix = 'dotnetmove')
+    param([string]$Prefix = 'netscoot')
     $d = Join-Path ([System.IO.Path]::GetTempPath()) ($Prefix + '_' + [guid]::NewGuid().ToString('N').Substring(0, 8))
     New-Item -ItemType Directory -Path $d | Out-Null
     if (($PSVersionTable.PSEdition -eq 'Core') -and -not $IsWindows) {

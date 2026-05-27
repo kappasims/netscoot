@@ -3,10 +3,10 @@
 BeforeAll {
     . (Join-Path $PSScriptRoot 'TestHelpers.ps1')
     # [IO.Path]::Combine (not multi-arg Join-Path) so this loads on Windows PowerShell 5.1 too.
-    Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'DotnetMove.Core', 'DotnetMove.Core.psd1')) -Force
+    Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'Netscoot.Core', 'Netscoot.Core.psd1')) -Force
 
     function New-PSFixture {
-        $root = New-TempRoot -Prefix 'dotnetmove_psfd'
+        $root = New-TempRoot -Prefix 'netscoot_psfd'
         return $root
     }
 }
@@ -17,9 +17,9 @@ Describe 'Move-PowerShell (front door)' {
         try {
             $ps1 = Join-Path $root 'helper.ps1'
             Set-Content -LiteralPath $ps1 -Value '"hi"'
-            Mock -ModuleName DotnetMove.Core Move-PowerShellScript { }
+            Mock -ModuleName Netscoot.Core Move-PowerShellScript { }
             Move-PowerShell -Path $ps1 -Destination (Join-Path $root 'moved.ps1')
-            Should -Invoke -ModuleName DotnetMove.Core Move-PowerShellScript -Times 1 -Exactly
+            Should -Invoke -ModuleName Netscoot.Core Move-PowerShellScript -Times 1 -Exactly
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
@@ -28,9 +28,9 @@ Describe 'Move-PowerShell (front door)' {
         try {
             $psd1 = Join-Path $root 'MyMod.psd1'
             Set-Content -LiteralPath $psd1 -Value '@{ ModuleVersion = "1.0" }'
-            Mock -ModuleName DotnetMove.Core Move-PowerShellModule { }
+            Mock -ModuleName Netscoot.Core Move-PowerShellModule { }
             Move-PowerShell -Path $psd1 -Destination (Join-Path $root 'modules')
-            Should -Invoke -ModuleName DotnetMove.Core Move-PowerShellModule -Times 1 -Exactly
+            Should -Invoke -ModuleName Netscoot.Core Move-PowerShellModule -Times 1 -Exactly
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
@@ -40,9 +40,9 @@ Describe 'Move-PowerShell (front door)' {
             $mod = Join-Path $root 'MyMod'
             New-Item -ItemType Directory -Path $mod | Out-Null
             Set-Content -LiteralPath (Join-Path $mod 'MyMod.psd1') -Value '@{ ModuleVersion = "1.0" }'
-            Mock -ModuleName DotnetMove.Core Move-PowerShellModule { }
+            Mock -ModuleName Netscoot.Core Move-PowerShellModule { }
             Move-PowerShell -Path $mod -Destination (Join-Path (Join-Path $root 'modules') 'MyMod')
-            Should -Invoke -ModuleName DotnetMove.Core Move-PowerShellModule -Times 1 -Exactly
+            Should -Invoke -ModuleName Netscoot.Core Move-PowerShellModule -Times 1 -Exactly
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 

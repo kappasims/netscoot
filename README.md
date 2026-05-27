@@ -1,23 +1,18 @@
 # Summary
 
-[![PowerShell Gallery](https://img.shields.io/powershellgallery/v/DotnetMove?logo=powershell&label=PowerShell%20Gallery)](https://www.powershellgallery.com/packages/DotnetMove) [![Downloads](https://img.shields.io/powershellgallery/dt/DotnetMove?label=downloads)](https://www.powershellgallery.com/packages/DotnetMove)
+[![PowerShell Gallery](https://img.shields.io/powershellgallery/v/Netscoot?logo=powershell&label=PowerShell%20Gallery)](https://www.powershellgallery.com/packages/Netscoot) [![Downloads](https://img.shields.io/powershellgallery/dt/Netscoot?label=downloads)](https://www.powershellgallery.com/packages/Netscoot)
 
-DotnetMove moves a .NET project folder and fixes everything the move would otherwise break: the
+netscoot moves a .NET project folder and fixes everything the move would otherwise break: the
 solution file, the references that point at it, and the GUID wiring. Visual Studio does that for you
-when you drag a project in its GUI; DotnetMove does it from the command line, everywhere Visual
+when you drag a project in its GUI; netscoot does it from the command line, everywhere Visual
 Studio is not, including VS Code, Rider, CI, Linux, macOS, and AI coding agents.
-
-> **Not a Microsoft product.** DotnetMove is an independent, community-maintained tool. It is **not
-> affiliated with, sponsored by, or endorsed by Microsoft**. ".NET", "dotnet", and related names are
-> trademarks of Microsoft Corporation, used here only to describe the .NET projects and tooling this
-> works with.
 
 ```powershell
 # moves the files and fixes the .sln, references, and GUIDs
-Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
+Invoke-Scoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
 
 # the same move as a git verb (not a plain git mv); --whatif previews it
-git dotnetmv src/Tarragon/Tarragon.csproj libs/Tarragon --whatif
+git netscoot src/Tarragon/Tarragon.csproj libs/Tarragon --whatif
 ```
 
 Each format is reconciled by the tool that owns it where one exists (the dotnet CLI, git mv,
@@ -37,11 +32,11 @@ like "move this project" (see [Skills](#skills)).
 - The .NET SDK (`dotnet`) on PATH for .NET project moves; the .NET 9 SDK or later for `.slnx`
   solutions. Moving PowerShell or Unity files does not need it.
 - git is optional: with it, moves use `git mv` (history kept); without it, `-Force` does a plain
-  `Move-Item` (no history). `Get-DotnetMoveCapability` reports what the machine has.
+  `Move-Item` (no history). `Get-ScootCapability` reports what the machine has.
 
 ## Footprint
 
-Everything DotnetMove creates or changes, so there are no surprises:
+Everything netscoot creates or changes, so there are no surprises:
 
 **Installing** (the installer or `./build.ps1 -Task Install`):
 
@@ -56,8 +51,8 @@ Everything DotnetMove creates or changes, so there are no surprises:
 
 - Edits the target repository's solution/project files to reconcile the move. That is the operation
   itself, done through first-party tooling (see [the Contract](#the-contract)).
-- Writes an undo journal to a per-user data directory (`%LOCALAPPDATA%\dotnet-move` on Windows,
-  `~/Library/Application Support/dotnet-move` on macOS, `~/.local/share/dotnet-move` on Linux), one
+- Writes an undo journal to a per-user data directory (`%LOCALAPPDATA%\netscoot` on Windows,
+  `~/Library/Application Support/netscoot` on macOS, `~/.local/share/netscoot` on Linux), one
   file per repository. It stays out of the working tree, so it is never tracked or shown by
   `git status`. On by default; see [Undoing](#undoing) to opt out or relocate it.
 - Snapshots the files it edits to the system temp dir for rollback, and removes the snapshot when
@@ -65,34 +60,41 @@ Everything DotnetMove creates or changes, so there are no surprises:
 
 **Only when you ask:**
 
-- `Register-DotnetMvGitAlias` adds one `alias.dotnetmv` line to your git config (repository-local, or
-  `~/.gitconfig` with `-Scope Global`); `Unregister-DotnetMvGitAlias` removes it.
+- `Register-ScootGitAlias` adds one `alias.netscoot` line to your git config (repository-local, or
+  `~/.gitconfig` with `-Scope Global`); `Unregister-ScootGitAlias` removes it.
 - `install.ps1 -NoJournal` turns the undo journal off persistently (`git config --global
-  dotnetmove.journal false` when git is present, else the `DOTNETMOVE_JOURNAL` env var).
-- `Set-DotnetMoveJournal` writes the `dotnetmove.journal` git setting (repository-local, or `-Global`
-  for every repository); `Clear-DotnetMoveJournal` deletes a repository's journal file.
+  netscoot.journal false` when git is present, else the `NETSCOOT_JOURNAL` env var).
+- `Set-ScootJournal` writes the `netscoot.journal` git setting (repository-local, or `-Global`
+  for every repository); `Clear-ScootJournal` deletes a repository's journal file.
 
 ### What it doesn't do
 
 Apart from the per-user undo journal noted above, it writes nothing under your home/AppData: it never
 edits `PATH`, never auto-installs git or the .NET SDK, and sends no telemetry.
 
+> [!NOTE]
+> **For sysadmins / managed fleets.** netscoot is built to be governed centrally:
+> - **No surprise network or state.** Never auto-installs, never edits `PATH`, sends no telemetry. The only network calls are an explicit install/update. CI runs least-privilege (`contents: read`, `packages: read`).
+> - **Auto-update is off by default.** A SessionStart/automation check only runs via `Test-ScootUpdate -EnableAutoUpdate` *and* only when `NETSCOOT_AUTOUPDATE` is truthy. Push `NETSCOOT_AUTOUPDATE=false` (Group Policy / Intune / profile) to disable checks fleet-wide and block `Update-Scoot` from self-updating.
+> - **Journaling is controllable centrally.** Turn it off per-repo or globally with `git config [--global] netscoot.journal false`; the undo journal lives in the standard per-user data dir (LocalAppData / Application Support / `~/.local/share`), covered by normal backup, and relocatable with `NETSCOOT_JOURNAL_HOME`.
+> - **Every file edit goes through first-party tooling** (the [Contract](#the-contract)), enforced in CI.
+
 ## Install
 
 Install the single bundled package (all engines) from the
-[PowerShell Gallery](https://www.powershellgallery.com/packages/DotnetMove):
+[PowerShell Gallery](https://www.powershellgallery.com/packages/Netscoot):
 
 ```powershell
-Install-Module DotnetMove -Scope CurrentUser     # PowerShellGet (Windows PowerShell 5.1+ / PowerShell 7)
-Install-PSResource DotnetMove                     # PSResourceGet (the newer installer, PowerShell 7.4+)
+Install-Module Netscoot -Scope CurrentUser     # PowerShellGet (Windows PowerShell 5.1+ / PowerShell 7)
+Install-PSResource Netscoot                     # PSResourceGet (the newer installer, PowerShell 7.4+)
 ```
 
-Update with `Update-Module DotnetMove` (or `Update-PSResource DotnetMove`). Then load it, and
+Update with `Update-Module Netscoot` (or `Update-PSResource Netscoot`). Then load it, and
 optionally enable the git verb:
 
 ```powershell
-Import-Module DotnetMove                   # all engines, by name
-Register-DotnetMvGitAlias -Scope Global    # optional: enable `git dotnetmv` (one git-config line)
+Import-Module Netscoot                   # all engines, by name
+Register-ScootGitAlias -Scope Global    # optional: enable `git netscoot` (one git-config line)
 ```
 
 ### Alternative / offline installation
@@ -101,52 +103,52 @@ If you cannot reach the Gallery, want to read the installer before running it, o
 specific release, install from the GitHub release instead. It downloads a release and copies the five
 module folders onto your CurrentUser module path.
 
-Download [the installer](https://github.com/kappasims/dotnet-move/blob/master/install.ps1), read it, then run it:
+Download [the installer](https://github.com/kappasims/netscoot/blob/master/install.ps1), read it, then run it:
 
 ```powershell
-irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 -OutFile install.ps1
+irm https://raw.githubusercontent.com/kappasims/netscoot/master/install.ps1 -OutFile install.ps1
 # look it over, then:
 ./install.ps1
 ```
 
 **No-script option:** download the latest release zip from the
-[Releases page](https://github.com/kappasims/dotnet-move/releases), unzip it, and copy the
-`DotnetMove.Shared`, `DotnetMove.Core`, `DotnetMove.Unity`, `DotnetMove.Native`, and `DotnetMove`
+[Releases page](https://github.com/kappasims/netscoot/releases), unzip it, and copy the
+`Netscoot.Shared`, `Netscoot.Core`, `Netscoot.Unity`, `Netscoot.Native`, and `netscoot`
 folders out of `src/` into any directory on your `$env:PSModulePath`.
 
-Or pipe it straight in for a **YOLO install** if you are comfortable running [the install script](https://github.com/kappasims/dotnet-move/blob/master/install.ps1) unread:
+Or pipe it straight in for a **YOLO install** if you are comfortable running [the install script](https://github.com/kappasims/netscoot/blob/master/install.ps1) unread:
 
 ```powershell
-irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 | iex
+irm https://raw.githubusercontent.com/kappasims/netscoot/master/install.ps1 | iex
 ```
 
-DotnetMove keeps an undo journal in a per-user data directory so you can reverse a move later (see [Undoing](#undoing)).
+netscoot keeps an undo journal in a per-user data directory so you can reverse a move later (see [Undoing](#undoing)).
 It is **on by default**. To install with it off, add `-NoJournal` (sets `git config --global
-dotnetmove.journal false`, or the `DOTNETMOVE_JOURNAL` env var with no git; updates never turn it back on):
+netscoot.journal false`, or the `NETSCOOT_JOURNAL` env var with no git; updates never turn it back on):
 
 ```powershell
 ./install.ps1 -NoJournal
 ```
 
-To work on DotnetMove itself, install from a clone instead, or import directly:
+To work on netscoot itself, install from a clone instead, or import directly:
 
 ```powershell
 ./build.ps1 -Task Install                          # copy this clone's modules to your module path
-Import-Module ./src/DotnetMove/DotnetMove.psd1     # or import straight from the clone (loads Shared + all engines)
+Import-Module ./src/Netscoot/Netscoot.psd1     # or import straight from the clone (loads Shared + all engines)
 ```
 
 ## Updating
 
-Nothing updates automatically. For Gallery installs, `Update-Module DotnetMove` is the one-liner.
-Otherwise `Test-DotnetMoveUpdate` checks GitHub for a newer release and `Update-DotnetMove` (or
+Nothing updates automatically. For Gallery installs, `Update-Module Netscoot` is the one-liner.
+Otherwise `Test-ScootUpdate` checks GitHub for a newer release and `Update-Scoot` (or
 re-running the installer) applies it in place. The Claude Code skills are separate files: refresh
 them with `git pull` in a clone, or re-sync `.claude/skills` if installed globally.
 
-**Opt-in auto-check (enterprise):** `Test-DotnetMoveUpdate -EnableAutoUpdate` is the gated entry
-point for a SessionStart hook or other automation. It runs only when `$env:DOTNETMOVE_AUTOUPDATE` is
+**Opt-in auto-check (enterprise):** `Test-ScootUpdate -EnableAutoUpdate` is the gated entry
+point for a SessionStart hook or other automation. It runs only when `$env:NETSCOOT_AUTOUPDATE` is
 truthy (`1`/`true`/`on`), so it stays a silent no-op until a user opts in, and it never updates
-(read-only). IT can disable it fleet-wide, and block `Update-DotnetMove` from self-updating, by
-pushing `DOTNETMOVE_AUTOUPDATE=false` via Group Policy / Intune / a profile (`-Force` overrides).
+(read-only). IT can disable it fleet-wide, and block `Update-Scoot` from self-updating, by
+pushing `NETSCOOT_AUTOUPDATE=false` via Group Policy / Intune / a profile (`-Force` overrides).
 
 # Usage
 
@@ -160,7 +162,7 @@ Level 1, one command for anything:
 
 | <small>Command</small> | <small>Moves</small> |
 |:---|:---|
-| <small>`Move-Dotnet`</small> | <small>any supported file or folder; detects the type and routes</small> |
+| <small>`Invoke-Scoot`</small> | <small>any supported file or folder; detects the type and routes</small> |
 
 Level 2, the everyday movers: hand them a file or a folder and they route to the right specialist.
 
@@ -203,9 +205,9 @@ Every move supports `-WhatIf`/`-Confirm`; `-Force` enables the no-git fallback.
 
 ## Undoing
 
-Every move is recorded in a journal in a per-user data directory (`%LOCALAPPDATA%\dotnet-move` on
-Windows, `~/Library/Application Support/dotnet-move` on macOS, `~/.local/share/dotnet-move` on Linux),
-one file per repository, so you can reverse it later, even from a fresh session. `Undo-DotnetMove` replays the recorded inverse (the same move with
+Every move is recorded in a journal in a per-user data directory (`%LOCALAPPDATA%\netscoot` on
+Windows, `~/Library/Application Support/netscoot` on macOS, `~/.local/share/netscoot` on Linux),
+one file per repository, so you can reverse it later, even from a fresh session. `Undo-Scoot` replays the recorded inverse (the same move with
 source and destination swapped), re-reconciling from the current state rather than restoring a stale
 snapshot. By default it reverses the most recent move; `-Id` reverses a specific entry, and `-List`
 shows what is available.
@@ -219,11 +221,11 @@ Undo applies to the move commands. `Sync-Solution` and `Repair-SolutionReference
 both take `-WhatIf` to preview before they change anything.
 
 ```powershell
-Undo-DotnetMove -List          # what can be undone (oldest first)
-Undo-DotnetMove -WhatIf        # preview reversing the most recent move
-Undo-DotnetMove                # reverse the most recent move and pop it; call again to walk back further
-Undo-DotnetMove -Id a1b2c3d4   # reverse a specific entry (prefer reverse order; later moves may depend on it)
-Undo-DotnetMove -All           # reverse every move, newest first (high-impact: prompts; -Force to skip, -WhatIf to preview)
+Undo-Scoot -List          # what can be undone (oldest first)
+Undo-Scoot -WhatIf        # preview reversing the most recent move
+Undo-Scoot                # reverse the most recent move and pop it; call again to walk back further
+Undo-Scoot -Id a1b2c3d4   # reverse a specific entry (prefer reverse order; later moves may depend on it)
+Undo-Scoot -All           # reverse every move, newest first (high-impact: prompts; -Force to skip, -WhatIf to preview)
 ```
 
 `-All` walks back the entire history in one operation, so it prompts for a yes/no confirmation that
@@ -233,21 +235,21 @@ the reversals first.
 The journal is **on by default** and stays out of the working tree: it lives in the per-user data
 directory above, so git never tracks it, `git status` never shows it, and your own `.gitignore` is
 left untouched. It survives `git clean` and repository deletion, and enterprise backup (Time Machine,
-roaming profiles, JAMF/Intune) covers it. Set `$env:DOTNETMOVE_JOURNAL_HOME` to relocate the store
+roaming profiles, JAMF/Intune) covers it. Set `$env:NETSCOOT_JOURNAL_HOME` to relocate the store
 (for example to a roaming or managed path).
 
-To opt out, turn it off per repository (or for every repository) with `Set-DotnetMoveJournal`, which
-writes the `dotnetmove.journal` git setting:
+To opt out, turn it off per repository (or for every repository) with `Set-ScootJournal`, which
+writes the `netscoot.journal` git setting:
 
 ```powershell
-Set-DotnetMoveJournal -Enabled $false           # this repository only
-Set-DotnetMoveJournal -Enabled $false -Global    # every repository on the machine
-Clear-DotnetMoveJournal                          # also discard the existing undo history
+Set-ScootJournal -Enabled $false           # this repository only
+Set-ScootJournal -Enabled $false -Global    # every repository on the machine
+Clear-ScootJournal                          # also discard the existing undo history
 ```
 
 The enabled state resolves in this order, first match wins: an internal suppression flag (set by
-`Undo` around its own reverse move) → `git config dotnetmove.journal` (local wins over global, the
-durable git setting) → the `DOTNETMOVE_JOURNAL` env var (`off`/`0`/`false`; the no-git escape hatch)
+`Undo` around its own reverse move) → `git config netscoot.journal` (local wins over global, the
+durable git setting) → the `NETSCOOT_JOURNAL` env var (`off`/`0`/`false`; the no-git escape hatch)
 → on. Installing with `-NoJournal` writes the global git setting (see [Install](#install)). Because
 the git setting outranks the env var and rides along with your git config, installing or updating
 never switches journaling back on for you.
@@ -257,7 +259,7 @@ anything beyond a 1 MB cap, always keeping the newest move.
 
 ## Inspecting
 
-DotnetMove can be used purely to inspect a repository. These commands are read-only and change nothing.
+netscoot can be used purely to inspect a repository. These commands are read-only and change nothing.
 
 | <small>Command</small> | <small>Reports</small> |
 |:---|:---|
@@ -266,13 +268,13 @@ DotnetMove can be used purely to inspect a repository. These commands are read-o
 | <small>`Find-PathReference`</small> | <small>path references in build/CI/hook scripts that no move reconciles</small> |
 | <small>`Test-UnityMetaIntegrity`</small> | <small>missing or orphan Unity `.meta`</small> |
 | <small>`Resolve-MoveEngine`</small> | <small>which engine a given path classifies to</small> |
-| <small>`Get-DotnetMoveCapability`</small> | <small>whether git and dotnet are present, plus the platform</small> |
-| <small>`Test-DotnetMoveUpdate`</small> | <small>whether a newer DotnetMove release is available on GitHub</small> |
+| <small>`Get-ScootCapability`</small> | <small>whether git and dotnet are present, plus the platform</small> |
+| <small>`Test-ScootUpdate`</small> | <small>whether a newer netscoot release is available on GitHub</small> |
 
 ## Repairing
 
 It can also fix a repository whose solution entries or `<ProjectReference>`s were left dangling by a
-move done outside DotnetMove, without moving anything itself. `Repair-SolutionReferences` finds
+move done outside netscoot, without moving anything itself. `Repair-SolutionReferences` finds
 entries pointing at a project that no longer exists at the recorded path and reports each as
 relocatable, missing, or ambiguous (read-only by default).
 
@@ -291,12 +293,12 @@ adds, never removes; preview with `-WhatIf` first.
 ## PowerShell usage
 
 ```powershell
-Import-Module DotnetMove   # all engines (native is loaded on Windows only)
+Import-Module Netscoot   # all engines (native is loaded on Windows only)
 
 # Top-level dispatcher; works for any supported type:
-Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
-Move-Dotnet -Path ./build/helpers.ps1 -Destination ./shared/helpers.ps1
-Move-Dotnet -Path ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/Tarragon
+Invoke-Scoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
+Invoke-Scoot -Path ./build/helpers.ps1 -Destination ./shared/helpers.ps1
+Invoke-Scoot -Path ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/Tarragon
 
 # Or call an engine command directly:
 Move-DotnetProject     -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
@@ -313,20 +315,20 @@ Test-SolutionConsistency  -RepoRoot .
 
 ## git usage
 
-An opt-in alias gives `git dotnetmv`, a single verb that forwards to `Move-Dotnet`. It sets one
+An opt-in alias gives `git netscoot`, a single verb that forwards to `Invoke-Scoot`. It sets one
 reversible git-config line and does not edit PATH or install anything.
 
 ```powershell
-Register-DotnetMvGitAlias -Scope Local -WhatIf   # preview the exact git config command
-Register-DotnetMvGitAlias -Scope Local           # set it
-Unregister-DotnetMvGitAlias -Scope Local         # undo
+Register-ScootGitAlias -Scope Local -WhatIf   # preview the exact git config command
+Register-ScootGitAlias -Scope Local           # set it
+Unregister-ScootGitAlias -Scope Local         # undo
 ```
 
 ```sh
-git dotnetmv src/Tarragon/Tarragon.csproj libs/Tarragon --whatif   # dry run
-git dotnetmv src/Tarragon/Tarragon.csproj libs/Tarragon            # do it (like git mv, no prompt)
-git dotnetmv Assets/Plugins/Tarragon Assets/Lib/Tarragon      # routes to the Unity engine
-git dotnetmv Aleppo/Aleppo.vcxproj native/Aleppo          # routes to the native engine (Windows)
+git netscoot src/Tarragon/Tarragon.csproj libs/Tarragon --whatif   # dry run
+git netscoot src/Tarragon/Tarragon.csproj libs/Tarragon            # do it (like git mv, no prompt)
+git netscoot Assets/Plugins/Tarragon Assets/Lib/Tarragon      # routes to the Unity engine
+git netscoot Aleppo/Aleppo.vcxproj native/Aleppo          # routes to the native engine (Windows)
 ```
 
 Flags: `--whatif` (preview), `--force` (plain `Move-Item` fallback when git is unavailable),
@@ -378,15 +380,15 @@ Every move upholds these guarantees:
 ./build.ps1 -Task Release -Version 1.2.0           # prepare on develop: stamp manifests, gate on analyze + tests, commit + push
 ./build.ps1 -Task Release -Version 1.2.0 -Publish  # finalize (after CI green): fast-forward master, tag vX.Y.Z, GitHub release
 ./build.ps1 -Task Publish                          # stage + validate the single bundled package (dry run)
-./build.ps1 -Task Publish -ApiKey <key>            # publish that one DotnetMove package to the PowerShell Gallery
+./build.ps1 -Task Publish -ApiKey <key>            # publish that one netscoot package to the PowerShell Gallery
 ```
 
 Building and testing needs PowerShell 7+ (or Windows PowerShell 5.1), the .NET SDK (the suite
 creates and builds real projects), git, and Pester 5. `-Task Test` prints the install command for
 Pester if it is missing; nothing here auto-installs.
 
-`Install` copies every module (Shared, the engines, and the `DotnetMove` umbrella) to your module
-path. Once it is on `$env:PSModulePath`, `Import-Module DotnetMove` loads Shared and every
+`Install` copies every module (Shared, the engines, and the `netscoot` umbrella) to your module
+path. Once it is on `$env:PSModulePath`, `Import-Module Netscoot` loads Shared and every
 available engine in one call (native on Windows only).
 
 Per-push CI (`.github/workflows/ci.yml`) runs the suite on windows-latest (PowerShell 7) and
@@ -422,28 +424,28 @@ publishes the single bundled package (a dry run without `-ApiKey`).
 ## Modules
 
 Split by platform so the cross-platform core never ships native, Windows-only code. It ships as
-one bundled Gallery package: the engines declare no `RequiredModules`; the `DotnetMove` umbrella
+one bundled Gallery package: the engines declare no `RequiredModules`; the `netscoot` umbrella
 loads Shared first, then each available engine, with `-Global` so all their commands surface
 together.
 
-- `DotnetMove.Shared`: cross-platform path/git/MSBuild/solution helpers used by the engines. Not
+- `Netscoot.Shared`: cross-platform path/git/MSBuild/solution helpers used by the engines. Not
   imported directly.
-- `DotnetMove.Core`: cross-platform (PowerShell 7 and Windows PowerShell 5.1). The .NET and
-  PowerShell engines, the `Move-Dotnet` dispatcher, and the utilities.
-- `DotnetMove.Unity`: cross-platform Unity engine.
-- `DotnetMove.Native`: Windows-only native C++ engine (loaded best-effort; absent elsewhere).
-- `DotnetMove`: the umbrella package (what you `Import-Module`).
+- `Netscoot.Core`: cross-platform (PowerShell 7 and Windows PowerShell 5.1). The .NET and
+  PowerShell engines, the `Invoke-Scoot` dispatcher, and the utilities.
+- `Netscoot.Unity`: cross-platform Unity engine.
+- `Netscoot.Native`: Windows-only native C++ engine (loaded best-effort; absent elsewhere).
+- `netscoot`: the umbrella package (what you `Import-Module`).
 
 ## Layout
 
 ```
 build.ps1                Test / Analyze / Install / Docs / Release / Publish tasks
 .github/workflows/      ci.yml (push: Windows + PS 5.1 + lint); platforms.yml (on-demand: Linux + macOS)
-src/DotnetMove.Shared/   shared helpers module (Common/ + Dotnet/); loaded by the umbrella first
-src/DotnetMove/          umbrella module (loads Shared + every available engine)
-src/DotnetMove.Core/     cross-platform module; Private/ = helpers, Public/ = cmdlets
-src/DotnetMove.Native/   Windows-only native module
-src/DotnetMove.Unity/    cross-platform Unity module
+src/Netscoot.Shared/   shared helpers module (Common/ + Dotnet/); loaded by the umbrella first
+src/Netscoot/          umbrella module (loads Shared + every available engine)
+src/Netscoot.Core/     cross-platform module; Private/ = helpers, Public/ = cmdlets
+src/Netscoot.Native/   Windows-only native module
+src/Netscoot.Unity/    cross-platform Unity module
 tests/                   Pester tests + fixtures
 .claude/skills/          restructure-dotnet / -powershell / -unity / -native
 ```
@@ -459,11 +461,11 @@ tests/                   Pester tests + fixtures
 
 | <small>Command</small> | <small>What it does</small> |
 |:---|:---|
-| <small>[Clear-DotnetMoveJournal](#clear-dotnetmovejournal)</small> | <small>Delete a repository's move journal, discarding its undo history.</small> |
+| <small>[Clear-ScootJournal](#clear-scootjournal)</small> | <small>Delete a repository's move journal, discarding its undo history.</small> |
 | <small>[Find-PathReference](#find-pathreference)</small> | <small>Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party tool reconciles.</small> |
-| <small>[Get-DotnetMoveCapability](#get-dotnetmovecapability)</small> | <small>Resolve DotnetMove's external-tool capabilities (git, dotnet) and platform.</small> |
+| <small>[Get-ScootCapability](#get-scootcapability)</small> | <small>Resolve Netscoot's external-tool capabilities (git, dotnet) and platform.</small> |
 | <small>[Get-SolutionInventory](#get-solutioninventory)</small> | <small>List the full contents of every solution in a repository - projects of any type, solution folders, and solution items - plus on-disk projects that no solution references.</small> |
-| <small>[Move-Dotnet](#move-dotnet)</small> | <small>Move any supported item and reconcile references, routing by detected type to the right per-namespace front door.</small> |
+| <small>[Invoke-Scoot](#invoke-scoot)</small> | <small>Move any supported item and reconcile references, routing by detected type to the right per-namespace front door.</small> |
 | <small>[Move-DotnetFile](#move-dotnetfile)</small> | <small>Move a single managed .NET file and reconcile references, routing by extension to the right specialist.</small> |
 | <small>[Move-DotnetFolder](#move-dotnetfolder)</small> | <small>Move a folder of managed .NET projects, reconciling references.</small> |
 | <small>[Move-DotnetProject](#move-dotnetproject)</small> | <small>Move a .NET project folder and reconcile every solution and project reference that points at it, delegating all path/GUID changes to the dotnet CLI.</small> |
@@ -473,16 +475,16 @@ tests/                   Pester tests + fixtures
 | <small>[Move-PowerShellModule](#move-powershellmodule)</small> | <small>Move a PowerShell module folder and reconcile its manifest, delegating manifest edits to Update-ModuleManifest rather than hand-editing the .psd1.</small> |
 | <small>[Move-PowerShellScript](#move-powershellscript)</small> | <small>Move a standalone .ps1 script and fix the relative paths in scripts that dot-source or call it (and the moved script's own dot-source/call paths).</small> |
 | <small>[Move-Solution](#move-solution)</small> | <small>Move a solution file (.sln/.slnx) and rebase the relative project paths it stores, so every project it references still resolves from the solution's new location.</small> |
-| <small>[Register-DotnetMvGitAlias](#register-dotnetmvgitalias)</small> | <small>Opt-in: register a `git dotnetmv` alias pointing at DotnetMove's forwarder.</small> |
+| <small>[Register-ScootGitAlias](#register-scootgitalias)</small> | <small>Opt-in: register a `git netscoot` alias pointing at Netscoot's forwarder.</small> |
 | <small>[Repair-SolutionReferences](#repair-solutionreferences)</small> | <small>Scan a repository for broken solution membership and dangling ProjectReferences and repair them by re-pointing each entry at the project's new location.</small> |
 | <small>[Resolve-MoveEngine](#resolve-moveengine)</small> | <small>Classify a path to the reconciliation engine that should move it: dotnet, native, unity, ps-script, ps-module, or unknown.</small> |
-| <small>[Set-DotnetMoveJournal](#set-dotnetmovejournal)</small> | <small>Turn the move journal on or off, per repository (default) or for every repository (`-Global`).</small> |
+| <small>[Set-ScootJournal](#set-scootjournal)</small> | <small>Turn the move journal on or off, per repository (default) or for every repository (`-Global`).</small> |
 | <small>[Sync-Solution](#sync-solution)</small> | <small>Resolve solution-membership divergence by adding each project to the solutions that are missing it, so every solution in the repository lists the same projects.</small> |
-| <small>[Test-DotnetMoveUpdate](#test-dotnetmoveupdate)</small> | <small>Check GitHub for a newer DotnetMove release and report whether the installed version is behind.</small> |
+| <small>[Test-ScootUpdate](#test-scootupdate)</small> | <small>Check GitHub for a newer netscoot release and report whether the installed version is behind.</small> |
 | <small>[Test-SolutionConsistency](#test-solutionconsistency)</small> | <small>Report projects whose membership diverges across the solution files in a repository (present in some solutions but absent from others).</small> |
-| <small>[Undo-DotnetMove](#undo-dotnetmove)</small> | <small>Reverse a previous DotnetMove move, using the journal at the repository root.</small> |
-| <small>[Unregister-DotnetMvGitAlias](#unregister-dotnetmvgitalias)</small> | <small>Remove the `git dotnetmv` alias registered by Register-DotnetMvGitAlias.</small> |
-| <small>[Update-DotnetMove](#update-dotnetmove)</small> | <small>Update an installed DotnetMove to the latest GitHub release, in place.</small> |
+| <small>[Undo-Scoot](#undo-scoot)</small> | <small>Reverse a previous netscoot move, using the journal at the repository root.</small> |
+| <small>[Unregister-ScootGitAlias](#unregister-scootgitalias)</small> | <small>Remove the `git netscoot` alias registered by Register-ScootGitAlias.</small> |
+| <small>[Update-Scoot](#update-scoot)</small> | <small>Update an installed netscoot to the latest GitHub release, in place.</small> |
 
 **Native C++ (Windows)**
 
@@ -499,21 +501,21 @@ tests/                   Pester tests + fixtures
 
 ---
 
-### Clear-DotnetMoveJournal
+### Clear-ScootJournal
 
 Delete a repository's move journal, discarding its undo history.
 
 **Syntax**
 
 ```powershell
-Clear-DotnetMoveJournal [[-RepoRoot] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+Clear-ScootJournal [[-RepoRoot] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 Removes this repository's journal file from the per-user store (LocalAppData on Windows,
 ~/Library/Application Support on macOS, ~/.local/share on Linux). The journal prunes itself on every write (entries older than the age
 cap, then oldest-first past the size cap), so this is rarely needed; use it to wipe the undo
-history outright. After clearing, Undo-DotnetMove has nothing to reverse until the next move.
-It does not change whether journaling is on - use Set-DotnetMoveJournal for that.
+history outright. After clearing, Undo-Scoot has nothing to reverse until the next move.
+It does not change whether journaling is on - use Set-ScootJournal for that.
 
 **Parameters**
 
@@ -531,10 +533,10 @@ None.
 
 ```powershell
 # Discard the undo history for this repository
-Clear-DotnetMoveJournal
+Clear-ScootJournal
 
 # Preview without deleting
-Clear-DotnetMoveJournal -WhatIf
+Clear-ScootJournal -WhatIf
 ```
 
 ---
@@ -573,11 +575,11 @@ Run it before a move (to see what will break) or after (searching the old path).
 
 **Output**
 
-Returns zero or more [DotnetMove.PathReference](#dotnetmovepathreference), collected as an array (`$null` when none).
+Returns zero or more [Netscoot.PathReference](#netscootpathreference), collected as an array (`$null` when none).
 One per matching line.
 
 ```text
-DotnetMove.PathReference
+Netscoot.PathReference
   File        string  repo-relative file containing the line
   Line        int     1-based line number
   Confidence  string  High | Low
@@ -599,15 +601,15 @@ Find-PathReference -Path ./lib/Tarragon.csproj -AdditionalGlob 'deploy/*.sh','*.
 
 ---
 
-### Get-DotnetMoveCapability
+### Get-ScootCapability
 
-Resolve DotnetMove's external-tool capabilities (git, dotnet) and platform. This is the
-canonical "what can I do here" probe - DotnetMove does not auto-install anything.
+Resolve Netscoot's external-tool capabilities (git, dotnet) and platform. This is the
+canonical "what can I do here" probe - netscoot does not auto-install anything.
 
 **Syntax**
 
 ```powershell
-Get-DotnetMoveCapability [<CommonParameters>]
+Get-ScootCapability [<CommonParameters>]
 ```
 
 PowerShell has no manifest mechanism to declare external-CLI prerequisites, so this is a
@@ -616,21 +618,21 @@ target), and git is optional (without it, moves fall back to a plain move (Power
 
 **Output**
 
-Returns a single [DotnetMove.Capability](#dotnetmovecapability).
+Returns a single [Netscoot.Capability](#netscootcapability).
 
 ```text
-DotnetMove.Capability
+Netscoot.Capability
   Platform            string
   PSEdition           string
   DotnetSupportsSlnx  bool
-  Git                 DotnetMove.ToolInfo
-  Dotnet              DotnetMove.ToolInfo
+  Git                 Netscoot.ToolInfo
+  Dotnet              Netscoot.ToolInfo
 ```
 
 **Examples**
 
 ```powershell
-Get-DotnetMoveCapability
+Get-ScootCapability
 ```
 
 Returns an object with Platform, PSEdition, Git, Dotnet, and DotnetSupportsSlnx.
@@ -665,16 +667,16 @@ Read-only: one record per item, so you can group, filter, or format it however y
 
 **Output**
 
-Returns zero or more [DotnetMove.SolutionItem](#dotnetmovesolutionitem), collected as an array.
+Returns zero or more [Netscoot.SolutionItem](#netscootsolutionitem), collected as an array.
 One per item.
 
 ```text
-DotnetMove.SolutionItem
-  Solution  string                       repo-relative, or '(none)' for an unreferenced project
-  Kind      DotnetMove.SolutionItemKind  enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
-  Type      string                       project extension without the dot, else empty
+Netscoot.SolutionItem
+  Solution  string                     repo-relative, or '(none)' for an unreferenced project
+  Kind      Netscoot.SolutionItemKind  enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
+  Type      string                     project extension without the dot, else empty
   Name      string
-  Path      string                       as stored in the solution, or repo-relative
+  Path      string                     as stored in the solution, or repo-relative
 ```
 
 **Examples**
@@ -689,27 +691,27 @@ Get-SolutionInventory | Where-Object Kind -eq 'UnreferencedProject'
 # Only loose solution items (e.g. a README in a solution folder)
 Get-SolutionInventory | Where-Object Kind -eq 'SolutionItem'
 
-# Kind is the [DotnetMove.SolutionItemKind] enum, so this also works
-Get-SolutionInventory | Where-Object Kind -eq ([DotnetMove.SolutionItemKind]::UnreferencedProject)
+# Kind is the [Netscoot.SolutionItemKind] enum, so this also works
+Get-SolutionInventory | Where-Object Kind -eq ([Netscoot.SolutionItemKind]::UnreferencedProject)
 ```
 
 ---
 
-### Move-Dotnet
+### Invoke-Scoot
 
 Move any supported item and reconcile references, routing by detected type to the right
-per-namespace front door. The single top-level entry point (the `git dotnetmv` alias
+per-namespace front door. The single top-level entry point (the `git netscoot` alias
 calls this).
 
 **Syntax**
 
 ```powershell
-Move-Dotnet [-Path] <string> -Destination <string> [-RepoRoot <string>] [-NoBuild] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
+Invoke-Scoot [-Path] <string> -Destination <string> [-RepoRoot <string>] [-NoBuild] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 Classifies the target with Resolve-MoveEngine, then dispatches to the namespace front door
 that performs the appropriate file/folder move (see Output for the routing). The Unity and
-native C++ front doors load DotnetMove.Unity / DotnetMove.Native on demand.
+native C++ front doors load Netscoot.Unity / Netscoot.Native on demand.
 
 "dotnet" here is the .NET-platform umbrella (CLR/CoreCLR), not just the dotnet CLI - the
 verb spans every engine. Each engine's behavior lives in its own cmdlet; this only routes.
@@ -732,14 +734,14 @@ target's engine accepts them.
 **Output**
 
 ```text
-.csproj  .fsproj  .vbproj  ->  DotnetMove.MoveResult
-folder of .NET projects    ->  DotnetMove.TreeMoveResult
-.sln  .slnx                ->  DotnetMove.SolutionMoveResult
-.props  .targets           ->  DotnetMove.ImportMoveResult
-.ps1                       ->  DotnetMove.ScriptMoveResult
-.psd1  module folder       ->  DotnetMove.PSModuleMoveResult
-.vcxproj                   ->  DotnetMove.NativeMoveResult
-Unity asset  .meta         ->  DotnetMove.UnityMoveResult
+.csproj  .fsproj  .vbproj  ->  Netscoot.MoveResult
+folder of .NET projects    ->  Netscoot.TreeMoveResult
+.sln  .slnx                ->  Netscoot.SolutionMoveResult
+.props  .targets           ->  Netscoot.ImportMoveResult
+.ps1                       ->  Netscoot.ScriptMoveResult
+.psd1  module folder       ->  Netscoot.PSModuleMoveResult
+.vcxproj                   ->  Netscoot.NativeMoveResult
+Unity asset  .meta         ->  Netscoot.UnityMoveResult
 ```
 
 These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields; they are plain pscustomobjects with no shared base type. See [Output types](#output-types).
@@ -748,19 +750,19 @@ These share a common shape (Engine, Source, Destination, Performed, SkippedCount
 
 ```powershell
 # Preview any move - detects the engine, changes nothing
-Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
+Invoke-Scoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
 
 # Rename: ./libs/Tarragon does not exist yet, so src/Tarragon becomes libs/Tarragon
-Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
+Invoke-Scoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
 
 # Move into an existing folder: ./libs exists, so it lands at ./libs/Tarragon
-Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs
+Invoke-Scoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs
 
 # Any supported type routes through the same call (here a PowerShell module folder)
-Move-Dotnet -Path ./tools/Mayo -Destination ./modules/Mayo
+Invoke-Scoot -Path ./tools/Mayo -Destination ./modules/Mayo
 
 # No git in the repository? -Force falls back to a plain Move-Item (history not preserved)
-Move-Dotnet -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -Force
+Invoke-Scoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -Force
 ```
 
 ---
@@ -798,9 +800,9 @@ Move-UnityAsset. `-WhatIf`/`-Confirm`/`-Verbose` propagate to the specialist; `-
 **Output**
 
 ```text
-.csproj  .fsproj  .vbproj  ->  Move-DotnetProject   ->  DotnetMove.MoveResult
-.sln  .slnx                ->  Move-Solution        ->  DotnetMove.SolutionMoveResult
-.props  .targets           ->  Move-MSBuildImport   ->  DotnetMove.ImportMoveResult
+.csproj  .fsproj  .vbproj  ->  Move-DotnetProject   ->  Netscoot.MoveResult
+.sln  .slnx                ->  Move-Solution        ->  Netscoot.SolutionMoveResult
+.props  .targets           ->  Move-MSBuildImport   ->  Netscoot.ImportMoveResult
 ```
 
 These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields; they are plain pscustomobjects with no shared base type. See [Output types](#output-types).
@@ -853,11 +855,11 @@ propagate; `-Force`/`-RepoRoot`/`-NoBuild` are forwarded.
 
 **Output**
 
-Returns a single [DotnetMove.TreeMoveResult](#dotnetmovetreemoveresult).
+Returns a single [Netscoot.TreeMoveResult](#netscoottreemoveresult).
 From Move-DotnetProjectTree.
 
 ```text
-DotnetMove.TreeMoveResult
+Netscoot.TreeMoveResult
   Engine         string
   Source         string
   Destination    string
@@ -912,16 +914,16 @@ terminating error honoring `-ErrorAction`).
 | <small>`‑Strict`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Escalate solution-divergence warnings to non-terminating errors.</small> |
 | <small>`‑NoBuild`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip the verifying 'dotnet build' at the end.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
-| <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-DotnetMove will not see this move).</small> |
+| <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-Scoot will not see this move).</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
 
 **Output**
 
-Returns a single [DotnetMove.MoveResult](#dotnetmovemoveresult).
+Returns a single [Netscoot.MoveResult](#netscootmoveresult).
 
 ```text
-DotnetMove.MoveResult
+Netscoot.MoveResult
   Engine         string
   Source         string
   Destination    string
@@ -990,16 +992,16 @@ confirmed plain-move fallback via `-Force` / ShouldContinue); supports `-WhatIf`
 | <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan. Defaults to the enclosing git repository root.</small> |
 | <small>`‑NoBuild`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip the verifying build of the moved projects.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
-| <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-DotnetMove will not see this move).</small> |
+| <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-Scoot will not see this move).</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
 
 **Output**
 
-Returns a single [DotnetMove.TreeMoveResult](#dotnetmovetreemoveresult).
+Returns a single [Netscoot.TreeMoveResult](#netscoottreemoveresult).
 
 ```text
-DotnetMove.TreeMoveResult
+Netscoot.TreeMoveResult
   Engine         string
   Source         string
   Destination    string
@@ -1066,16 +1068,16 @@ fallback via `-Force`). Supports `-WhatIf`.
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>New file path (or a folder, in which case the file keeps its name).</small> |
 | <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for importers. Defaults to the enclosing git repository root.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
-| <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-DotnetMove will not see this move).</small> |
+| <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-Scoot will not see this move).</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
 
 **Output**
 
-Returns a single [DotnetMove.ImportMoveResult](#dotnetmoveimportmoveresult).
+Returns a single [Netscoot.ImportMoveResult](#netscootimportmoveresult).
 
 ```text
-DotnetMove.ImportMoveResult
+Netscoot.ImportMoveResult
   Engine           string
   Source           string
   Destination      string
@@ -1133,8 +1135,8 @@ no RepoRoot).
 **Output**
 
 ```text
-.ps1                   ->  Move-PowerShellScript  ->  DotnetMove.ScriptMoveResult
-.psd1  module folder   ->  Move-PowerShellModule  ->  DotnetMove.PSModuleMoveResult
+.ps1                   ->  Move-PowerShellScript  ->  Netscoot.ScriptMoveResult
+.psd1  module folder   ->  Move-PowerShellModule  ->  Netscoot.PSModuleMoveResult
 ```
 
 These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields; they are plain pscustomobjects with no shared base type. See [Output types](#output-types).
@@ -1179,16 +1181,16 @@ and any path computed at runtime, cannot be reconciled automatically.
 | <small>`‑ModulePath`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Path to the module folder, or directly to its .psd1 manifest.</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>Where to move the module folder, following `git mv` rules: an existing directory means move into it (keeping the name); otherwise it is the module's new folder path. Errors if it exists.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
-| <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-DotnetMove will not see this move).</small> |
+| <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-Scoot will not see this move).</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
 
 **Output**
 
-Returns a single [DotnetMove.PSModuleMoveResult](#dotnetmovepsmodulemoveresult).
+Returns a single [Netscoot.PSModuleMoveResult](#netscootpsmodulemoveresult).
 
 ```text
-DotnetMove.PSModuleMoveResult
+Netscoot.PSModuleMoveResult
   Engine        string
   Source        string
   Destination   string
@@ -1246,16 +1248,16 @@ supported; dotnet not required.
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>New file path (or a folder, in which case the script keeps its name).</small> |
 | <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for referencing scripts. Defaults to the enclosing git repository root.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
-| <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-DotnetMove will not see this move).</small> |
+| <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-Scoot will not see this move).</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
 
 **Output**
 
-Returns a single [DotnetMove.ScriptMoveResult](#dotnetmovescriptmoveresult).
+Returns a single [Netscoot.ScriptMoveResult](#netscootscriptmoveresult).
 
 ```text
-DotnetMove.ScriptMoveResult
+Netscoot.ScriptMoveResult
   Engine            string
   Source            string
   Destination       string
@@ -1310,16 +1312,16 @@ supported. dotnet is not required.
 | <small>`‑Path`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>The .sln/.slnx file to move. Accepts pipeline input.</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>New file path (or a folder, in which case the solution keeps its name).</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
-| <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-DotnetMove will not see this move).</small> |
+| <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-Scoot will not see this move).</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
 
 **Output**
 
-Returns a single [DotnetMove.SolutionMoveResult](#dotnetmovesolutionmoveresult).
+Returns a single [Netscoot.SolutionMoveResult](#netscootsolutionmoveresult).
 
 ```text
-DotnetMove.SolutionMoveResult
+Netscoot.SolutionMoveResult
   Engine           string
   Source           string
   Destination      string
@@ -1343,23 +1345,23 @@ Move-Solution -Path ./Demo.sln -Destination ./build/Demo.sln
 
 ---
 
-### Register-DotnetMvGitAlias
+### Register-ScootGitAlias
 
-Opt-in: register a `git dotnetmv` alias pointing at DotnetMove's forwarder. Sets a single
+Opt-in: register a `git netscoot` alias pointing at Netscoot's forwarder. Sets a single
 reversible git-config line - it never edits PATH or installs anything.
 
 **Syntax**
 
 ```powershell
-Register-DotnetMvGitAlias [[-Scope] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+Register-ScootGitAlias [[-Scope] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-Adds `alias.dotnetmv = !pwsh -NoProfile -File <forwarder>` to git config so
-`git dotnetmv <src> <dst>` works. "dotnet" is the .NET-platform umbrella: the verb
+Adds `alias.netscoot = !pwsh -NoProfile -File <forwarder>` to git config so
+`git netscoot <src> <dst>` works. "dotnet" is the .NET-platform umbrella: the verb
 branches by target type to the right engine - the .NET project model
 (csproj/sln/props), Unity (.meta/.asmdef), PowerShell (.ps1/.psd1), or native C++
 (.vcxproj). Scope is your choice (repository-local or global). Undo with
-Unregister-DotnetMvGitAlias. Use `-WhatIf` to see the exact `git config` command.
+Unregister-ScootGitAlias. Use `-WhatIf` to see the exact `git config` command.
 
 **Parameters**
 
@@ -1371,10 +1373,10 @@ Unregister-DotnetMvGitAlias. Use `-WhatIf` to see the exact `git config` command
 
 **Output**
 
-Returns a single [DotnetMove.GitAlias](#dotnetmovegitalias).
+Returns a single [Netscoot.GitAlias](#netscootgitalias).
 
 ```text
-DotnetMove.GitAlias
+Netscoot.GitAlias
   Alias      string
   Scope      string
   Forwarder  string
@@ -1385,13 +1387,13 @@ DotnetMove.GitAlias
 
 ```powershell
 # Preview the exact git config command (changes nothing)
-Register-DotnetMvGitAlias -Scope Global -WhatIf
+Register-ScootGitAlias -Scope Global -WhatIf
 
 # Register for this repository only (default scope is Local)
-Register-DotnetMvGitAlias
+Register-ScootGitAlias
 
 # Register globally, in ~/.gitconfig
-Register-DotnetMvGitAlias -Scope Global
+Register-ScootGitAlias -Scope Global
 ```
 
 ---
@@ -1434,11 +1436,11 @@ CLI. `-Prune` never touches Relocatable or Ambiguous entries. `-Fix` and `-Prune
 
 **Output**
 
-Returns zero or more [DotnetMove.RepairResult](#dotnetmoverepairresult), collected as an array (`$null` when none).
+Returns zero or more [Netscoot.RepairResult](#netscootrepairresult), collected as an array (`$null` when none).
 One per dangling entry.
 
 ```text
-DotnetMove.RepairResult
+Netscoot.RepairResult
   Kind        string
   Resolution  string
   Missing     string
@@ -1466,7 +1468,7 @@ Repair-SolutionReferences -RepoRoot . -Fix -Prune -WhatIf
 ### Resolve-MoveEngine
 
 Classify a path to the reconciliation engine that should move it: dotnet, native,
-unity, ps-script, ps-module, or unknown. Used by the `git dotnetmv` forwarder and
+unity, ps-script, ps-module, or unknown. Used by the `git netscoot` forwarder and
 available for introspection.
 
 **Syntax**
@@ -1516,23 +1518,23 @@ Resolve-MoveEngine ./Aleppo/Aleppo.vcxproj
 
 ---
 
-### Set-DotnetMoveJournal
+### Set-ScootJournal
 
 Turn the move journal on or off, per repository (default) or for every repository (`-Global`).
 
 **Syntax**
 
 ```powershell
-Set-DotnetMoveJournal [-Enabled] <bool> [[-RepoRoot] <string>] [-Global] [-WhatIf] [-Confirm] [<CommonParameters>]
+Set-ScootJournal [-Enabled] <bool> [[-RepoRoot] <string>] [-Global] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 Journaling is on by default. This cmdlet writes the git setting that the precedence stack
-reads (git config dotnetmove.journal), so the choice persists across sessions and rides along
+reads (git config netscoot.journal), so the choice persists across sessions and rides along
 with the repository's git config - no environment variable to remember. Local config (the
 default here) wins over global, matching the resolution order in Test-MoveJournalEnabled.
 
 With `-Global` it writes the user's global git config, switching the default for every
-repository on the machine in one place. Requires git; with no git, set `$env`:DOTNETMOVE_JOURNAL
+repository on the machine in one place. Requires git; with no git, set `$env`:NETSCOOT_JOURNAL
 instead.
 
 **Parameters**
@@ -1553,13 +1555,13 @@ None.
 
 ```powershell
 # Stop journaling in this repository only
-Set-DotnetMoveJournal -Enabled $false
+Set-ScootJournal -Enabled $false
 
 # Turn it back on
-Set-DotnetMoveJournal -Enabled $true
+Set-ScootJournal -Enabled $true
 
 # Turn journaling off for every repository on the machine
-Set-DotnetMoveJournal -Enabled $false -Global
+Set-ScootJournal -Enabled $false -Global
 ```
 
 ---
@@ -1594,11 +1596,11 @@ this against the whole repository; preview with `-WhatIf` first and add specific
 
 **Output**
 
-Returns zero or more [DotnetMove.SyncResult](#dotnetmovesyncresult), collected as an array (`$null` when none).
+Returns zero or more [Netscoot.SyncResult](#netscootsyncresult), collected as an array (`$null` when none).
 One per project added.
 
 ```text
-DotnetMove.SyncResult
+Netscoot.SyncResult
   Solution  string  repo-relative
   Added     string  repo-relative project path
 ```
@@ -1615,18 +1617,18 @@ Sync-Solution -RepoRoot .
 
 ---
 
-### Test-DotnetMoveUpdate
+### Test-ScootUpdate
 
-Check GitHub for a newer DotnetMove release and report whether the installed version is
+Check GitHub for a newer netscoot release and report whether the installed version is
 behind. On-demand and read-only: it never updates anything itself.
 
 **Syntax**
 
 ```powershell
-Test-DotnetMoveUpdate [[-Repository] <string>] [-EnableAutoUpdate] [<CommonParameters>]
+Test-ScootUpdate [[-Repository] <string>] [-EnableAutoUpdate] [<CommonParameters>]
 ```
 
-DotnetMove does not update automatically, however it is installed (PowerShell Gallery,
+netscoot does not update automatically, however it is installed (PowerShell Gallery,
 installer, or a clone). This is the pull-based check: it GETs the latest GitHub release
 and compares its tag (the "available" version) against the installed module's ModuleVersion
 (the "installed" version). It prints what to do when behind, but performs no update - an
@@ -1636,25 +1638,25 @@ Needs network access to api.github.com. Honors `-ErrorAction` if the request fai
 rate-limited, or no releases yet).
 
 `-EnableAutoUpdate` makes this the automation/SessionStart entry point: it runs the check ONLY
-when `$env`:DOTNETMOVE_AUTOUPDATE is set to a truthy value (1/true/on/yes/enabled), and is a
+when `$env`:NETSCOOT_AUTOUPDATE is set to a truthy value (1/true/on/yes/enabled), and is a
 silent no-op otherwise. So a hook can call it unconditionally; nothing happens until a user
 opts in, and IT can disable it fleet-wide by clearing or setting the variable to false via
-Group Policy / Intune / a profile. A plain Test-DotnetMoveUpdate (no switch) always checks.
+Group Policy / Intune / a profile. A plain Test-ScootUpdate (no switch) always checks.
 
 **Parameters**
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
 | <small>`‑Repository`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>owner/name of the GitHub repository to check. Defaults to the project repository.</small> |
-| <small>`‑EnableAutoUpdate`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Run as the gated auto-check (for a SessionStart hook or other automation): proceed only when `$env`:DOTNETMOVE_AUTOUPDATE is truthy, otherwise do nothing. Still read-only - it never updates.</small> |
+| <small>`‑EnableAutoUpdate`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Run as the gated auto-check (for a SessionStart hook or other automation): proceed only when `$env`:NETSCOOT_AUTOUPDATE is truthy, otherwise do nothing. Still read-only - it never updates.</small> |
 
 **Output**
 
-Returns a single [DotnetMove.Update](#dotnetmoveupdate).
-None (writes a non-terminating error) when the release cannot be fetched, and nothing at all when `-EnableAutoUpdate` is set but `$env`:DOTNETMOVE_AUTOUPDATE is not enabled.
+Returns a single [Netscoot.Update](#netscootupdate).
+None (writes a non-terminating error) when the release cannot be fetched, and nothing at all when `-EnableAutoUpdate` is set but `$env`:NETSCOOT_AUTOUPDATE is not enabled.
 
 ```text
-DotnetMove.Update
+Netscoot.Update
   Installed        version
   Latest           version?  $null if the tag could not be parsed
   Tag              string
@@ -1666,13 +1668,13 @@ DotnetMove.Update
 
 ```powershell
 # Compare the installed module to the latest GitHub release
-Test-DotnetMoveUpdate
+Test-ScootUpdate
 
 # Check a fork or a different repository (owner/name)
-Test-DotnetMoveUpdate -Repository myfork/dotnet-move
+Test-ScootUpdate -Repository myfork/netscoot
 
-# SessionStart hook: checks only if the user/fleet opted in via $env:DOTNETMOVE_AUTOUPDATE
-Test-DotnetMoveUpdate -EnableAutoUpdate
+# SessionStart hook: checks only if the user/fleet opted in via $env:NETSCOOT_AUTOUPDATE
+Test-ScootUpdate -EnableAutoUpdate
 ```
 
 ---
@@ -1704,11 +1706,11 @@ full membership matrix of every solution and its projects.
 
 **Output**
 
-Returns zero or more [DotnetMove.ConsistencyResult](#dotnetmoveconsistencyresult), collected as an array (`$null` when none).
+Returns zero or more [Netscoot.ConsistencyResult](#netscootconsistencyresult), collected as an array (`$null` when none).
 One per divergent project.
 
 ```text
-DotnetMove.ConsistencyResult
+Netscoot.ConsistencyResult
   Project     string
   PresentIn   string[]  solution paths that list it
   AbsentFrom  string[]  solution paths that do not
@@ -1732,32 +1734,32 @@ Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
 
 ---
 
-### Undo-DotnetMove
+### Undo-Scoot
 
-Reverse a previous DotnetMove move, using the journal at the repository root.
+Reverse a previous netscoot move, using the journal at the repository root.
 
 **Syntax**
 
 ```powershell
-Undo-DotnetMove [-RepoRoot <string>] [-Id <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+Undo-Scoot [-RepoRoot <string>] [-Id <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
 
-Undo-DotnetMove -All [-RepoRoot <string>] [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
+Undo-Scoot -All [-RepoRoot <string>] [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 
-Undo-DotnetMove [-RepoRoot <string>] [-List] [-WhatIf] [-Confirm] [<CommonParameters>]
+Undo-Scoot [-RepoRoot <string>] [-List] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 Each move is recorded in the journal (a per-user data directory: LocalAppData on Windows,
 ~/Library/Application Support on macOS, ~/.local/share on Linux; one file per repository) with
 its inverse: the same mover run with source and destination
-swapped. Undo-DotnetMove replays that inverse, re-reconciling the solutions, references, and
+swapped. Undo-Scoot replays that inverse, re-reconciling the solutions, references, and
 GUIDs from the CURRENT state (more robust than restoring a stale snapshot). By default it
 undoes the most recent move and pops it from the journal, so calling again walks further back
 (LIFO); `-Id` targets a specific entry and `-List` shows the journal.
 
 The reversing move is not itself journaled, so undo walks the history back rather than
 ping-ponging. Journaling must have been on when the original move ran (it is on by default;
-opt out per repository with git config dotnetmove.journal false, or with
-`$env`:DOTNETMOVE_JOURNAL). Undoing an entry that is not the most recent can conflict with
+opt out per repository with git config netscoot.journal false, or with
+`$env`:NETSCOOT_JOURNAL). Undoing an entry that is not the most recent can conflict with
 moves made after it, so prefer undoing in reverse order.
 
 `-All` reverses every journaled move (newest first) in one operation. Because that walks back
@@ -1786,31 +1788,31 @@ mover). With `-List`, the journal entries. Nothing when the journal is empty.
 
 ```powershell
 # See what can be undone
-Undo-DotnetMove -List
+Undo-Scoot -List
 
 # Preview undoing the most recent move
-Undo-DotnetMove -WhatIf
+Undo-Scoot -WhatIf
 
 # Undo the most recent move
-Undo-DotnetMove
+Undo-Scoot
 
 # Undo a specific entry by id
-Undo-DotnetMove -Id a1b2c3d4
+Undo-Scoot -Id a1b2c3d4
 
 # Reverse every journaled move (prompts; -Force to skip the prompt)
-Undo-DotnetMove -All
+Undo-Scoot -All
 ```
 
 ---
 
-### Unregister-DotnetMvGitAlias
+### Unregister-ScootGitAlias
 
-Remove the `git dotnetmv` alias registered by Register-DotnetMvGitAlias.
+Remove the `git netscoot` alias registered by Register-ScootGitAlias.
 
 **Syntax**
 
 ```powershell
-Unregister-DotnetMvGitAlias [[-Scope] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+Unregister-ScootGitAlias [[-Scope] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 **Parameters**
@@ -1829,34 +1831,34 @@ None.
 
 ```powershell
 # Remove the alias for this repository (default scope is Local)
-Unregister-DotnetMvGitAlias
+Unregister-ScootGitAlias
 
 # Remove the global alias from ~/.gitconfig
-Unregister-DotnetMvGitAlias -Scope Global
+Unregister-ScootGitAlias -Scope Global
 ```
 
 ---
 
-### Update-DotnetMove
+### Update-Scoot
 
-Update an installed DotnetMove to the latest GitHub release, in place. The one-command
+Update an installed netscoot to the latest GitHub release, in place. The one-command
 update for non-clone installs.
 
 **Syntax**
 
 ```powershell
-Update-DotnetMove [[-Repository] <string>] [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
+Update-Scoot [[-Repository] <string>] [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-Checks GitHub for a newer release (via Test-DotnetMoveUpdate) and, if the installed version
+Checks GitHub for a newer release (via Test-ScootUpdate) and, if the installed version
 is behind, runs the release's install.ps1 to overwrite the modules on your module path. No
 git, no clone. Does nothing when already current unless `-Force`. Honors `-WhatIf`/`-Confirm`.
 
-After it runs, reload the module in the current session with `Import-Module DotnetMove -Force`.
-Needs network access to GitHub. For Gallery installs, `Update-Module DotnetMove` is the
+After it runs, reload the module in the current session with `Import-Module Netscoot -Force`.
+Needs network access to GitHub. For Gallery installs, `Update-Module Netscoot` is the
 simpler path; this command updates installer/clone installs in place from the GitHub release.
 
-Policy kill-switch: when `$env`:DOTNETMOVE_AUTOUPDATE is set to a falsy value (0/false/off/no/
+Policy kill-switch: when `$env`:NETSCOOT_AUTOUPDATE is set to a falsy value (0/false/off/no/
 disabled) - e.g. pushed by IT via Group Policy / Intune - this refuses to update so machine
 state stays managed. `-Force` overrides the policy (and also reinstalls when already current).
 
@@ -1864,18 +1866,18 @@ state stays managed. `-Force` overrides the policy (and also reinstalls when alr
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Reinstall the latest release even if already current, and override the `$env`:DOTNETMOVE_AUTOUPDATE policy block.</small> |
+| <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Reinstall the latest release even if already current, and override the `$env`:NETSCOOT_AUTOUPDATE policy block.</small> |
 | <small>`‑Repository`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>owner/name of the GitHub repository. Defaults to the project repository.</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
 
 **Output**
 
-Returns a single [DotnetMove.Update](#dotnetmoveupdate).
-The record from Test-DotnetMoveUpdate, so the decision is inspectable. Nothing on a failed check.
+Returns a single [Netscoot.Update](#netscootupdate).
+The record from Test-ScootUpdate, so the decision is inspectable. Nothing on a failed check.
 
 ```text
-DotnetMove.Update
+Netscoot.Update
   Installed        version
   Latest           version?  $null if the tag could not be parsed
   Tag              string
@@ -1887,13 +1889,13 @@ DotnetMove.Update
 
 ```powershell
 # Update to the latest release if the installed copy is behind
-Update-DotnetMove
+Update-Scoot
 
 # Report what it would do without downloading or installing
-Update-DotnetMove -WhatIf
+Update-Scoot -WhatIf
 
 # Reinstall the latest even if already up to date
-Update-DotnetMove -Force
+Update-Scoot -Force
 ```
 
 ---
@@ -1929,16 +1931,16 @@ MSBuild paths yet - surfacing them beats silently mis-editing them.
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>Where to move the project folder, following `git mv` rules: an existing directory means move into it (keeping the name); otherwise it is the new folder path. Errors if it exists.</small> |
 | <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for solutions. Defaults to the enclosing git repository root.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
-| <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-DotnetMove will not see this move).</small> |
+| <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-Scoot will not see this move).</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
 
 **Output**
 
-Returns a single [DotnetMove.NativeMoveResult](#dotnetmovenativemoveresult).
+Returns a single [Netscoot.NativeMoveResult](#netscootnativemoveresult).
 
 ```text
-DotnetMove.NativeMoveResult
+Netscoot.NativeMoveResult
   Engine                string
   Source                string
   Destination           string
@@ -1996,16 +1998,16 @@ Android, etc.) are plain fields untouched by a move, so mobile layouts are prese
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>Where to move the asset/folder, following `git mv` rules: an existing directory means move into it (keeping the name); otherwise it is the new path. Errors if it exists.</small> |
 | <small>`‑RepoRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for asmdef referencers. Defaults to the enclosing git repository root.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
-| <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-DotnetMove will not see this move).</small> |
+| <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-Scoot will not see this move).</small> |
 | <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
 | <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
 
 **Output**
 
-Returns a single [DotnetMove.UnityMoveResult](#dotnetmoveunitymoveresult).
+Returns a single [Netscoot.UnityMoveResult](#netscootunitymoveresult).
 
 ```text
-DotnetMove.UnityMoveResult
+Netscoot.UnityMoveResult
   Engine        string
   Source        string
   Destination   string
@@ -2061,11 +2063,11 @@ and the Library/Temp/obj caches.
 
 **Output**
 
-Returns zero or more [DotnetMove.MetaIntegrity](#dotnetmovemetaintegrity), collected as an array (`$null` when none).
+Returns zero or more [Netscoot.MetaIntegrity](#netscootmetaintegrity), collected as an array (`$null` when none).
 One per problem.
 
 ```text
-DotnetMove.MetaIntegrity
+Netscoot.MetaIntegrity
   Kind  string  MissingMeta | OrphanMeta
   Path  string
 ```
@@ -2080,79 +2082,79 @@ Reports MissingMeta and OrphanMeta under Assets, one non-terminating error each.
 
 ## Output types
 
-Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several (and some types are also used as a field on another); whether a given command returns one or a collection is stated in that command's Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `DotnetMove.*` field is itself one of these types.
+Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several (and some types are also used as a field on another); whether a given command returns one or a collection is stated in that command's Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `Netscoot.*` field is itself one of these types.
 
 | <small>Type</small> | <small>Represents</small> |
 |:---|:---|
-| <small>[DotnetMove.Capability](#dotnetmovecapability)</small> | <small>DotnetMove's resolved external-tool capabilities and platform - the 'what can I do here' probe.</small> |
-| <small>[DotnetMove.ConsistencyResult](#dotnetmoveconsistencyresult)</small> | <small>One project whose solution membership diverges across the repo.</small> |
-| <small>[DotnetMove.GitAlias](#dotnetmovegitalias)</small> | <small>The git dotnetmv alias registration (or what would be registered).</small> |
-| <small>[DotnetMove.ImportMoveResult](#dotnetmoveimportmoveresult)</small> | <small>Result of moving a shared MSBuild .props/.targets file and fixing its importers.</small> |
-| <small>[DotnetMove.MetaIntegrity](#dotnetmovemetaintegrity)</small> | <small>One Unity .meta integrity problem: an asset missing a .meta, or an orphan .meta.</small> |
-| <small>[DotnetMove.MoveResult](#dotnetmovemoveresult)</small> | <small>Result of moving a .NET project folder and reconciling solutions and project references.</small> |
-| <small>[DotnetMove.NativeMoveResult](#dotnetmovenativemoveresult)</small> | <small>Result of moving a native / C++/CLI project (.vcxproj).</small> |
-| <small>[DotnetMove.PathReference](#dotnetmovepathreference)</small> | <small>One build/CI/hook/container line that hardcodes a moved path and that no first-party tool reconciles.</small> |
-| <small>[DotnetMove.PSModuleMoveResult](#dotnetmovepsmodulemoveresult)</small> | <small>Result of moving a PowerShell module folder and reconciling its manifest.</small> |
-| <small>[DotnetMove.RepairResult](#dotnetmoverepairresult)</small> | <small>One dangling solution-membership or ProjectReference entry that was (or would be) repaired.</small> |
-| <small>[DotnetMove.ScriptMoveResult](#dotnetmovescriptmoveresult)</small> | <small>Result of moving a standalone .ps1 and fixing dot-source/call paths.</small> |
-| <small>[DotnetMove.SolutionItem](#dotnetmovesolutionitem)</small> | <small>One entry in the full contents of a solution (or a project on disk that no solution references).</small> |
-| <small>[DotnetMove.SolutionMoveResult](#dotnetmovesolutionmoveresult)</small> | <small>Result of moving a solution file and rebasing the relative project paths it stores.</small> |
-| <small>[DotnetMove.SyncResult](#dotnetmovesyncresult)</small> | <small>One project added to a solution that was missing it, to resolve membership divergence.</small> |
-| <small>[DotnetMove.ToolInfo](#dotnetmovetoolinfo)</small> | <small>Presence and version of one external tool (git or dotnet).</small> |
-| <small>[DotnetMove.TreeMoveResult](#dotnetmovetreemoveresult)</small> | <small>Result of moving a folder of one or more .NET projects in one operation.</small> |
-| <small>[DotnetMove.UnityMoveResult](#dotnetmoveunitymoveresult)</small> | <small>Result of moving a Unity asset/folder while keeping its paired .meta file(s).</small> |
-| <small>[DotnetMove.Update](#dotnetmoveupdate)</small> | <small>Whether the installed DotnetMove is behind the latest GitHub release.</small> |
+| <small>[Netscoot.Capability](#netscootcapability)</small> | <small>Netscoot's resolved external-tool capabilities and platform - the 'what can I do here' probe.</small> |
+| <small>[Netscoot.ConsistencyResult](#netscootconsistencyresult)</small> | <small>One project whose solution membership diverges across the repo.</small> |
+| <small>[Netscoot.GitAlias](#netscootgitalias)</small> | <small>The git netscoot alias registration (or what would be registered).</small> |
+| <small>[Netscoot.ImportMoveResult](#netscootimportmoveresult)</small> | <small>Result of moving a shared MSBuild .props/.targets file and fixing its importers.</small> |
+| <small>[Netscoot.MetaIntegrity](#netscootmetaintegrity)</small> | <small>One Unity .meta integrity problem: an asset missing a .meta, or an orphan .meta.</small> |
+| <small>[Netscoot.MoveResult](#netscootmoveresult)</small> | <small>Result of moving a .NET project folder and reconciling solutions and project references.</small> |
+| <small>[Netscoot.NativeMoveResult](#netscootnativemoveresult)</small> | <small>Result of moving a native / C++/CLI project (.vcxproj).</small> |
+| <small>[Netscoot.PathReference](#netscootpathreference)</small> | <small>One build/CI/hook/container line that hardcodes a moved path and that no first-party tool reconciles.</small> |
+| <small>[Netscoot.PSModuleMoveResult](#netscootpsmodulemoveresult)</small> | <small>Result of moving a PowerShell module folder and reconciling its manifest.</small> |
+| <small>[Netscoot.RepairResult](#netscootrepairresult)</small> | <small>One dangling solution-membership or ProjectReference entry that was (or would be) repaired.</small> |
+| <small>[Netscoot.ScriptMoveResult](#netscootscriptmoveresult)</small> | <small>Result of moving a standalone .ps1 and fixing dot-source/call paths.</small> |
+| <small>[Netscoot.SolutionItem](#netscootsolutionitem)</small> | <small>One entry in the full contents of a solution (or a project on disk that no solution references).</small> |
+| <small>[Netscoot.SolutionMoveResult](#netscootsolutionmoveresult)</small> | <small>Result of moving a solution file and rebasing the relative project paths it stores.</small> |
+| <small>[Netscoot.SyncResult](#netscootsyncresult)</small> | <small>One project added to a solution that was missing it, to resolve membership divergence.</small> |
+| <small>[Netscoot.ToolInfo](#netscoottoolinfo)</small> | <small>Presence and version of one external tool (git or dotnet).</small> |
+| <small>[Netscoot.TreeMoveResult](#netscoottreemoveresult)</small> | <small>Result of moving a folder of one or more .NET projects in one operation.</small> |
+| <small>[Netscoot.UnityMoveResult](#netscootunitymoveresult)</small> | <small>Result of moving a Unity asset/folder while keeping its paired .meta file(s).</small> |
+| <small>[Netscoot.Update](#netscootupdate)</small> | <small>Whether the installed Netscoot is behind the latest GitHub release.</small> |
 
-### DotnetMove.Capability
+### Netscoot.Capability
 
-<small>[ [Get-DotnetMoveCapability](#get-dotnetmovecapability) ]</small>
+<small>[ [Get-ScootCapability](#get-scootcapability) ]</small>
 
-DotnetMove's resolved external-tool capabilities and platform - the 'what can I do here' probe.
+Netscoot's resolved external-tool capabilities and platform - the 'what can I do here' probe.
 
 ```text
-DotnetMove.Capability
+Netscoot.Capability
   Platform            string
   PSEdition           string
   DotnetSupportsSlnx  bool
-  Git                 DotnetMove.ToolInfo
-  Dotnet              DotnetMove.ToolInfo
+  Git                 Netscoot.ToolInfo
+  Dotnet              Netscoot.ToolInfo
 ```
 
-### DotnetMove.ConsistencyResult
+### Netscoot.ConsistencyResult
 
 <small>[ [Test-SolutionConsistency](#test-solutionconsistency) ]</small>
 
 One project whose solution membership diverges across the repo.
 
 ```text
-DotnetMove.ConsistencyResult
+Netscoot.ConsistencyResult
   Project     string
   PresentIn   string[]  solution paths that list it
   AbsentFrom  string[]  solution paths that do not
 ```
 
-### DotnetMove.GitAlias
+### Netscoot.GitAlias
 
-<small>[ [Register-DotnetMvGitAlias](#register-dotnetmvgitalias) ]</small>
+<small>[ [Register-ScootGitAlias](#register-scootgitalias) ]</small>
 
-The git dotnetmv alias registration (or what would be registered).
+The git netscoot alias registration (or what would be registered).
 
 ```text
-DotnetMove.GitAlias
+Netscoot.GitAlias
   Alias      string
   Scope      string
   Forwarder  string
   Command    string  the git config command that was/would be run
 ```
 
-### DotnetMove.ImportMoveResult
+### Netscoot.ImportMoveResult
 
-<small>[ [Move-Dotnet](#move-dotnet) | [Move-DotnetFile](#move-dotnetfile) | [Move-MSBuildImport](#move-msbuildimport) ]</small>
+<small>[ [Invoke-Scoot](#invoke-scoot) | [Move-DotnetFile](#move-dotnetfile) | [Move-MSBuildImport](#move-msbuildimport) ]</small>
 
 Result of moving a shared MSBuild .props/.targets file and fixing its importers.
 
 ```text
-DotnetMove.ImportMoveResult
+Netscoot.ImportMoveResult
   Engine           string
   Source           string
   Destination      string
@@ -2163,26 +2165,26 @@ DotnetMove.ImportMoveResult
   AutoImported     bool    true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
 ```
 
-### DotnetMove.MetaIntegrity
+### Netscoot.MetaIntegrity
 
 <small>[ [Test-UnityMetaIntegrity](#test-unitymetaintegrity) ]</small>
 
 One Unity .meta integrity problem: an asset missing a .meta, or an orphan .meta.
 
 ```text
-DotnetMove.MetaIntegrity
+Netscoot.MetaIntegrity
   Kind  string  MissingMeta | OrphanMeta
   Path  string
 ```
 
-### DotnetMove.MoveResult
+### Netscoot.MoveResult
 
-<small>[ [Move-Dotnet](#move-dotnet) | [Move-DotnetFile](#move-dotnetfile) | [Move-DotnetProject](#move-dotnetproject) ]</small>
+<small>[ [Invoke-Scoot](#invoke-scoot) | [Move-DotnetFile](#move-dotnetfile) | [Move-DotnetProject](#move-dotnetproject) ]</small>
 
 Result of moving a .NET project folder and reconciling solutions and project references.
 
 ```text
-DotnetMove.MoveResult
+Netscoot.MoveResult
   Engine         string
   Source         string
   Destination    string
@@ -2194,14 +2196,14 @@ DotnetMove.MoveResult
   Built          bool?     $null with -NoBuild
 ```
 
-### DotnetMove.NativeMoveResult
+### Netscoot.NativeMoveResult
 
-<small>[ [Move-Dotnet](#move-dotnet) | [Move-NativeProject](#move-nativeproject) ]</small>
+<small>[ [Invoke-Scoot](#invoke-scoot) | [Move-NativeProject](#move-nativeproject) ]</small>
 
 Result of moving a native / C++/CLI project (.vcxproj).
 
 ```text
-DotnetMove.NativeMoveResult
+Netscoot.NativeMoveResult
   Engine                string
   Source                string
   Destination           string
@@ -2212,28 +2214,28 @@ DotnetMove.NativeMoveResult
   UnreconciledSettings  object[]  one per native path setting to verify by hand; each has the setting name and value
 ```
 
-### DotnetMove.PathReference
+### Netscoot.PathReference
 
 <small>[ [Find-PathReference](#find-pathreference) ]</small>
 
 One build/CI/hook/container line that hardcodes a moved path and that no first-party tool reconciles.
 
 ```text
-DotnetMove.PathReference
+Netscoot.PathReference
   File        string  repo-relative file containing the line
   Line        int     1-based line number
   Confidence  string  High | Low
   Text        string  the matching line
 ```
 
-### DotnetMove.PSModuleMoveResult
+### Netscoot.PSModuleMoveResult
 
-<small>[ [Move-Dotnet](#move-dotnet) | [Move-PowerShell](#move-powershell) | [Move-PowerShellModule](#move-powershellmodule) ]</small>
+<small>[ [Invoke-Scoot](#invoke-scoot) | [Move-PowerShell](#move-powershell) | [Move-PowerShellModule](#move-powershellmodule) ]</small>
 
 Result of moving a PowerShell module folder and reconciling its manifest.
 
 ```text
-DotnetMove.PSModuleMoveResult
+Netscoot.PSModuleMoveResult
   Engine        string
   Source        string
   Destination   string
@@ -2242,14 +2244,14 @@ DotnetMove.PSModuleMoveResult
   Manifest      string  the manifest file name
 ```
 
-### DotnetMove.RepairResult
+### Netscoot.RepairResult
 
 <small>[ [Repair-SolutionReferences](#repair-solutionreferences) ]</small>
 
 One dangling solution-membership or ProjectReference entry that was (or would be) repaired.
 
 ```text
-DotnetMove.RepairResult
+Netscoot.RepairResult
   Kind        string
   Resolution  string
   Missing     string
@@ -2259,14 +2261,14 @@ DotnetMove.RepairResult
   Candidates  string[]  same-named project files found, used to resolve NewPath
 ```
 
-### DotnetMove.ScriptMoveResult
+### Netscoot.ScriptMoveResult
 
-<small>[ [Move-Dotnet](#move-dotnet) | [Move-PowerShell](#move-powershell) | [Move-PowerShellScript](#move-powershellscript) ]</small>
+<small>[ [Invoke-Scoot](#invoke-scoot) | [Move-PowerShell](#move-powershell) | [Move-PowerShellScript](#move-powershellscript) ]</small>
 
 Result of moving a standalone .ps1 and fixing dot-source/call paths.
 
 ```text
-DotnetMove.ScriptMoveResult
+Netscoot.ScriptMoveResult
   Engine            string
   Source            string
   Destination       string
@@ -2277,29 +2279,29 @@ DotnetMove.ScriptMoveResult
   UnresolvedRefs    int     count of possible dynamic references to verify, not a list
 ```
 
-### DotnetMove.SolutionItem
+### Netscoot.SolutionItem
 
 <small>[ [Get-SolutionInventory](#get-solutioninventory) ]</small>
 
 One entry in the full contents of a solution (or a project on disk that no solution references).
 
 ```text
-DotnetMove.SolutionItem
-  Solution  string                       repo-relative, or '(none)' for an unreferenced project
-  Kind      DotnetMove.SolutionItemKind  enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
-  Type      string                       project extension without the dot, else empty
+Netscoot.SolutionItem
+  Solution  string                     repo-relative, or '(none)' for an unreferenced project
+  Kind      Netscoot.SolutionItemKind  enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
+  Type      string                     project extension without the dot, else empty
   Name      string
-  Path      string                       as stored in the solution, or repo-relative
+  Path      string                     as stored in the solution, or repo-relative
 ```
 
-### DotnetMove.SolutionMoveResult
+### Netscoot.SolutionMoveResult
 
-<small>[ [Move-Dotnet](#move-dotnet) | [Move-DotnetFile](#move-dotnetfile) | [Move-Solution](#move-solution) ]</small>
+<small>[ [Invoke-Scoot](#invoke-scoot) | [Move-DotnetFile](#move-dotnetfile) | [Move-Solution](#move-solution) ]</small>
 
 Result of moving a solution file and rebasing the relative project paths it stores.
 
 ```text
-DotnetMove.SolutionMoveResult
+Netscoot.SolutionMoveResult
   Engine           string
   Source           string
   Destination      string
@@ -2308,39 +2310,39 @@ DotnetMove.SolutionMoveResult
   ProjectsRebased  int     stored paths rewritten
 ```
 
-### DotnetMove.SyncResult
+### Netscoot.SyncResult
 
 <small>[ [Sync-Solution](#sync-solution) ]</small>
 
 One project added to a solution that was missing it, to resolve membership divergence.
 
 ```text
-DotnetMove.SyncResult
+Netscoot.SyncResult
   Solution  string  repo-relative
   Added     string  repo-relative project path
 ```
 
-### DotnetMove.ToolInfo
+### Netscoot.ToolInfo
 
-<small>[ [DotnetMove.Capability](#dotnetmovecapability) ]</small>
+<small>[ [Netscoot.Capability](#netscootcapability) ]</small>
 
 Presence and version of one external tool (git or dotnet).
 
 ```text
-DotnetMove.ToolInfo
+Netscoot.ToolInfo
   Present  bool    found on PATH
   Version  string
   Path     string
 ```
 
-### DotnetMove.TreeMoveResult
+### Netscoot.TreeMoveResult
 
-<small>[ [Move-Dotnet](#move-dotnet) | [Move-DotnetFolder](#move-dotnetfolder) | [Move-DotnetProjectTree](#move-dotnetprojecttree) ]</small>
+<small>[ [Invoke-Scoot](#invoke-scoot) | [Move-DotnetFolder](#move-dotnetfolder) | [Move-DotnetProjectTree](#move-dotnetprojecttree) ]</small>
 
 Result of moving a folder of one or more .NET projects in one operation.
 
 ```text
-DotnetMove.TreeMoveResult
+Netscoot.TreeMoveResult
   Engine         string
   Source         string
   Destination    string
@@ -2351,14 +2353,14 @@ DotnetMove.TreeMoveResult
   Built          bool?   $null with -NoBuild
 ```
 
-### DotnetMove.UnityMoveResult
+### Netscoot.UnityMoveResult
 
-<small>[ [Move-Dotnet](#move-dotnet) | [Move-UnityAsset](#move-unityasset) ]</small>
+<small>[ [Invoke-Scoot](#invoke-scoot) | [Move-UnityAsset](#move-unityasset) ]</small>
 
 Result of moving a Unity asset/folder while keeping its paired .meta file(s).
 
 ```text
-DotnetMove.UnityMoveResult
+Netscoot.UnityMoveResult
   Engine        string
   Source        string
   Destination   string
@@ -2369,14 +2371,14 @@ DotnetMove.UnityMoveResult
   ReferencedBy  string[]  asmdefs that reference a moved .asmdef; informational, refs are by name/GUID and survive
 ```
 
-### DotnetMove.Update
+### Netscoot.Update
 
-<small>[ [Test-DotnetMoveUpdate](#test-dotnetmoveupdate) | [Update-DotnetMove](#update-dotnetmove) ]</small>
+<small>[ [Test-ScootUpdate](#test-scootupdate) | [Update-Scoot](#update-scoot) ]</small>
 
-Whether the installed DotnetMove is behind the latest GitHub release.
+Whether the installed Netscoot is behind the latest GitHub release.
 
 ```text
-DotnetMove.Update
+Netscoot.Update
   Installed        version
   Latest           version?  $null if the tag could not be parsed
   Tag              string
@@ -2385,3 +2387,7 @@ DotnetMove.Update
 ```
 
 <!-- END GENERATED REFERENCE -->
+
+---
+
+<sub><b>Trademarks.</b> netscoot is an independent, community-maintained project, not affiliated with, sponsored by, or endorsed by Microsoft. ".NET", "dotnet", and related marks are trademarks of Microsoft Corporation, used here only to describe the projects and tooling netscoot works with.</sub>

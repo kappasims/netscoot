@@ -2,12 +2,12 @@
 
 BeforeAll {
     . (Join-Path $PSScriptRoot TestHelpers.ps1)
-    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'DotnetMove.Core' ('DotnetMove.Core.psd1'))))) -Force
+    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Core' ('Netscoot.Core.psd1'))))) -Force
 
     function New-Fixture {
         # Build a throwaway 2-project solution: App -> Lib, in a fresh temp git repo.
         param([ValidateSet('sln', 'slnx')][string]$Format = 'slnx')
-        $root = New-TempRoot -Prefix 'dotnetmove'
+        $root = New-TempRoot -Prefix 'netscoot'
         Push-Location $root
         try {
             & git init -q

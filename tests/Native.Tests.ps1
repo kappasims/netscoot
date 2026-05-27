@@ -2,13 +2,13 @@
 
 BeforeAll {
     . (Join-Path $PSScriptRoot 'TestHelpers.ps1')
-    # Core must load before Native (Native declares RequiredModules = DotnetMove.Core).
-    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'DotnetMove.Core' ('DotnetMove.Core.psd1'))))) -Force
-    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'DotnetMove.Native' ('DotnetMove.Native.psd1'))))) -Force
+    # Core must load before Native (Native declares RequiredModules = Netscoot.Core).
+    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Core' ('Netscoot.Core.psd1'))))) -Force
+    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Native' ('Netscoot.Native.psd1'))))) -Force
 
     function New-NativeFixture {
         # A minimal hand-written .vcxproj with native path-bearing settings (no build needed).
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_nat_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_nat_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
         $proj = Join-Path $root 'Foo'
         New-Item -ItemType Directory -Path $proj -Force | Out-Null
         $vcx = Join-Path $proj 'Foo.vcxproj'
@@ -52,7 +52,7 @@ Describe 'Native project handling' {
     It 'Get-NativePathSettings finds and dedupes the path-bearing settings' {
         $vcx = New-NativeFixture
         try {
-            InModuleScope DotnetMove.Native -Parameters @{ Vcx = $vcx } {
+            InModuleScope Netscoot.Native -Parameters @{ Vcx = $vcx } {
                 param($Vcx)
                 $settings = Get-NativePathSettings -ProjectFile $Vcx
                 ($settings.Kind | Sort-Object -Unique) | Should -Contain 'Import'
@@ -65,7 +65,7 @@ Describe 'Native project handling' {
 
 Describe 'OS-aware path comparison' {
     It 'matches Windows case-insensitivity / non-Windows case-sensitivity' {
-        InModuleScope DotnetMove.Shared {
+        InModuleScope Netscoot.Shared {
             # Test-IsWindowsHost is 5.1-safe; a bare $IsWindows throws here under the module's
             # StrictMode on Windows PowerShell 5.1 (where $IsWindows is not an automatic variable).
             $expected = [bool](Test-IsWindowsHost)
@@ -76,7 +76,7 @@ Describe 'OS-aware path comparison' {
 }
 
 AfterAll {
-    # This file imports DotnetMove.Native unconditionally (it loads on any OS). Remove it so it
+    # This file imports Netscoot.Native unconditionally (it loads on any OS). Remove it so it
     # does not leak into later test files - on non-Windows, Umbrella.Tests asserts it is absent.
-    Remove-Module DotnetMove.Native -Force -ErrorAction SilentlyContinue
+    Remove-Module Netscoot.Native -Force -ErrorAction SilentlyContinue
 }

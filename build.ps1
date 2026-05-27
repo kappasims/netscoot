@@ -1,24 +1,27 @@
 #requires -Version 5.1
 <#
 .SYNOPSIS
-    Build entry point for DotnetMove: run tests, lint, or install the modules.
+    Build entry point for netscoot: run tests, lint, or install the modules.
 
 .DESCRIPTION
     Tasks:
       Test    (default) - import the modules and run the Pester suite (validates they load).
                           Non-zero exit on failure (for CI).
       Analyze           - run PSScriptAnalyzer over src/ if it is available.
-      Install           - copy all modules (Shared, the engines, and the DotnetMove umbrella) into
-                          a PowerShell module path so `Import-Module DotnetMove` works by name.
+      Install           - copy all modules (Shared, the engines, and the netscoot umbrella) into
+                          a PowerShell module path so `Import-Module Netscoot` works by name.
       Docs              - regenerate the "Command reference" section of README.md from the
                           cmdlets' comment-based help.
+      CheckDocs         - gate the docs: fail if the README reference is stale (someone edited
+                          cmdlet help without regenerating) or if README/skills carry an old-brand
+                          token or name a cmdlet that no longer exists. Part of the Release gate.
       Release -Version  - run from develop. Without -Publish (prepare): stamp the semver into every
                           manifest, gate on static analysis (required + clean) and the tests, then
                           commit `release: vX.Y.Z` and push develop so CI runs on it. With -Publish
                           (finalize, after CI is green on all platforms): fast-forward master to that
                           commit, tag, push, and create the GitHub release. master is protected, so it
                           only ever receives a CI-passed commit; ModuleVersion stays equal to the tag.
-      Publish           - assemble the single bundled DotnetMove package, validate and smoke-import
+      Publish           - assemble the single bundled netscoot package, validate and smoke-import
                           it, then Publish-Module to the PowerShell Gallery (dry run without -ApiKey).
 
 .EXAMPLE
@@ -32,7 +35,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('Test', 'Analyze', 'Install', 'Docs', 'Release', 'Publish')]
+    [ValidateSet('Test', 'Analyze', 'Install', 'Docs', 'CheckDocs', 'Release', 'Publish')]
     [string]$Task = 'Test',
     [string]$InstallPath,
     # Publish: PowerShell Gallery NuGet API key. Without it, Publish only stages + validates the
@@ -53,10 +56,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 # Shared first: the engines call its helpers, so it must import/install before them.
-$modules = 'DotnetMove.Shared', 'DotnetMove.Core', 'DotnetMove.Native', 'DotnetMove.Unity'
+$modules = 'Netscoot.Shared', 'Netscoot.Core', 'Netscoot.Native', 'Netscoot.Unity'
 # The umbrella bootstrap imports the engines above; it ships but is not in the per-engine
 # import/test loop (importing it would pull the engines in a second time).
-$umbrella = 'DotnetMove'
+$umbrella = 'Netscoot'
 
 function script:Test-IsWindowsBuild {
     if ($PSVersionTable.PSEdition -eq 'Desktop') { return $true }
@@ -136,18 +139,18 @@ function Invoke-InstallTask {
         if (Test-Path $dest) { Remove-Item -LiteralPath $dest -Recurse -Force }
         Copy-Item -LiteralPath (Join-Path $root (Join-Path 'src' ($name))) -Destination $dest -Recurse -Force
     }
-    Write-Host "Installed DotnetMove (all engines + Shared) to: $InstallPath" -ForegroundColor Green
+    Write-Host "Installed netscoot (all engines + Shared) to: $InstallPath" -ForegroundColor Green
 
     $sep = [System.IO.Path]::PathSeparator
     $onPath = ($env:PSModulePath -split $sep) | Where-Object { $_.TrimEnd('\', '/') -ieq $InstallPath.TrimEnd('\', '/') }
     if ($onPath) {
         Write-Host 'Ready. Import it by name:' -ForegroundColor Green
-        Write-Host '    Import-Module DotnetMove          # all engines'
-        Write-Host '    Register-DotnetMvGitAlias -Scope Global   # optional: enable `git dotnetmv`'
+        Write-Host '    Import-Module Netscoot          # all engines'
+        Write-Host '    Register-ScootGitAlias -Scope Global   # optional: enable `git netscoot`'
     } else {
         Write-Host "That folder is NOT on `$env:PSModulePath. Add it for this session with:" -ForegroundColor Yellow
         Write-Host "    `$env:PSModulePath = '$InstallPath' + '$sep' + `$env:PSModulePath"
-        Write-Host '    Import-Module DotnetMove'
+        Write-Host '    Import-Module Netscoot'
     }
 }
 
@@ -155,9 +158,9 @@ function Invoke-DocsTask {
     foreach ($m in $modules) {
         Import-Module ([System.IO.Path]::Combine($root, 'src', $m, "$m.psd1")) -Force
     }
-    # Document only the public engine modules. DotnetMove.Shared is internal infrastructure (its
+    # Document only the public engine modules. Netscoot.Shared is internal infrastructure (its
     # helpers are not part of the user-facing API), so it is imported above but not listed here.
-    $docModules = @($modules | Where-Object { $_ -ne 'DotnetMove.Shared' })
+    $docModules = @($modules | Where-Object { $_ -ne 'Netscoot.Shared' })
 
     function Format-HelpText { param($Field) (($Field | ForEach-Object { $_.Text }) -join "`n").Trim() }
 
@@ -205,7 +208,7 @@ function Invoke-DocsTask {
     }
 
     # Output-type registry (typedefs). Each cmdlet declares the type(s) it emits via
-    # [OutputType('DotnetMove.X')]; we look the name up here to render a link + a terse code-view
+    # [OutputType('Netscoot.X')]; we look the name up here to render a link + a terse code-view
     # of its structure, and to build the "Output types" section. Single source of truth for shapes.
     $typeDefs = Import-PowerShellDataFile ([System.IO.Path]::Combine($root, 'docs', 'output-types.psd1'))
     $typeAlt = ($typeDefs.Keys | ForEach-Object { [regex]::Escape($_) }) -join '|'
@@ -229,7 +232,7 @@ function Invoke-DocsTask {
     }
 
     # GitHub heading anchor for a type entry: lowercase, drop all but [a-z0-9 -], spaces to dashes
-    # (so 'DotnetMove.PathReference' -> 'dotnetmovepathreference').
+    # (so 'Netscoot.PathReference' -> 'netscootpathreference').
     function Get-TypeAnchor { param([string]$Name) (($Name.ToLower() -replace '[^a-z0-9 -]', '') -replace ' ', '-') }
     function Format-TypeLink { param([string]$Name) "[$Name](#$(Get-TypeAnchor $Name))" }
 
@@ -276,7 +279,7 @@ function Invoke-DocsTask {
 
     $sb = [System.Text.StringBuilder]::new()
     $emittedBy = @{}   # type name -> @(command names) that declare it via [OutputType]
-    $nsLabel = @{ 'DotnetMove.Core' = '.NET and PowerShell'; 'DotnetMove.Unity' = 'Unity'; 'DotnetMove.Native' = 'Native C++ (Windows)' }
+    $nsLabel = @{ 'Netscoot.Core' = '.NET and PowerShell'; 'Netscoot.Unity' = 'Unity'; 'Netscoot.Native' = 'Native C++ (Windows)' }
 
     # Two subsections under the hand-written "# Reference": the commands, then the output types.
     [void]$sb.AppendLine('## Command reference')
@@ -304,7 +307,7 @@ function Invoke-DocsTask {
     # Per-command detail (flat; the TOC above provides the namespace grouping).
     foreach ($m in $docModules) {
         foreach ($c in (Get-Command -Module $m -CommandType Function | Sort-Object Name)) {
-            # Get-Help treats the name as a pattern, so 'Move-Dotnet' also matches Move-Dotnet*;
+            # Get-Help treats the name as a pattern, so 'Invoke-Scoot' also matches Invoke-Scoot*;
             # keep the exact match.
             $h = Get-Help $c.Name -Full | Where-Object { $_.Name -eq $c.Name } | Select-Object -First 1
             # Horizontal rule before each command so the entries read as distinct blocks.
@@ -415,7 +418,7 @@ function Invoke-DocsTask {
     # Output types: the second subsection under "# Reference", one entry per typedef with the same
     # code-view the commands link to. Back-references (which commands emit it, which types nest it)
     # sit as a callout right under each type name. A type that is only nested in another (never
-    # emitted directly, e.g. DotnetMove.ToolInfo inside Capability) is still listed so its link
+    # emitted directly, e.g. Netscoot.ToolInfo inside Capability) is still listed so its link
     # resolves; every type here appears in command output, directly or nested.
     $nestedIn = @{}
     foreach ($name in $typeDefs.Keys) {
@@ -426,7 +429,7 @@ function Invoke-DocsTask {
     }
     [void]$sb.AppendLine('## Output types')
     [void]$sb.AppendLine()
-    [void]$sb.AppendLine('Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several (and some types are also used as a field on another); whether a given command returns one or a collection is stated in that command''s Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `DotnetMove.*` field is itself one of these types.')
+    [void]$sb.AppendLine('Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several (and some types are also used as a field on another); whether a given command returns one or a collection is stated in that command''s Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `Netscoot.*` field is itself one of these types.')
     [void]$sb.AppendLine()
     $sortedTypes = @($typeDefs.Keys | Sort-Object)
     [void]$sb.AppendLine('| ' + (Format-Small 'Type') + ' | ' + (Format-Small 'Represents') + ' |')
@@ -441,7 +444,7 @@ function Invoke-DocsTask {
         [void]$sb.AppendLine("### $name")
         [void]$sb.AppendLine()
         # Cross-references as a compact bracketed list (no label), one font size down. The link
-        # text - a command name or a DotnetMove.* type - is self-describing.
+        # text - a command name or a Netscoot.* type - is self-describing.
         $refs = @()
         if ($emittedBy[$name]) { $refs += @(@($emittedBy[$name]) | Sort-Object -Unique | ForEach-Object { "[$_](#$($_.ToLower()))" }) }
         if ($nestedIn[$name]) { $refs += @(@($nestedIn[$name]) | Sort-Object -Unique | ForEach-Object { Format-TypeLink $_ }) }
@@ -473,6 +476,52 @@ function Invoke-DocsTask {
     Write-Host "Wrote the Command reference section of README.md ($((Get-Command -Module $docModules -CommandType Function).Count) cmdlets)." -ForegroundColor Green
 }
 
+function Assert-DocsNotStale {
+    # Release gate: fail if the docs have drifted from the code. Two checks (run with a clean tree):
+    #   1. Stale README - regenerating the Command reference must be a no-op. If it changes, someone
+    #      edited cmdlet help without running -Task Docs.
+    #   2. Stale README + skills - no leftover old-brand tokens, and every product cmdlet the docs name
+    #      must still be exported (catches a rename/removal the docs did not follow).
+    Write-Host 'Checking docs are current (README reference + brand/command references)...' -ForegroundColor Cyan
+
+    # (1) README reference drift. Save the current content, regenerate, compare (ignoring EOL), then
+    # restore the saved content. File save/restore - never `git checkout` - so this never discards
+    # uncommitted README work even if run on a dirty tree.
+    $readmePath = [System.IO.Path]::Combine($root, 'README.md')
+    $before = [System.IO.File]::ReadAllText($readmePath)
+    Invoke-DocsTask | Out-Null
+    $after = [System.IO.File]::ReadAllText($readmePath)
+    [System.IO.File]::WriteAllText($readmePath, $before, [System.Text.UTF8Encoding]::new($false))
+    if (($before -replace "`r`n", "`n") -ne ($after -replace "`r`n", "`n")) {
+        throw 'README is stale: its generated Command reference does not match the cmdlet help. Run ./build.ps1 -Task Docs and commit.'
+    }
+
+    $docFiles = @([System.IO.Path]::Combine($root, 'README.md'))
+    $docFiles += @(Get-ChildItem -Path (Join-Path $root '.claude/skills') -Recurse -Filter '*.md' -ErrorAction SilentlyContinue | ForEach-Object FullName)
+
+    # (2a) Leftover old-brand tokens (an incomplete rebrand).
+    foreach ($f in $docFiles) {
+        $text = [System.IO.File]::ReadAllText($f)
+        foreach ($bad in 'DotnetMove', 'dotnet-move', 'DOTNETMOVE', 'dotnetmv') {
+            if ($text.Contains($bad)) { throw "Stale brand token '$bad' in $(Split-Path -Leaf $f); update it to the current brand." }
+        }
+        if ($text -cmatch '\bMove-Dotnet\b') { throw "Stale 'Move-Dotnet' (the umbrella is now Invoke-Scoot) in $(Split-Path -Leaf $f)." }
+    }
+
+    # (2b) Every product cmdlet the docs name must be exported (a distinctive-noun match avoids
+    # flagging generic PowerShell/dotnet commands that legitimately appear in examples).
+    foreach ($m in $modules) { Import-Module ([System.IO.Path]::Combine($root, 'src', $m, "$m.psd1")) -Force }
+    $exported = @(Get-Command -Module $modules -CommandType Function | ForEach-Object Name)
+    $stem = 'Scoot|Dotnet|PowerShell|Native|Unity|MSBuild|MoveEngine|SolutionReferences|SolutionConsistency|SolutionInventory|PathReference'
+    foreach ($f in $docFiles) {
+        $text = [System.IO.File]::ReadAllText($f)
+        foreach ($mch in [regex]::Matches($text, "\b[A-Z][a-z]+-($stem)\w*\b")) {
+            if ($mch.Value -notin $exported) { throw "Docs name a cmdlet that does not exist: '$($mch.Value)' in $(Split-Path -Leaf $f) (renamed or removed?). Update the docs." }
+        }
+    }
+    Write-Host 'Docs are current.' -ForegroundColor Green
+}
+
 function Invoke-ReleaseTask {
     # Releases are cut from master, which is branch-protected: the CI checks are required and enforced
     # for admins, so master may only ever receive a commit that already passed CI. This task therefore
@@ -493,6 +542,10 @@ function Invoke-ReleaseTask {
     if (-not $Publish) {
         # PREPARE on develop: stamp, gate locally, commit the bump, push so CI runs on that commit.
         if (& git -C $root status --porcelain) { throw 'Working tree is not clean; commit or stash first so the release commit is only the version bump.' }
+
+        # Gate: docs must not be stale (README reference current; README + skills reference no removed
+        # brand/cmdlets). Run while the tree is clean, before stamping.
+        Assert-DocsNotStale
 
         $manifests = foreach ($m in ($modules + $umbrella)) { Join-Path $root (Join-Path 'src' (Join-Path $m "$m.psd1")) }
         $changed = $false
@@ -534,37 +587,37 @@ function Invoke-ReleaseTask {
     if ($LASTEXITCODE -ne 0) { & git -C $root checkout develop; throw 'master could not fast-forward to develop (diverged?). Resolve, then re-run -Publish.' }
     & git -C $root push origin master
     if ($LASTEXITCODE -ne 0) { & git -C $root checkout develop; throw "Pushing master was rejected - the required CI checks are likely not green yet on $tag. Wait for CI, then re-run -Publish." }
-    & git -C $root tag -a $tag -m "DotnetMove $Version"
+    & git -C $root tag -a $tag -m "netscoot $Version"
     & git -C $root push origin $tag
-    & gh release create $tag --title "DotnetMove $Version" --generate-notes
+    & gh release create $tag --title "netscoot $Version" --generate-notes
     & git -C $root checkout develop
     Write-Host "Released $tag from master; back on develop." -ForegroundColor Green
 }
 
 function Invoke-PublishTask {
-    # Assemble the SINGLE bundled DotnetMove package and publish it to the PowerShell Gallery. The
+    # Assemble the SINGLE bundled netscoot package and publish it to the PowerShell Gallery. The
     # shipped package is one module folder: the umbrella at the root, with Shared + each engine as
     # subfolders the umbrella's RootModule loads (-Global; native only on Windows, best-effort). No
     # separate Shared/Core/Unity/Native packages. Without -ApiKey this only stages + validates.
-    $stage = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_pkg_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
-    $pkg = Join-Path $stage 'DotnetMove'
+    $stage = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_pkg_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+    $pkg = Join-Path $stage 'Netscoot'
     New-Item -ItemType Directory -Path $pkg -Force | Out-Null
 
     # Umbrella files (manifest + RootModule) at the package root...
-    Copy-Item -Path (Join-Path $root (Join-Path 'src' (Join-Path 'DotnetMove' '*'))) -Destination $pkg -Recurse -Force
+    Copy-Item -Path (Join-Path $root (Join-Path 'src' (Join-Path 'Netscoot' '*'))) -Destination $pkg -Recurse -Force
     # ...then Shared + the engines as subfolders the umbrella loads.
-    foreach ($name in 'DotnetMove.Shared', 'DotnetMove.Core', 'DotnetMove.Unity', 'DotnetMove.Native') {
+    foreach ($name in 'Netscoot.Shared', 'Netscoot.Core', 'Netscoot.Unity', 'Netscoot.Native') {
         Copy-Item -Path (Join-Path $root (Join-Path 'src' $name)) -Destination (Join-Path $pkg $name) -Recurse -Force
     }
 
-    $manifest = Join-Path $pkg 'DotnetMove.psd1'
+    $manifest = Join-Path $pkg 'Netscoot.psd1'
     Write-Host "Validating bundled manifest: $manifest" -ForegroundColor Cyan
     $null = Test-ModuleManifest -Path $manifest
 
     # Smoke-import in a clean child pwsh to prove the single package self-loads with no separate
     # modules on the path (this is what catches missing-bundle / load-order bugs).
     Write-Host 'Smoke-importing the bundled package in a clean session...' -ForegroundColor Cyan
-    & pwsh -NoProfile -Command "Import-Module '$manifest' -Force; if (-not (Get-Command Move-Dotnet -ErrorAction SilentlyContinue)) { throw 'Move-Dotnet was not surfaced by the bundled package.' }; 'bundled import OK'"
+    & pwsh -NoProfile -Command "Import-Module '$manifest' -Force; if (-not (Get-Command Invoke-Scoot -ErrorAction SilentlyContinue)) { throw 'Invoke-Scoot was not surfaced by the bundled package.' }; 'bundled import OK'"
     if ($LASTEXITCODE -ne 0) { throw 'The bundled package failed to import in a clean session.' }
 
     Write-Host "Staged single package at: $pkg" -ForegroundColor Green
@@ -573,7 +626,7 @@ function Invoke-PublishTask {
         return
     }
     Publish-Module -Path $pkg -NuGetApiKey $ApiKey -Repository PSGallery
-    Write-Host 'Published DotnetMove to the PowerShell Gallery.' -ForegroundColor Green
+    Write-Host 'Published netscoot to the PowerShell Gallery.' -ForegroundColor Green
 }
 
 switch ($Task) {
@@ -581,6 +634,7 @@ switch ($Task) {
     'Analyze' { Invoke-AnalyzeTask }
     'Install' { Invoke-InstallTask }
     'Docs' { Invoke-DocsTask }
+    'CheckDocs' { Assert-DocsNotStale }
     'Release' { Invoke-ReleaseTask }
     'Publish' { Invoke-PublishTask }
 }

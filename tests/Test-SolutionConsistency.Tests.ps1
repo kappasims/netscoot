@@ -2,11 +2,11 @@
 
 BeforeAll {
     . (Join-Path $PSScriptRoot TestHelpers.ps1)
-    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'DotnetMove.Core' ('DotnetMove.Core.psd1'))))) -Force
+    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Core' ('Netscoot.Core.psd1'))))) -Force
 
     function New-DivergentRepo {
         # Two solutions: Both.sln lists Lib+App; Partial.slnx lists App only -> Lib diverges.
-        $root = New-TempRoot -Prefix 'dotnetmove_div'
+        $root = New-TempRoot -Prefix 'netscoot_div'
         Push-Location $root
         try {
             & git init -q

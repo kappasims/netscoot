@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # DotnetMove delegates to the dotnet CLI and uses .slnx (SDK 9+); tests build net10 fixtures.
+      # Netscoot delegates to the dotnet CLI and uses .slnx (SDK 9+); tests build net10 fixtures.
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'

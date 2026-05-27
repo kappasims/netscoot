@@ -2,10 +2,10 @@
 
 BeforeAll {
     . (Join-Path $PSScriptRoot TestHelpers.ps1)
-    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'DotnetMove.Core' ('DotnetMove.Core.psd1'))))) -Force
+    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Core' ('Netscoot.Core.psd1'))))) -Force
 
     function New-SoloFixture {
-        $root = New-TempRoot -Prefix 'dotnetmove_cap'
+        $root = New-TempRoot -Prefix 'netscoot_cap'
         Push-Location $root
         try {
             New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
@@ -16,9 +16,9 @@ BeforeAll {
     }
 }
 
-Describe 'Get-DotnetMoveCapability' {
+Describe 'Get-ScootCapability' {
     It 'reports dotnet present with .slnx support and a platform' {
-        $cap = Get-DotnetMoveCapability
+        $cap = Get-ScootCapability
         $cap.Dotnet.Present | Should -BeTrue
         $cap.DotnetSupportsSlnx | Should -BeTrue          # .NET 9+ on this machine
         $cap.Platform | Should -BeIn @('Windows', 'macOS', 'Linux')
@@ -27,7 +27,7 @@ Describe 'Get-DotnetMoveCapability' {
 
 Describe 'Required-tool gating (dotnet)' {
     It 'aborts with a clear error when dotnet is missing' {
-        Mock -ModuleName DotnetMove.Shared Test-DotnetAvailable { $false }
+        Mock -ModuleName Netscoot.Shared Test-DotnetAvailable { $false }
         Move-DotnetProject -Project 'X:/nope/Foo.csproj' -Destination 'X:/dst' `
             -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
         $errs[0].FullyQualifiedErrorId | Should -Match 'DotnetMissing'
@@ -36,7 +36,7 @@ Describe 'Required-tool gating (dotnet)' {
 
 Describe 'Optional-tool fallback (git)' {
     It 'falls back to a plain move when git is missing and -Force is given' {
-        Mock -ModuleName DotnetMove.Shared Test-GitAvailable { $false }
+        Mock -ModuleName Netscoot.Shared Test-GitAvailable { $false }
         $root = New-SoloFixture
         try {
             $lib = Join-Path $root (Join-Path 'Lib' ('Lib.csproj'))

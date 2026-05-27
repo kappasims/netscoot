@@ -19,7 +19,7 @@ Describe 'First-party tooling drift monitor' {
         # Files allowed to write content directly:
         #   MSBuildImports.ps1 - IS the Set-Raw* helpers (the sanctioned solution/<Import>/script rewriters).
         #   Journal.ps1        - writes the repo-local undo journal and its self-.gitignore under
-        #                        .dotnetmove/; a tool sidecar, never a solution/project file, so the
+        #                        .netscoot/; a tool sidecar, never a solution/project file, so the
         #                        "no hand-writing project files" contract is unaffected.
         $sanctioned = @('MSBuildImports.ps1', 'Journal.ps1')
         $offenders = $srcFiles |

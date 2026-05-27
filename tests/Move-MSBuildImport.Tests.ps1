@@ -2,11 +2,11 @@
 
 BeforeAll {
     . (Join-Path $PSScriptRoot 'TestHelpers.ps1')
-    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'DotnetMove.Core' ('DotnetMove.Core.psd1'))))) -Force
+    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Core' ('Netscoot.Core.psd1'))))) -Force
 
     function New-ImportFixture {
         # root/Shared.props ; src/App/App.csproj imports it via ..\..\Shared.props
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_imp_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_imp_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
         $app = Join-Path (Join-Path $root 'src') 'App'
         New-Item -ItemType Directory -Path $app -Force | Out-Null
         Set-Content -LiteralPath (Join-Path $root 'Shared.props') -Encoding UTF8 -Value @'
@@ -33,7 +33,7 @@ BeforeAll {
 
     function New-VcxprojImportFixture {
         # root/Shared.props ; Native/Native.vcxproj (old-style, MSBuild xmlns) imports it via ..\Shared.props
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_vcx_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_vcx_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
         $nat = Join-Path $root 'Native'
         New-Item -ItemType Directory -Path $nat -Force | Out-Null
         Set-Content -LiteralPath (Join-Path $root 'Shared.props') -Encoding UTF8 -Value @'

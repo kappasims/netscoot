@@ -2,11 +2,11 @@
 
 BeforeAll {
     . (Join-Path $PSScriptRoot TestHelpers.ps1)
-    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'DotnetMove.Core' ('DotnetMove.Core.psd1'))))) -Force
+    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Core' ('Netscoot.Core.psd1'))))) -Force
 
     function New-TreeFixture {
         # group/{Lib, Lib2->Lib (internal)}, plus App outside group -> Lib (external). One solution.
-        $root = New-TempRoot -Prefix 'dotnetmove_tree'
+        $root = New-TempRoot -Prefix 'netscoot_tree'
         Push-Location $root
         try {
             & git init -q
@@ -58,7 +58,7 @@ Describe 'Move-DotnetProjectTree' {
     }
 
     It 'warns when the move changes Directory.Build.* inheritance' {
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_dbt_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_dbt_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
         New-Item -ItemType Directory -Path (Join-Path $root 'area') -Force | Out-Null
         Push-Location $root
         try {
@@ -76,7 +76,7 @@ Describe 'Move-DotnetProjectTree' {
     }
 
     It 'warns when the move changes Central Package Management (Directory.Packages.props) scope' {
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("dotnetmove_cpm_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_cpm_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
         New-Item -ItemType Directory -Path (Join-Path $root 'area') -Force | Out-Null
         Push-Location $root
         try {

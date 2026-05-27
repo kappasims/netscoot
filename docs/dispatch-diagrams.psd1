@@ -7,26 +7,26 @@
     # columns aligned by hand; '->' is the routing arrow. This is content, not generated - edit it
     # here when routing changes (and keep it in step with Resolve-MoveEngine / the dispatchers).
 
-    'Move-Dotnet' = @'
-.csproj  .fsproj  .vbproj  ->  DotnetMove.MoveResult
-folder of .NET projects    ->  DotnetMove.TreeMoveResult
-.sln  .slnx                ->  DotnetMove.SolutionMoveResult
-.props  .targets           ->  DotnetMove.ImportMoveResult
-.ps1                       ->  DotnetMove.ScriptMoveResult
-.psd1  module folder       ->  DotnetMove.PSModuleMoveResult
-.vcxproj                   ->  DotnetMove.NativeMoveResult
-Unity asset  .meta         ->  DotnetMove.UnityMoveResult
+    'Invoke-Scoot' = @'
+.csproj  .fsproj  .vbproj  ->  Netscoot.MoveResult
+folder of .NET projects    ->  Netscoot.TreeMoveResult
+.sln  .slnx                ->  Netscoot.SolutionMoveResult
+.props  .targets           ->  Netscoot.ImportMoveResult
+.ps1                       ->  Netscoot.ScriptMoveResult
+.psd1  module folder       ->  Netscoot.PSModuleMoveResult
+.vcxproj                   ->  Netscoot.NativeMoveResult
+Unity asset  .meta         ->  Netscoot.UnityMoveResult
 '@
 
     'Move-DotnetFile' = @'
-.csproj  .fsproj  .vbproj  ->  Move-DotnetProject   ->  DotnetMove.MoveResult
-.sln  .slnx                ->  Move-Solution        ->  DotnetMove.SolutionMoveResult
-.props  .targets           ->  Move-MSBuildImport   ->  DotnetMove.ImportMoveResult
+.csproj  .fsproj  .vbproj  ->  Move-DotnetProject   ->  Netscoot.MoveResult
+.sln  .slnx                ->  Move-Solution        ->  Netscoot.SolutionMoveResult
+.props  .targets           ->  Move-MSBuildImport   ->  Netscoot.ImportMoveResult
 '@
 
     'Move-PowerShell' = @'
-.ps1                   ->  Move-PowerShellScript  ->  DotnetMove.ScriptMoveResult
-.psd1  module folder   ->  Move-PowerShellModule  ->  DotnetMove.PSModuleMoveResult
+.ps1                   ->  Move-PowerShellScript  ->  Netscoot.ScriptMoveResult
+.psd1  module folder   ->  Move-PowerShellModule  ->  Netscoot.PSModuleMoveResult
 '@
 
     'Resolve-MoveEngine' = @'

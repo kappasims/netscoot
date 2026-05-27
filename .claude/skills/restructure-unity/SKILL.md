@@ -5,7 +5,7 @@ description: Use when moving, relocating, or restructuring assets/folders in a U
 
 # Restructuring Unity projects (cross-platform, incl. mobile)
 
-Purpose (full overview: the [DotnetMove README](https://github.com/kappasims/dotnet-move)): a move
+Purpose (full overview: the [netscoot README](https://github.com/kappasims/netscoot)): a move
 that does not break references. Where the .NET engines fix what a move breaks, the Unity engine
 prevents the break: it always moves an asset together with its `.meta`, so the GUID that scenes,
 prefabs, and asmdefs resolve by survives.
@@ -25,17 +25,17 @@ So the rule: **never move a Unity asset/folder without its `.meta`.** A folder's
 
 Before moving, audit with the read-only surface rather than scanning `.meta`/asmdef files by hand:
 `Test-UnityMetaIntegrity -Root ./Assets` (assets missing a `.meta`, orphan `.meta` whose asset is
-gone; see "Validate integrity" below) and `Resolve-MoveEngine` / `Get-DotnetMoveCapability`. If the
+gone; see "Validate integrity" below) and `Resolve-MoveEngine` / `Get-ScootCapability`. If the
 project also has a managed side (`.csproj`/`.sln`), `Test-SolutionConsistency`,
 `Get-SolutionInventory`, `Repair-SolutionReferences` (report mode), and `Sync-Solution` cover that.
 
 ## Use Move-UnityAsset
 
-`Import-Module DotnetMove` loads the Unity engine (install it first if needed; never
+`Import-Module Netscoot` loads the Unity engine (install it first if needed; never
 auto-install).
 
 ```powershell
-Import-Module DotnetMove
+Import-Module Netscoot
 Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/Tarragon -WhatIf
 ```
 
@@ -66,32 +66,32 @@ Unity analog of dangling references.
 ## Undoing a move
 
 Every move is journaled to a per-user data directory (LocalAppData on Windows, ~/Library/Application Support on macOS, ~/.local/share on Linux), so you can reverse it later -
-even in a new session - with `Undo-DotnetMove`. It replays the inverse (the asset and its `.meta`
+even in a new session - with `Undo-Scoot`. It replays the inverse (the asset and its `.meta`
 move back together).
 
 ```powershell
-Undo-DotnetMove -List     # what can be undone
-Undo-DotnetMove -WhatIf   # preview reversing the most recent move
-Undo-DotnetMove           # reverse the most recent move (call again to walk back)
+Undo-Scoot -List     # what can be undone
+Undo-Scoot -WhatIf   # preview reversing the most recent move
+Undo-Scoot           # reverse the most recent move (call again to walk back)
 ```
 
 Journaling is on by default and stays out of the working tree (it lives inside `.git/`, so git never tracks it).
-Opt out per repository with `Set-DotnetMoveJournal -Enabled $false` (or `-Global` for all repositories). See the [README](https://github.com/kappasims/dotnet-move).
+Opt out per repository with `Set-ScootJournal -Enabled $false` (or `-Global` for all repositories). See the [README](https://github.com/kappasims/netscoot).
 
-## The `git dotnetmv` verb (optional; ask first)
+## The `git netscoot` verb (optional; ask first)
 
-The same routing is also an opt-in git verb: `git dotnetmv <src> <dst> [--whatif]`. It needs a
-one-time alias that `Register-DotnetMvGitAlias` writes to the user's git config. If you suggest
+The same routing is also an opt-in git verb: `git netscoot <src> <dst> [--whatif]`. It needs a
+one-time alias that `Register-ScootGitAlias` writes to the user's git config. If you suggest
 it or want to use it, prompt the user first and let them register it; do not edit their git
 config for them. Never auto-install anything (git, the dotnet SDK, or these modules): if a
 prerequisite is missing, tell the user the install command and let them run it.
 
 ## Staying current
 
-DotnetMove does not auto-update; cutting a release changes nothing on an installed machine until
-you update. Check with `Test-DotnetMoveUpdate` (it compares the installed module to the latest
-GitHub release). Update in place with `Update-DotnetMove` (no git), or re-run the installer:
-`irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 | iex`. From a dev
+netscoot does not auto-update; cutting a release changes nothing on an installed machine until
+you update. Check with `Test-ScootUpdate` (it compares the installed module to the latest
+GitHub release). Update in place with `Update-Scoot` (no git), or re-run the installer:
+`irm https://raw.githubusercontent.com/kappasims/netscoot/master/install.ps1 | iex`. From a dev
 clone instead, `git pull` then `./build.ps1 -Task Install`. For automatic reminders, consider a
-Claude Code SessionStart hook that runs `Test-DotnetMoveUpdate -EnableAutoUpdate` (gated: it checks only when `$env:DOTNETMOVE_AUTOUPDATE` is truthy, and never updates); ask the user before adding it,
+Claude Code SessionStart hook that runs `Test-ScootUpdate -EnableAutoUpdate` (gated: it checks only when `$env:NETSCOOT_AUTOUPDATE` is truthy, and never updates); ask the user before adding it,
 since it edits their settings.json.

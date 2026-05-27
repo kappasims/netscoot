@@ -5,9 +5,9 @@ description: Use when moving, relocating, or restructuring managed .NET projects
 
 # Restructuring managed .NET repositories (cross-platform)
 
-Purpose (full overview: the [DotnetMove README](https://github.com/kappasims/dotnet-move)): a move
+Purpose (full overview: the [netscoot README](https://github.com/kappasims/netscoot)): a move
 that fixes what it would otherwise break. Dragging a project in Visual Studio reconciles the
-`.sln`/`.slnx`, the `<ProjectReference>`s that point at it, and the GUID wiring; DotnetMove does the
+`.sln`/`.slnx`, the `<ProjectReference>`s that point at it, and the GUID wiring; netscoot does the
 same from the command line, everywhere Visual Studio is not, delegating every path/GUID change to
 first-party tooling rather than hand-editing files.
 
@@ -20,7 +20,7 @@ PowerShell modules/scripts, see the `restructure-powershell` skill.
 Relative paths and solution GUIDs drift out of sync when typed by hand. Delegate every
 path/GUID change to first-party tooling.
 
-Use the installed `DotnetMove` module (`Import-Module DotnetMove`). If it is not installed, point
+Use the installed `netscoot` module (`Import-Module Netscoot`). If it is not installed, point
 the user to the project's install steps and let them run them; never auto-install.
 
 ## Analyze/audit first (read-only)
@@ -35,7 +35,7 @@ To understand a repository before touching it, use these; do not parse solution/
 - `Repair-SolutionReferences` (no flags) - report dangling solution entries / `<ProjectReference>`s.
 - `Find-PathReference` - build/CI/hook scripts that hardcode a path no move reconciles.
 - `Resolve-MoveEngine` - which engine a given path classifies to.
-- `Get-DotnetMoveCapability` - whether git and dotnet are present, plus the platform.
+- `Get-ScootCapability` - whether git and dotnet are present, plus the platform.
 
 To resolve a divergence that `Test-SolutionConsistency` reports, run `Sync-Solution` (it adds each
 project to the solutions missing it; preview with `-WhatIf`), or add it by hand with
@@ -45,7 +45,7 @@ project to the solutions missing it; preview with `-WhatIf`), or add it by hand 
 ## Moving a .NET project
 
 ```powershell
-Import-Module DotnetMove
+Import-Module Netscoot
 # Always dry-run first:
 Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
 # Then for real:
@@ -95,32 +95,32 @@ Use the raw CLI, never a text editor:
 ## Undoing a move
 
 Every move is journaled to a per-user data directory (LocalAppData on Windows, ~/Library/Application Support on macOS, ~/.local/share on Linux), so you can reverse it later -
-even in a new session - with `Undo-DotnetMove`. It replays the inverse (the same move with source
+even in a new session - with `Undo-Scoot`. It replays the inverse (the same move with source
 and destination swapped), re-reconciling from the current state.
 
 ```powershell
-Undo-DotnetMove -List     # what can be undone
-Undo-DotnetMove -WhatIf   # preview reversing the most recent move
-Undo-DotnetMove           # reverse the most recent move (call again to walk back)
+Undo-Scoot -List     # what can be undone
+Undo-Scoot -WhatIf   # preview reversing the most recent move
+Undo-Scoot           # reverse the most recent move (call again to walk back)
 ```
 
 Journaling is on by default and stays out of the working tree (it lives inside `.git/`, so git never tracks it).
-Opt out per repository with `Set-DotnetMoveJournal -Enabled $false` (or `-Global` for all repositories). See the [README](https://github.com/kappasims/dotnet-move).
+Opt out per repository with `Set-ScootJournal -Enabled $false` (or `-Global` for all repositories). See the [README](https://github.com/kappasims/netscoot).
 
-## The `git dotnetmv` verb (optional; ask first)
+## The `git netscoot` verb (optional; ask first)
 
-The same routing is also an opt-in git verb: `git dotnetmv <src> <dst> [--whatif]`. It needs a
-one-time alias that `Register-DotnetMvGitAlias` writes to the user's git config. If you suggest
+The same routing is also an opt-in git verb: `git netscoot <src> <dst> [--whatif]`. It needs a
+one-time alias that `Register-ScootGitAlias` writes to the user's git config. If you suggest
 it or want to use it, prompt the user first and let them register it; do not edit their git
 config for them. Never auto-install anything (git, the dotnet SDK, or these modules): if a
 prerequisite is missing, tell the user the install command and let them run it.
 
 ## Staying current
 
-DotnetMove does not auto-update; cutting a release changes nothing on an installed machine until
-you update. Check with `Test-DotnetMoveUpdate` (it compares the installed module to the latest
-GitHub release). Update in place with `Update-DotnetMove` (no git), or re-run the installer:
-`irm https://raw.githubusercontent.com/kappasims/dotnet-move/master/install.ps1 | iex`. From a dev
+netscoot does not auto-update; cutting a release changes nothing on an installed machine until
+you update. Check with `Test-ScootUpdate` (it compares the installed module to the latest
+GitHub release). Update in place with `Update-Scoot` (no git), or re-run the installer:
+`irm https://raw.githubusercontent.com/kappasims/netscoot/master/install.ps1 | iex`. From a dev
 clone instead, `git pull` then `./build.ps1 -Task Install`. For automatic reminders, consider a
-Claude Code SessionStart hook that runs `Test-DotnetMoveUpdate -EnableAutoUpdate` (gated: it checks only when `$env:DOTNETMOVE_AUTOUPDATE` is truthy, and never updates); ask the user before adding it,
+Claude Code SessionStart hook that runs `Test-ScootUpdate -EnableAutoUpdate` (gated: it checks only when `$env:NETSCOOT_AUTOUPDATE` is truthy, and never updates); ask the user before adding it,
 since it edits their settings.json.

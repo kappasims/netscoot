@@ -2,11 +2,11 @@
 
 BeforeAll {
     . (Join-Path $PSScriptRoot TestHelpers.ps1)
-    Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'DotnetMove.Core', 'DotnetMove.Core.psd1')) -Force
+    Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'Netscoot.Core', 'Netscoot.Core.psd1')) -Force
 
     function New-RepairFixtureBase {
         # App -> Lib in a solution. Returns the repo root with Lib still in place.
-        $root = New-TempRoot -Prefix 'dotnetmove_rep'
+        $root = New-TempRoot -Prefix 'netscoot_rep'
         Push-Location $root
         try {
             & git init -q
@@ -39,7 +39,7 @@ BeforeAll {
         # App -> Widgets (at src/Widgets), in a solution. A second, unrelated project also named
         # Widgets.csproj lives at $DecoyDir, so the leaf name 'Widgets.csproj' is not unique.
         param([Parameter(Mandatory)][string]$DecoyDir)
-        $root = New-TempRoot -Prefix 'dotnetmove_amb'
+        $root = New-TempRoot -Prefix 'netscoot_amb'
         $srcWidgets = Join-Path $root (Join-Path 'src' 'Widgets')
         Push-Location $root
         try {

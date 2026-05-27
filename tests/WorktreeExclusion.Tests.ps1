@@ -2,12 +2,12 @@
 
 BeforeAll {
     . (Join-Path $PSScriptRoot TestHelpers.ps1)
-    Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'DotnetMove.Core', 'DotnetMove.Core.psd1')) -Force
+    Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'Netscoot.Core', 'Netscoot.Core.psd1')) -Force
 
     function New-RepoWithNestedWorktree {
         # A repo with a .sln and a .slnx (both listing Lib), plus a linked git worktree nested
         # under .claude/worktrees/wt holding duplicate copies of all of it.
-        $root = New-TempRoot -Prefix 'dotnetmove_wt'
+        $root = New-TempRoot -Prefix 'netscoot_wt'
         Push-Location $root
         try {
             & git init -q
@@ -28,7 +28,7 @@ Describe 'Nested worktrees are excluded from repo scans' {
     It 'Find-Solutions ignores the worktree copies' {
         $root = New-RepoWithNestedWorktree
         try {
-            InModuleScope DotnetMove.Shared -Parameters @{ Root = $root } {
+            InModuleScope Netscoot.Shared -Parameters @{ Root = $root } {
                 param($Root)
                 # Two solutions at the root, not the four that the worktree copy would add.
                 @(Find-Solutions -Root $Root).Count | Should -Be 2

@@ -2,10 +2,10 @@
 
 BeforeAll {
     . (Join-Path $PSScriptRoot TestHelpers.ps1)
-    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'DotnetMove.Core' ('DotnetMove.Core.psd1'))))) -Force
+    Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Core' ('Netscoot.Core.psd1'))))) -Force
 
     function New-DispatchFixture {
-        $root = New-TempRoot -Prefix 'dotnetmove_disp'
+        $root = New-TempRoot -Prefix 'netscoot_disp'
         Push-Location $root
         try {
             & git init -q
@@ -35,7 +35,7 @@ Describe 'Move-DotnetFile (routing)' {
         $root = New-DispatchFixture
         try {
             $r = Move-DotnetFile -Path (Join-Path $root 'Demo.slnx') -Destination (Join-Path $root (Join-Path 'build' ('Demo.slnx'))) -Confirm:$false -WarningAction SilentlyContinue
-            $r.PSObject.TypeNames[0] | Should -Be 'DotnetMove.SolutionMoveResult'
+            $r.PSObject.TypeNames[0] | Should -Be 'Netscoot.SolutionMoveResult'
             (Join-Path $root (Join-Path 'build' ('Demo.slnx'))) | Should -Exist
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -44,7 +44,7 @@ Describe 'Move-DotnetFile (routing)' {
         $root = New-DispatchFixture
         try {
             $r = Move-DotnetFile -Path (Join-Path $root 'Shared.props') -Destination (Join-Path $root (Join-Path 'build' ('Shared.props'))) -RepoRoot $root -Confirm:$false -WarningAction SilentlyContinue
-            $r.PSObject.TypeNames[0] | Should -Be 'DotnetMove.ImportMoveResult'
+            $r.PSObject.TypeNames[0] | Should -Be 'Netscoot.ImportMoveResult'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
@@ -67,13 +67,13 @@ Describe 'Move-DotnetFile (routing)' {
     }
 }
 
-Describe 'Move-Dotnet (legacy .vcproj)' {
+Describe 'Invoke-Scoot (legacy .vcproj)' {
     It 'rejects a legacy .vcproj with a clear, specific error' {
         $root = New-DispatchFixture
         try {
             $vcproj = Join-Path $root 'Old.vcproj'
             Set-Content -LiteralPath $vcproj -Value '<VisualStudioProject></VisualStudioProject>' -Encoding UTF8
-            Move-Dotnet -Path $vcproj -Destination (Join-Path $root 'moved') -Confirm:$false `
+            Invoke-Scoot -Path $vcproj -Destination (Join-Path $root 'moved') -Confirm:$false `
                 -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
             $errs[0].FullyQualifiedErrorId | Should -Match 'LegacyVcprojNotSupported'
             $vcproj | Should -Exist   # nothing moved
@@ -86,7 +86,7 @@ Describe 'Move-DotnetFolder (routing)' {
         $root = New-DispatchFixture
         try {
             $r = Move-DotnetFolder -Path (Join-Path $root 'src') -Destination (Join-Path $root 'source') -RepoRoot $root -NoBuild -Confirm:$false -WarningAction SilentlyContinue
-            $r.PSObject.TypeNames[0] | Should -Be 'DotnetMove.TreeMoveResult'
+            $r.PSObject.TypeNames[0] | Should -Be 'Netscoot.TreeMoveResult'
             (Join-Path $root (Join-Path 'source' (Join-Path 'Lib' ('Lib.csproj')))) | Should -Exist
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
