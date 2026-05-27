@@ -13,11 +13,11 @@ function Move-MSBuildImport {
         tokens are reported as unresolved rather than guessed.
 
         Note: Directory.Build.props/.targets (and Directory.Packages.props, etc.) are imported
-        by location, not an explicit <Import> - moving one changes inheritance scope, which
+        by location, not an explicit `<Import>` - moving one changes inheritance scope, which
         cannot be "fixed" by editing imports. For those this warns (like the inheritance check)
         and only fixes the file's own outgoing imports.
 
-        Importers may include native .vcxproj files; their <Import> path is fixed on any OS (a
+        Importers may include native .vcxproj files; their `<Import>` path is fixed on any OS (a
         best-effort, path-only update), but a .vcxproj's native link settings are never
         reconciled off Windows; that remains Move-NativeProject's Windows-only job.
 

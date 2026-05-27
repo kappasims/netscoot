@@ -5,7 +5,7 @@ function Repair-SolutionReferences {
         by re-pointing each entry at the project's new location.
 
     .DESCRIPTION
-        Finds solution entries and <ProjectReference>s that point at a project file which no longer
+        Finds solution entries and `<ProjectReference>`s that point at a project file which no longer
         exists at the recorded path (usually because a project was moved or renamed without
         reconciling). Read-only by default: It returns one object per problem, each tagged with a
         Resolution of Relocatable, Missing, or Ambiguous.

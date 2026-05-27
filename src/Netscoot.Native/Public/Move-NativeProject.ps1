@@ -8,7 +8,7 @@ function Move-NativeProject {
     .DESCRIPTION
         Native projects link through MSBuild settings the dotnet CLI does not touch:
         AdditionalIncludeDirectories / AdditionalLibraryDirectories / AdditionalDependencies,
-        <Import> of shared .props/.targets, $(SolutionDir)-relative OutDir, and the paired
+        `<Import>` of shared .props/.targets, $(SolutionDir)-relative OutDir, and the paired
         .vcxproj.filters. C++/CLI is Windows-only, so this cmdlet refuses to run elsewhere.
 
         It will: Update .sln/.slnx membership via 'dotnet sln' (which understands .vcxproj),

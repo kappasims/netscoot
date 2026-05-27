@@ -6,7 +6,7 @@ function Test-UnityMetaIntegrity {
         references - both lead to broken/regenerated GUIDs.
 
     .DESCRIPTION
-        Walks the tree and pairs every asset (file or folder) with its '<name>.meta'.
+        Walks the tree and pairs every asset (file or folder) with its `<name>.meta`.
         Emits one object per problem and surfaces it through the standard streams so behavior
         follows invocation: By default it writes a Warning per problem; -Strict escalates each to
         a non-terminating error (honoring -ErrorAction). Objects are always emitted so results are

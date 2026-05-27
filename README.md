@@ -1089,11 +1089,11 @@ changes. The `$(MSBuildThisFileDirectory)` token is resolved/preserved; other `$
 tokens are reported as unresolved rather than guessed.
 
 Note: Directory.Build.props/.targets (and Directory.Packages.props, etc.) are imported
-by location, not an explicit &lt;Import&gt; - moving one changes inheritance scope, which
+by location, not an explicit `<Import>` - moving one changes inheritance scope, which
 cannot be "fixed" by editing imports. For those this warns (like the inheritance check)
 and only fixes the file's own outgoing imports.
 
-Importers may include native .vcxproj files; their &lt;Import&gt; path is fixed on any OS (a
+Importers may include native .vcxproj files; their `<Import>` path is fixed on any OS (a
 best-effort, path-only update), but a .vcxproj's native link settings are never
 reconciled off Windows; that remains Move-NativeProject's Windows-only job.
 
@@ -1346,7 +1346,7 @@ A solution stores each project as a path relative to the solution file. Moving t
 solution changes that base directory, so every entry must be recomputed. The dotnet
 CLI has no "rebase" command, so this rewrites the stored paths with precise,
 formatting- and BOM-preserving edits. It replaces the exact path token captured from the
-file (the .slnx &lt;Project Path="..."&gt; or the .sln project line), not a blind regex, and
+file (the .slnx `<Project Path="...">` or the .sln project line), not a blind regex, and
 keeps each format's separator convention (/ for .slnx, \ for .sln). Project-to-project
 references are unaffected by a solution move and are left alone.
 
@@ -1461,7 +1461,7 @@ by re-pointing each entry at the project's new location.
 Repair-SolutionReferences [[-RepositoryRoot] <string>] [-Fix] [-Prune] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-Finds solution entries and &lt;ProjectReference&gt;s that point at a project file which no longer
+Finds solution entries and `<ProjectReference>`s that point at a project file which no longer
 exists at the recorded path (usually because a project was moved or renamed without
 reconciling). Read-only by default: It returns one object per problem, each tagged with a
 Resolution of Relocatable, Missing, or Ambiguous.
@@ -1998,7 +1998,7 @@ Move-NativeProject [-Project] <string> -Destination <string> [-RepositoryRoot <s
 
 Native projects link through MSBuild settings the dotnet CLI does not touch:
 AdditionalIncludeDirectories / AdditionalLibraryDirectories / AdditionalDependencies,
-&lt;Import&gt; of shared .props/.targets, `$(SolutionDir)`-relative OutDir, and the paired
+`<Import>` of shared .props/.targets, `$(SolutionDir)`-relative OutDir, and the paired
 .vcxproj.filters. C++/CLI is Windows-only, so this cmdlet refuses to run elsewhere.
 
 It will: Update .sln/.slnx membership via 'dotnet sln' (which understands .vcxproj),
@@ -2063,7 +2063,7 @@ that scene/prefab/asmdef references depend on survive the move.
 Move-UnityAsset [-AssetPath] <string> -Destination <string> [-RepositoryRoot <string>] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-In Unity every asset and folder has a sibling '&lt;name&gt;.meta' carrying a stable GUID.
+In Unity every asset and folder has a sibling `<name>.meta` carrying a stable GUID.
 References (in scenes, prefabs, and asmdef "references" entries of the form
 "GUID:...") resolve by that GUID, not by path. If you move files on disk without
 their .meta, Unity regenerates fresh GUIDs and every reference to them breaks.
@@ -2133,7 +2133,7 @@ references - both lead to broken/regenerated GUIDs.
 Test-UnityMetaIntegrity [[-Root] <string>] [-Strict] [<CommonParameters>]
 ```
 
-Walks the tree and pairs every asset (file or folder) with its '&lt;name&gt;.meta'.
+Walks the tree and pairs every asset (file or folder) with its `<name>.meta`.
 Emits one object per problem and surfaces it through the standard streams so behavior
 follows invocation: By default it writes a Warning per problem; `-Strict` escalates each to
 a non-terminating error (honoring `-ErrorAction`). Objects are always emitted so results are

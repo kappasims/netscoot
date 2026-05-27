@@ -9,7 +9,7 @@ function Move-Solution {
         solution changes that base directory, so every entry must be recomputed. The dotnet
         CLI has no "rebase" command, so this rewrites the stored paths with precise,
         formatting- and BOM-preserving edits. It replaces the exact path token captured from the
-        file (the .slnx <Project Path="..."> or the .sln project line), not a blind regex, and
+        file (the .slnx `<Project Path="...">` or the .sln project line), not a blind regex, and
         keeps each format's separator convention (/ for .slnx, \ for .sln). Project-to-project
         references are unaffected by a solution move and are left alone.
 

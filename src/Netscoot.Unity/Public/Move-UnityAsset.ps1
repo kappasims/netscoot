@@ -5,7 +5,7 @@ function Move-UnityAsset {
         that scene/prefab/asmdef references depend on survive the move.
 
     .DESCRIPTION
-        In Unity every asset and folder has a sibling '<name>.meta' carrying a stable GUID.
+        In Unity every asset and folder has a sibling `<name>.meta` carrying a stable GUID.
         References (in scenes, prefabs, and asmdef "references" entries of the form
         "GUID:...") resolve by that GUID, not by path. If you move files on disk without
         their .meta, Unity regenerates fresh GUIDs and every reference to them breaks.
