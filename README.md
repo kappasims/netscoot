@@ -393,6 +393,11 @@ Every move upholds these guarantees:
 4. **No unverified compliance.** These guarantees are enforced, not merely promised:
    `tests/FirstPartyDrift.Tests.ps1` fails the build if a new file writes file content or a new cmdlet
    calls the raw writers.
+5. **Detection is bounded and report-only.** `Find-PathReference` flags hardcoded paths in a known
+   set of build/CI/hook/automation files and never edits them. It does not analyze application
+   source for runtime or computed path use (`Path.Combine`, config, environment variables, P/Invoke):
+   resolving those statically is undecidable, so the tool reports what it can match by hand and never
+   claims to find every reference.
 
 ## Building
 
