@@ -98,7 +98,9 @@ function Repair-NetscootJournal {
         return $interrupted
     }
 
-    $targets = if ($Id) { @($interrupted | Where-Object { "$($_.id)" -eq $Id }) } else { $interrupted }
+    # Wrap the whole if-expression in @(): a single-element result flowing out of an if-block unwraps
+    # to a scalar, and Windows PowerShell 5.1 (StrictMode) then has no .Count on it.
+    $targets = @(if ($Id) { $interrupted | Where-Object { "$($_.id)" -eq $Id } } else { $interrupted })
     if (-not $targets.Count) {
         $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
                 [System.InvalidOperationException]::new("No interrupted move$(if ($Id) { " with id '$Id'" }) for '$repoFull'."),

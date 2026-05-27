@@ -298,9 +298,9 @@ function Invoke-DocsTask {
         $t
     }
 
-    # Render reference-table text one font size down. <small> is the semantic "one step smaller"
-    # element and, unlike <sub>, does not shift the baseline; markdown inside it still renders.
-    function Format-Small { param([string]$Text) "<small>$Text</small>" }
+    # Pass-through: the reference tables used to wrap cells in <small>, but that is inline HTML
+    # (markdownlint MD033) and we keep the docs HTML-free, so cells render at normal size.
+    function Format-Small { param([string]$Text) $Text }
 
     # Common parameters Get-Help lists without descriptions; supply our own so the table is complete.
     $commonDesc = @{
@@ -332,7 +332,7 @@ function Invoke-DocsTask {
     function Add-IndexTable {
         param([string[]]$Commands)
         [void]$sb.AppendLine('| ' + (Format-Small 'Command') + ' | ' + (Format-Small 'What it does') + ' |')
-        [void]$sb.AppendLine('|:---|:---|')
+        [void]$sb.AppendLine('| :--- | :--- |')
         foreach ($name in $Commands) {
             $link = Format-Small ('[' + $name + '](#' + $name.ToLower() + ')')
             $blurbCell = Format-Small ((ConvertTo-MdText ("$($blurbs[$name])")).Replace('|', '\|'))
@@ -390,7 +390,7 @@ function Invoke-DocsTask {
                 [void]$sb.AppendLine()
                 $hdr = @('Name', 'Type', 'Required', 'Pipeline', 'Description') | ForEach-Object { Format-Small $_ }
                 [void]$sb.AppendLine('| ' + ($hdr -join ' | ') + ' |')
-                [void]$sb.AppendLine('|:---|:---|:---|:---|:---|')
+                [void]$sb.AppendLine('| :--- | :--- | :--- | :--- | :--- |')
                 foreach ($p in $params) {
                     $pdText = (Format-HelpText $p.description) -replace '\r?\n', ' '
                     if (-not $pdText -and $commonDesc.ContainsKey($p.name)) { $pdText = $commonDesc[$p.name] }
@@ -494,7 +494,7 @@ function Invoke-DocsTask {
     [void]$sb.AppendLine()
     $sortedTypes = @($typeDefs.Keys | Sort-Object)
     [void]$sb.AppendLine('| ' + (Format-Small 'Type') + ' | ' + (Format-Small 'Represents') + ' |')
-    [void]$sb.AppendLine('|:---|:---|')
+    [void]$sb.AppendLine('| :--- | :--- |')
     foreach ($name in $sortedTypes) {
         $sm = (ConvertTo-MdText ("$($typeDefs[$name].Summary)")).Replace('|', '\|')
         [void]$sb.AppendLine('| ' + (Format-Small (Format-TypeLink $name)) + ' | ' + (Format-Small $sm) + ' |')
