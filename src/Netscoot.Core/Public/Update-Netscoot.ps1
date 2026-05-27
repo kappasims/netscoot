@@ -13,12 +13,14 @@ function Update-Netscoot {
         Needs network access to GitHub. For Gallery installs, `Update-Module Netscoot` is the
         simpler path; this command updates installer/clone installs in place from the GitHub release.
 
-        Policy kill-switch: when the update policy is Disabled (see Set-NetscootUpdatePolicy, or an
-        administrator's Group Policy / Intune push), this refuses to update so machine state stays
-        managed. -Force overrides the policy (and also reinstalls when current).
+        Policy kill-switch: when the update policy is Disabled (see Set-NetscootUpdatePolicy), this
+        refuses to update so machine state stays managed. -Force overrides a Disabled you set for
+        yourself (process or user scope), but NOT one an administrator pushed machine-wide (Group
+        Policy / Intune), so -Force cannot defeat a managed fleet's kill-switch.
 
     .PARAMETER Force
-        Reinstall the latest release even if already current, and override a Disabled update policy.
+        Reinstall the latest release even if already current, and override a Disabled update policy
+        that you set for yourself. A machine-scope (administrator) Disabled is never overridden.
 
     .PARAMETER Repository
         owner/name of the GitHub repository. Defaults to the project repository.
@@ -43,11 +45,20 @@ function Update-Netscoot {
     )
 
     # Policy kill-switch (GPO/Intune-friendly): refuse when the update policy is Disabled, so a
-    # managed fleet does not self-update outside its own pipeline. -Force overrides. Checked before
-    # the network call so a disabled fleet makes no request.
-    if ((-not $Force) -and ((Get-NetscootUpdatePolicy).State -eq 'Disabled')) {
-        Write-Warning 'Updates are disabled by the update policy. Use -Force to override, or run Set-NetscootUpdatePolicy -State Manual.'
-        return
+    # managed fleet does not self-update outside its own pipeline. Checked before the network call
+    # so a disabled fleet makes no request. -Force overrides a Disabled the user set for themselves
+    # (Process/User scope), but NOT one pushed by an administrator (Machine scope) - otherwise -Force
+    # would defeat the fleet kill-switch.
+    $policy = Get-NetscootUpdatePolicy
+    if ($policy.State -eq 'Disabled') {
+        if ($policy.Source -eq 'Machine') {
+            Write-Warning 'Updates are disabled by an administrator (machine-scope policy); -Force cannot override. Update through your managed pipeline, or contact your administrator.'
+            return
+        }
+        if (-not $Force) {
+            Write-Warning 'Updates are disabled by the update policy. Use -Force to override, or run Set-NetscootUpdatePolicy -State Manual.'
+            return
+        }
     }
 
     $check = Test-NetscootUpdate -Repository $Repository

@@ -2126,14 +2126,15 @@ Checks GitHub for a newer release (via Test-NetscootUpdate) and, if the installe
 `-Force`. Honors `-WhatIf`/`-Confirm`. After it runs, reload the module in the current session with
 `Import-Module Netscoot -Force`. Needs network access to GitHub. For Gallery installs, `Update-Module Netscoot` is the
 simpler path; this command updates installer/clone installs in place from the GitHub release. Policy kill-switch: when
-the update policy is Disabled (see Set-NetscootUpdatePolicy, or an administrator's Group Policy / Intune push), this
-refuses to update so machine state stays managed. `-Force` overrides the policy (and also reinstalls when current).
+the update policy is Disabled (see Set-NetscootUpdatePolicy), this refuses to update so machine state stays managed.
+`-Force` overrides a Disabled you set for yourself (process or user scope), but NOT one an administrator pushed
+machine-wide (Group Policy / Intune), so `-Force` cannot defeat a managed fleet's kill-switch.
 
 ##### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Force` | SwitchParameter | false | false | Reinstall the latest release even if already current, and override a Disabled update policy. |
+| `‑Force` | SwitchParameter | false | false | Reinstall the latest release even if already current, and override a Disabled update policy that you set for yourself. A machine-scope (administrator) Disabled is never overridden. |
 | `‑Repository` | String | false | false | owner/name of the GitHub repository. Defaults to the project repository. |
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
