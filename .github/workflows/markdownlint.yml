@@ -1,0 +1,23 @@
+name: Markdownlint
+
+# Enforce DavidAnson/markdownlint on all Markdown (README + skills + docs). Config in
+# .markdownlint.jsonc tunes only MD013/MD024 to the generated reference's shape; the rest are
+# defaults. The repo has no other Node tooling, so this job sets up Node and runs the CLI.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  markdownlint:
+    name: markdownlint-cli2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Lint Markdown
+        run: npx --yes markdownlint-cli2 "**/*.md"

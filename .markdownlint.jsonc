@@ -1,0 +1,11 @@
+{
+  // Parameter tuning only - no rule is disabled to hide a defect. These adapt two rules to the
+  // generated reference's structure; everything else runs at markdownlint defaults.
+  //
+  // MD013 (line-length): prose gets a sane width, but generated tables and code blocks cannot be
+  // re-wrapped, so they are exempt from the length check.
+  "MD013": { "line_length": 120, "tables": false, "code_blocks": false },
+  // MD024 (no-duplicate-headings): every command's detail repeats the "Syntax"/"Parameters"/
+  // "Output"/"Examples" sub-headings; allow duplicates that are not siblings of each other.
+  "MD024": { "siblings_only": true }
+}
