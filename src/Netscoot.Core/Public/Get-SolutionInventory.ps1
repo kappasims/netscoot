@@ -1,8 +1,8 @@
 function Get-SolutionInventory {
     <#
     .SYNOPSIS
-        List the full contents of every solution in a repository - projects of any type, solution
-        folders, and solution items - plus on-disk projects that no solution references.
+        List the full contents of every solution in a repository (projects of any type, solution
+        folders, and solution items), plus on-disk projects that no solution references.
 
     .DESCRIPTION
         Where Test-SolutionConsistency compares membership and Repair-SolutionReferences finds

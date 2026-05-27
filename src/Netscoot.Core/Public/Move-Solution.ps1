@@ -8,9 +8,9 @@ function Move-Solution {
         A solution stores each project as a path relative to the solution file. Moving the
         solution changes that base directory, so every entry must be recomputed. The dotnet
         CLI has no "rebase" command, so this rewrites the stored paths with precise,
-        formatting- and BOM-preserving edits (it replaces the exact path token captured from
-        the file - .slnx <Project Path="..."> or the .sln project line - not a blind regex),
-        keeping each format's separator convention (/ for .slnx, \ for .sln). Project-to-project
+        formatting- and BOM-preserving edits. It replaces the exact path token captured from the
+        file (the .slnx <Project Path="..."> or the .sln project line), not a blind regex, and
+        keeps each format's separator convention (/ for .slnx, \ for .sln). Project-to-project
         references are unaffected by a solution move and are left alone.
 
         git is used when available (else confirmed plain-move fallback via -Force). -WhatIf

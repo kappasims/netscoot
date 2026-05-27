@@ -14,8 +14,8 @@ function Update-Netscoot {
         simpler path; this command updates installer/clone installs in place from the GitHub release.
 
         Policy kill-switch: when $env:NETSCOOT_AUTOUPDATE is set to a falsy value (0/false/off/no/
-        disabled) - e.g. pushed by IT via Group Policy / Intune - this refuses to update so machine
-        state stays managed. -Force overrides the policy (and also reinstalls when already current).
+        disabled), for example pushed by IT via Group Policy or Intune, this refuses to update so
+        machine state stays managed. -Force overrides the policy (and also reinstalls when current).
 
     .PARAMETER Force
         Reinstall the latest release even if already current, and override the

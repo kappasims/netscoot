@@ -2,10 +2,11 @@
 
 [![PowerShell Gallery](https://img.shields.io/powershellgallery/v/Netscoot?logo=powershell&label=PowerShell%20Gallery)](https://www.powershellgallery.com/packages/Netscoot) [![Downloads](https://img.shields.io/powershellgallery/dt/Netscoot?label=downloads)](https://www.powershellgallery.com/packages/Netscoot)
 
-netscoot moves a .NET project folder and fixes everything the move would otherwise break: the
-solution file, the references that point at it, and the GUID wiring. Visual Studio does that for you
-when you drag a project in its GUI; netscoot does it from the command line, everywhere Visual
-Studio is not, including VS Code, Rider, CI, Linux, macOS, and AI coding agents.
+netscoot moves a .NET project folder without breaking what depends on it. It reconciles the solution
+file, the references that point at it, and the GUID wiring as part of the move, and rolls back to the
+original state if anything fails. Visual Studio does that for you when you drag a project in its GUI;
+netscoot does it from the command line, everywhere Visual Studio is not, including VS Code, Rider,
+CI, Linux, macOS, and AI coding agents.
 
 ```powershell
 # moves the files and fixes the .sln, references, and GUIDs
@@ -66,6 +67,29 @@ Everything netscoot creates or changes, so there are no surprises:
   netscoot.journal false` when git is present, else the `NETSCOOT_JOURNAL` env var).
 - `Set-NetscootJournal` writes the `netscoot.journal` git setting (repository-local, or `-Global`
   for every repository); `Clear-NetscootJournal` deletes a repository's journal file.
+
+### Environment variables
+
+netscoot reads no environment variables by default. Each one below is an opt-in control; the
+journaling switches also have a git-config equivalent that outranks them.
+
+| Variable | Values | Effect |
+|:---|:---|:---|
+| <small>`NETSCOOT_JOURNAL`</small> | <small>`off`/`0`/`false`</small> | <small>Turns the undo journal off. The no-git escape hatch; `git config netscoot.journal` outranks it.</small> |
+| <small>`NETSCOOT_JOURNAL_HOME`</small> | <small>a directory</small> | <small>Relocates the journal store away from the per-user data dir above (point it at a roaming or managed path).</small> |
+| <small>`NETSCOOT_AUTOUPDATE`</small> | <small>`true` / `false`</small> | <small>Gates the opt-in update check. `Test-NetscootUpdate -EnableAutoUpdate` runs only when truthy; `false` disables it fleet-wide and blocks `Update-Netscoot` (`-Force` overrides). Unset means no auto-check.</small> |
+| <small>`NETSCOOT_JOURNAL_SUPPRESS`</small> | <small>internal</small> | <small>Set by `Undo-Netscoot` around its own reverse move so the undo is not itself journaled. Not meant to be set by hand.</small> |
+
+Journaling resolves in this order, first match wins: `NETSCOOT_JOURNAL_SUPPRESS` (internal), then
+`git config netscoot.journal` (local over global), then `NETSCOOT_JOURNAL`, then on.
+
+Common scenarios:
+
+- Stop journaling in one repository: `git config netscoot.journal false` (or `Set-NetscootJournal -Enabled $false`).
+- Stop it for every repository: `git config --global netscoot.journal false`, or install with `-NoJournal`. With no git, set `NETSCOOT_JOURNAL=off` in your profile.
+- Move the journal off its default location: set `NETSCOOT_JOURNAL_HOME` to the path you want.
+- Turn on update reminders: set `NETSCOOT_AUTOUPDATE=true` and have a SessionStart hook run `Test-NetscootUpdate -EnableAutoUpdate`.
+- Block self-updates across a managed fleet: push `NETSCOOT_AUTOUPDATE=false` via Group Policy or Intune.
 
 ### What it doesn't do
 
@@ -464,7 +488,7 @@ tests/                   Pester tests + fixtures
 | <small>[Clear-NetscootJournal](#clear-netscootjournal)</small> | <small>Delete a repository's move journal, discarding its undo history.</small> |
 | <small>[Find-PathReference](#find-pathreference)</small> | <small>Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party tool reconciles.</small> |
 | <small>[Get-NetscootCapability](#get-netscootcapability)</small> | <small>Resolve Netscoot's external-tool capabilities (git, dotnet) and platform.</small> |
-| <small>[Get-SolutionInventory](#get-solutioninventory)</small> | <small>List the full contents of every solution in a repository - projects of any type, solution folders, and solution items - plus on-disk projects that no solution references.</small> |
+| <small>[Get-SolutionInventory](#get-solutioninventory)</small> | <small>List the full contents of every solution in a repository (projects of any type, solution folders, and solution items), plus on-disk projects that no solution references.</small> |
 | <small>[Invoke-Netscoot](#invoke-netscoot)</small> | <small>Move any supported item and reconcile references, routing by detected type to the right per-namespace front door.</small> |
 | <small>[Move-DotnetFile](#move-dotnetfile)</small> | <small>Move a single managed .NET file and reconcile references, routing by extension to the right specialist.</small> |
 | <small>[Move-DotnetFolder](#move-dotnetfolder)</small> | <small>Move a folder of managed .NET projects, reconciling references.</small> |
@@ -641,8 +665,8 @@ Returns an object with Platform, PSEdition, Git, Dotnet, and DotnetSupportsSlnx.
 
 ### Get-SolutionInventory
 
-List the full contents of every solution in a repository - projects of any type, solution
-folders, and solution items - plus on-disk projects that no solution references.
+List the full contents of every solution in a repository (projects of any type, solution
+folders, and solution items), plus on-disk projects that no solution references.
 
 **Syntax**
 
@@ -1297,9 +1321,9 @@ Move-Solution [-Path] <string> -Destination <string> [-Force] [-NoJournal] [-Wha
 A solution stores each project as a path relative to the solution file. Moving the
 solution changes that base directory, so every entry must be recomputed. The dotnet
 CLI has no "rebase" command, so this rewrites the stored paths with precise,
-formatting- and BOM-preserving edits (it replaces the exact path token captured from
-the file - .slnx &lt;Project Path="..."&gt; or the .sln project line - not a blind regex),
-keeping each format's separator convention (/ for .slnx, \ for .sln). Project-to-project
+formatting- and BOM-preserving edits. It replaces the exact path token captured from the
+file (the .slnx &lt;Project Path="..."&gt; or the .sln project line), not a blind regex, and
+keeps each format's separator convention (/ for .slnx, \ for .sln). Project-to-project
 references are unaffected by a solution move and are left alone.
 
 git is used when available (else confirmed plain-move fallback via `-Force`). `-WhatIf`
@@ -1859,8 +1883,8 @@ Needs network access to GitHub. For Gallery installs, `Update-Module Netscoot` i
 simpler path; this command updates installer/clone installs in place from the GitHub release.
 
 Policy kill-switch: when `$env`:NETSCOOT_AUTOUPDATE is set to a falsy value (0/false/off/no/
-disabled) - e.g. pushed by IT via Group Policy / Intune - this refuses to update so machine
-state stays managed. `-Force` overrides the policy (and also reinstalls when already current).
+disabled), for example pushed by IT via Group Policy or Intune, this refuses to update so
+machine state stays managed. `-Force` overrides the policy (and also reinstalls when current).
 
 **Parameters**
 
