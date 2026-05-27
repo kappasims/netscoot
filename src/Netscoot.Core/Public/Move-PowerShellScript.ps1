@@ -11,8 +11,8 @@ function Move-PowerShellScript {
         preserving the original style ($PSScriptRoot-prefixed or .\-relative).
 
         HEURISTIC LIMIT: only literal and $PSScriptRoot-based string paths are resolved and
-        rewritten. A path that is a string containing other variables (e.g. "$dir\x.ps1") whose
-        leaf matches the moved script is reported as a possible dynamic reference to verify by
+        rewritten. A path that is a string built from other variables (e.g. one rooted at $dir)
+        whose leaf matches the moved script is reported as a possible dynamic reference to verify by
         hand. A path built entirely from an expression (e.g. Join-Path ...) is not a string node
         and cannot be detected at all - grep to be sure. Treat the result as "fixed what could
         be proven," not "guaranteed complete."

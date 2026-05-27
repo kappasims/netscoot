@@ -202,6 +202,11 @@ function Invoke-DocsTask {
             $ext = 'csproj|fsproj|vbproj|sln|slnx|props|targets|ps1|psd1|psm1|vcxproj|meta'
             $s = [regex]::Replace($s, '(?<![\w' + $bt + './-])\.?[\w][\w./-]*\.(' + $ext + ')\b', { param($mm) '`' + $mm.Value + '`' })
             $s = [regex]::Replace($s, '(?<![\w' + $bt + './])\.(' + $ext + ')\b', { param($mm) '`' + $mm.Value + '`' })
+            # A literal backslash immediately before a backtick we just inserted (e.g. a Windows
+            # path "$dir\x.ps1" -> `$dir`\`x.ps1`) reads as a markdown-escaped backtick, which
+            # unbalances code-span pairing for the rest of the paragraph (a phantom MD038). Double
+            # the backslash so it stays literal and the backtick keeps its delimiter role.
+            $s = $s -replace '\\(?=`)', '\\'
             # Escape < > so they are not read as HTML tags.
             $s.Replace('<', '&lt;').Replace('>', '&gt;')
         }

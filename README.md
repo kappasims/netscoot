@@ -663,7 +663,7 @@ Makefile/Dockerfile, etc. - and unlike `.sln/.csproj/.psd1` there is no tool tha
 cannot be safely auto-rewritten (a blind regex could corrupt logic). This detects the class of such files (by location +
 name, not a hardcoded filename list) and reports lines that reference the given path, so you (or an agent) can fix them
 deliberately. It never edits anything. Two confidence tiers: High when the item's repository-relative path appears (e.g.
-'`lib/Tarragon.csproj`' or 'lib\`Tarragon.csproj`'), Low when only the bare leaf name appears (e.g.
+'`lib/Tarragon.csproj`' or 'lib\\`Tarragon.csproj`'), Low when only the bare leaf name appears (e.g.
 '`Tarragon.csproj`'), which is likely but not certain. Run it before a move (to see what will break) or after (searching
 the old path).
 
@@ -1372,8 +1372,8 @@ Move-PowerShellScript [-Path] <string> -Destination <string> [-RepositoryRoot <s
 Finds references via the PowerShell AST: dot-source (`. path`) and call (`& path`) invocations whose path is a literal
 string or a `$PSScriptRoot`-based string resolving to the moved script. It rewrites those relative paths with precise,
 BOM-preserving edits, preserving the original style (`$PSScriptRoot`-prefixed or .\-relative). HEURISTIC LIMIT: only
-literal and `$PSScriptRoot`-based string paths are resolved and rewritten. A path that is a string containing other
-variables (e.g. "`$dir`\`x.ps1`") whose leaf matches the moved script is reported as a possible dynamic reference to
+literal and `$PSScriptRoot`-based string paths are resolved and rewritten. A path that is a string built from other
+variables (e.g. one rooted at `$dir`) whose leaf matches the moved script is reported as a possible dynamic reference to
 verify by hand. A path built entirely from an expression (e.g. Join-Path ...) is not a string node and cannot be
 detected at all - grep to be sure. Treat the result as "fixed what could be proven," not "guaranteed complete." git is
 used when available (else confirmed plain-move fallback via `-Force`). `-WhatIf` supported; dotnet not required.
