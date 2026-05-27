@@ -68,15 +68,11 @@ function Repair-SolutionReferences {
         # file that no longer exists there).
         $dangling = [System.Collections.Generic.List[object]]::new()
         foreach ($sln in (Find-Solutions -Root $RepositoryRoot)) {
-            $slnDir = Split-Path -Parent $sln.FullName
-            $listed = Invoke-DotnetRead sln $sln.FullName list
-            if ($LASTEXITCODE -ne 0) { continue }
-            foreach ($line in $listed) {
-                $line = $line.Trim()
-                if ($line -notmatch '\.(cs|fs|vb|vcx)proj$') { continue }
-                $abs = [System.IO.Path]::GetFullPath((Join-Path $slnDir $line))
-                if (-not (Test-Path -LiteralPath $abs)) {
-                    $dangling.Add([pscustomobject]@{ Kind = 'Solution'; Container = $sln.FullName; Missing = $line; MissingAbs = $abs })
+            $parsed = Read-Solution -SolutionFile $sln.FullName
+            foreach ($entry in $parsed.Projects) {
+                if ($entry.Stored -notmatch '\.(cs|fs|vb|vcx)proj$') { continue }
+                if (-not (Test-Path -LiteralPath $entry.Abs)) {
+                    $dangling.Add([pscustomobject]@{ Kind = 'Solution'; Container = $sln.FullName; Missing = $entry.Stored; MissingAbs = $entry.Abs })
                 }
             }
         }

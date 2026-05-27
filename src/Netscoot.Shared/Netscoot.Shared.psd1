@@ -37,6 +37,7 @@
         'New-MoveItem',
         'New-MoveResult',
         'Read-ProjectXml',
+        'Read-Solution',
         'Remove-MoveJournalEntry',
         'Test-MoveJournalEnabled',
         'Resolve-FullPath',
