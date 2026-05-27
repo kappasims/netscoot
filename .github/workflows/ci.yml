@@ -33,10 +33,16 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      # build.ps1 no longer auto-installs Pester; CI provisions it explicitly.
+      # build.ps1 no longer auto-installs Pester; CI provisions it (pinned), retrying so a transient
+      # PSGallery/NuGet hiccup does not fail the gate.
       - name: Install Pester
         shell: pwsh
-        run: Install-Module Pester -MinimumVersion 5.0 -Scope CurrentUser -Force -SkipPublisherCheck
+        run: |
+          $ErrorActionPreference = 'Stop'
+          for ($i = 1; $i -le 3; $i++) {
+            try { Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck; break }
+            catch { if ($i -eq 3) { throw }; Write-Host "Install-Module Pester failed (attempt $i); retrying in 10s..."; Start-Sleep 10 }
+          }
 
       - name: Run tests
         shell: pwsh
@@ -68,8 +74,14 @@ jobs:
         shell: powershell
         run: |
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-          Install-PackageProvider -Name NuGet -Force | Out-Null
-          Install-Module Pester -MinimumVersion 5.0 -Scope CurrentUser -Force -SkipPublisherCheck
+          $ErrorActionPreference = 'Stop'
+          for ($i = 1; $i -le 3; $i++) {
+            try {
+              Install-PackageProvider -Name NuGet -Force | Out-Null
+              Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck
+              break
+            } catch { if ($i -eq 3) { throw }; Write-Host "Pester install failed (attempt $i); retrying in 10s..."; Start-Sleep 10 }
+          }
       - name: Run tests on Windows PowerShell 5.1
         shell: powershell
         run: ./build.ps1 -Task Test -ShardIndex ${{ matrix.shard }} -ShardCount 3

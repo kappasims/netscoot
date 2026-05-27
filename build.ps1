@@ -68,11 +68,11 @@ function script:Test-IsWindowsBuild {
 }
 
 function Invoke-TestTask {
-    if (-not (Get-Module -ListAvailable Pester | Where-Object Version -ge ([version]'5.0'))) {
+    if (-not (Get-Module -ListAvailable Pester | Where-Object Version -eq ([version]'5.7.1'))) {
         # Do not auto-install (matches the toolkit's "never auto-install" stance); instruct instead.
-        throw "Pester 5+ is required to run the tests. Install it: Install-Module Pester -MinimumVersion 5.0 -Scope CurrentUser -SkipPublisherCheck"
+        throw "Pester 5.7.1 is required to run the tests. Install it: Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -SkipPublisherCheck"
     }
-    Import-Module Pester -MinimumVersion 5.0 -Force
+    Import-Module Pester -RequiredVersion 5.7.1 -Force
 
     # Import Shared first, then the engines (mirrors how the umbrella loads them) before tests run.
     foreach ($m in $modules) {

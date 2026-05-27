@@ -29,10 +29,16 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      # Ubuntu/macOS runners ship pwsh; build.ps1 no longer auto-installs Pester.
+      # Ubuntu/macOS runners ship pwsh; build.ps1 no longer auto-installs Pester. Provision it
+      # (pinned), retrying so a transient PSGallery/NuGet hiccup does not fail the gate.
       - name: Install Pester
         shell: pwsh
-        run: Install-Module Pester -MinimumVersion 5.0 -Scope CurrentUser -Force -SkipPublisherCheck
+        run: |
+          $ErrorActionPreference = 'Stop'
+          for ($i = 1; $i -le 3; $i++) {
+            try { Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck; break }
+            catch { if ($i -eq 3) { throw }; Write-Host "Install-Module Pester failed (attempt $i); retrying in 10s..."; Start-Sleep 10 }
+          }
 
       - name: Run tests
         shell: pwsh
