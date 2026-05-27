@@ -9,10 +9,10 @@ netscoot does it from the command line, everywhere Visual Studio is not, includi
 CI, Linux, macOS, and AI coding agents.
 
 ```powershell
-# moves the files and fixes the .sln, references, and GUIDs
+# moves the project and reconciles the .sln, references, and GUIDs (rolls back on failure)
 Invoke-Netscoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
 
-# the same move as a git verb (not a plain git mv); --whatif previews it
+# the same move via the git verb; --whatif previews it first
 git netscoot src/Tarragon/Tarragon.csproj libs/Tarragon --whatif
 ```
 
@@ -51,7 +51,7 @@ Everything netscoot creates or changes, so there are no surprises:
 **Running a move:**
 
 - Edits the target repository's solution/project files to reconcile the move. That is the operation
-  itself, done through first-party tooling (see [the Contract](#the-contract)).
+  itself, done through first-party tooling (see: [the Contract](#the-contract)).
 - Writes an undo journal to a per-user data directory (`%LOCALAPPDATA%\netscoot` on Windows,
   `~/Library/Application Support/netscoot` on macOS, `~/.local/share/netscoot` on Linux), one
   file per repository. It stays out of the working tree, so it is never tracked or shown by
@@ -98,10 +98,10 @@ edits `PATH`, never auto-installs git or the .NET SDK, and sends no telemetry.
 
 > [!NOTE]
 > **For sysadmins / managed fleets.** netscoot is built to be governed centrally:
-> - **No surprise network or state.** Never auto-installs, never edits `PATH`, sends no telemetry. The only network calls are an explicit install/update. CI runs least-privilege (`contents: read`, `packages: read`).
+> - **No surprise network or state.** Never auto-installs, never edits `PATH`, sends no telemetry. The only network calls are an explicit install or update.
 > - **Auto-update is off by default.** A SessionStart/automation check only runs via `Test-NetscootUpdate -EnableAutoUpdate` *and* only when `NETSCOOT_AUTOUPDATE` is truthy. Push `NETSCOOT_AUTOUPDATE=false` (Group Policy / Intune / profile) to disable checks fleet-wide and block `Update-Netscoot` from self-updating.
 > - **Journaling is controllable centrally.** Turn it off per-repo or globally with `git config [--global] netscoot.journal false`; the undo journal lives in the standard per-user data dir (LocalAppData / Application Support / `~/.local/share`), covered by normal backup, and relocatable with `NETSCOOT_JOURNAL_HOME`.
-> - **Every file edit goes through first-party tooling** (the [Contract](#the-contract)), enforced in CI.
+> - **Every file edit goes through first-party tooling** (the [Contract](#the-contract)), never a hand-edit.
 
 ## Install
 
@@ -2414,4 +2414,4 @@ Netscoot.Update
 
 ---
 
-<sub><b>Trademarks.</b> netscoot is an independent, community-maintained project, not affiliated with, sponsored by, or endorsed by Microsoft. ".NET," "dotnet," and related marks are trademarks of Microsoft Corporation, used here only to describe the projects and tooling netscoot works with.</sub>
+<sub>netscoot is an independent, community-maintained project, not affiliated with, sponsored by, or endorsed by Microsoft. ".NET," "dotnet," and related marks are trademarks of Microsoft Corporation, used here only to describe the projects and tooling netscoot works with.</sub>
