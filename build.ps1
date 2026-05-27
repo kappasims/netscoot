@@ -663,6 +663,14 @@ function Invoke-ReleaseTask {
         # brand/cmdlets). Run while the tree is clean, before stamping.
         Assert-DocsNotStale
 
+        # Gate: CHANGELOG.md must document this version, so updating it is a required step of every
+        # release rather than an afterthought. Matches a "## [X.Y.Z]" heading (Keep a Changelog).
+        $changelog = Join-Path $root 'CHANGELOG.md'
+        if (-not (Test-Path $changelog)) { throw "CHANGELOG.md not found at $changelog; add it before releasing." }
+        if ([System.IO.File]::ReadAllText($changelog) -notmatch "(?m)^##\s*\[$([regex]::Escape($Version))\]") {
+            throw "CHANGELOG.md has no '## [$Version]' entry. Document $tag in CHANGELOG.md first."
+        }
+
         $manifests = foreach ($m in ($modules + $umbrella)) { Join-Path $root (Join-Path 'src' (Join-Path $m "$m.psd1")) }
         $changed = $false
         foreach ($mf in $manifests) {
