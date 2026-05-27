@@ -21,11 +21,13 @@ Invoke-Netscoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarrago
 git netscoot src/Tarragon/Tarragon.csproj libs/Tarragon --whatif
 ```
 
-Each format is reconciled by the tool that owns it (the dotnet CLI, git mv, Update-ModuleManifest),
-or by a targeted in-place rewrite where no such tool exists. See [The Contract](#the-contract).
-
 For AI agents, the repository ships Claude Code skills that run these commands, triggering on phrases
-like "move this project" (see [Skills](#skills)).
+like "move this project" (see [Usage](#usage)).
+
+**Guarantees.** Solution and project files are never hand-edited: every path and GUID change goes
+through the tool that owns the format (`dotnet sln` / `dotnet reference`, `git mv`,
+`Update-ModuleManifest`), with a targeted in-place rewrite only where no such tool exists. Every move
+rolls back to the original state if any step fails, and path-reference detection is report-only.
 
 ## Setup
 
@@ -39,85 +41,75 @@ like "move this project" (see [Skills](#skills)).
 
 ### Install
 
-**Recommended: install from the [PowerShell Gallery](https://www.powershellgallery.com/packages/Netscoot)**
-(the single bundled package, all engines):
+Install from the [PowerShell Gallery](https://www.powershellgallery.com/packages/Netscoot) (the
+single bundled package, all engines), then load it:
 
 ```powershell
 Install-Module Netscoot -Scope CurrentUser     # PowerShellGet (Windows PowerShell 5.1+ / PowerShell 7)
 Install-PSResource Netscoot                     # PSResourceGet (the newer installer, PowerShell 7.4+)
+Import-Module Netscoot                          # load all engines, by name
 ```
 
-Update with `Update-Module Netscoot` (or `Update-PSResource Netscoot`). Then load it, and
-optionally enable the git verb:
-
-```powershell
-Import-Module Netscoot                   # all engines, by name
-Register-NetscootGitAlias -Scope Global    # optional: enable `git netscoot` (one git-config line)
-```
-
-#### Alternative / offline installation
-
-If you cannot reach the Gallery, want to read the installer before running it, or need to pin a
-specific release, install from the GitHub release instead. It downloads a release and copies the five
-module folders onto your CurrentUser module path.
-
-Download [the installer](https://github.com/kappasims/netscoot/blob/master/install.ps1), read it, then run it:
-
-```powershell
-irm https://raw.githubusercontent.com/kappasims/netscoot/master/install.ps1 -OutFile install.ps1
-# look it over, then:
-./install.ps1
-```
-
-No-script option: download the latest release zip from the
-[Releases page](https://github.com/kappasims/netscoot/releases), unzip it, and copy the
-`Netscoot.Shared`, `Netscoot.Core`, `Netscoot.Unity`, `Netscoot.Native`, and `netscoot`
-folders out of `src/` into any directory on your `$env:PSModulePath`.
-
-netscoot keeps an undo journal in a per-user data directory so you can reverse a move later (see [Undoing](#undoing)).
-It is **on by default**. To install with it off, add `-NoJournal` (sets `git config --global
-netscoot.journal false`, or the `NETSCOOT_JOURNAL` env var with no git; updates never turn it back on):
-
-```powershell
-./install.ps1 -NoJournal
-```
-
-To work on netscoot itself, install from a clone instead, or import directly:
-
-```powershell
-./build.ps1 -Task Install                          # copy this clone's modules to your module path
-Import-Module ./src/Netscoot/Netscoot.psd1     # or import straight from the clone (loads Shared + all engines)
-```
-
-### Updating
-
-Nothing updates automatically. For Gallery installs, `Update-Module Netscoot` is the one-liner.
-Otherwise `Test-NetscootUpdate` checks GitHub for a newer release and `Update-Netscoot` (or
-re-running the installer) applies it in place. The Claude Code skills are separate files: Refresh
-them with `git pull` in a clone, or re-sync `.claude/skills` if installed globally.
-
-A single policy governs automatic behavior, set with `Set-NetscootUpdatePolicy` (or read with
-`Get-NetscootUpdatePolicy`):
-
-| State | Automatic check (`Test-NetscootUpdate -Auto`) | `Update-Netscoot` |
-| :--- | :--- | :--- |
-| `Enabled` | runs | allowed |
-| `Manual` (default) | no-op | allowed (when you run it) |
-| `Disabled` | no-op | refused (`-Force` overrides a Disabled you set yourself, not an admin one) |
-
-```powershell
-Set-NetscootUpdatePolicy -State Enabled              # opt in: a SessionStart hook's -Auto check now runs
-Set-NetscootUpdatePolicy -State Disabled -Scope Machine   # block updates for every user (elevated)
-Get-NetscootUpdatePolicy                             # show the effective state and where it came from
-```
-
-The policy is stored in the `NETSCOOT_AUTOUPDATE` environment variable, so an administrator can set
-the same states fleet-wide through Group Policy / Intune (truthy = Enabled, falsy = Disabled). A
-manual `Update-Netscoot` you run yourself works unless the policy is Disabled; the automatic `-Auto`
-check stays silent unless the policy is Enabled. `-Force` overrides a Disabled you set for yourself,
-but never one an administrator pushed machine-wide.
+If you cannot reach the Gallery, want to read the installer first, or need to pin a release, install
+from the [GitHub release](https://github.com/kappasims/netscoot/releases) instead (it copies the
+module folders onto your module path). To update an installed copy, see [Updating](#updating).
 
 ## Usage
+
+netscoot exposes the same moves through three front ends. The PowerShell module is the core: after
+`Import-Module Netscoot`, the `Invoke-Netscoot` dispatcher routes any supported file or folder to the
+right engine, or you can call an engine command (`Move-DotnetProject`, `Move-Solution`,
+`Move-PowerShell`, and so on) directly.
+
+```powershell
+Import-Module Netscoot   # all engines (native is loaded on Windows only)
+
+# Top-level dispatcher; works for any supported type:
+Invoke-Netscoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
+Invoke-Netscoot -Path ./build/helpers.ps1 -Destination ./shared/helpers.ps1
+Invoke-Netscoot -Path ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/Tarragon
+
+# Or call an engine command directly:
+Move-DotnetProject     -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
+Move-DotnetProjectTree -Path ./src/Group -Destination ./libs/Group
+Move-Solution          -Path ./Demo.slnx -Destination ./build/Demo.slnx
+Move-MSBuildImport     -Path ./Shared.props -Destination ./build/Shared.props
+Move-PowerShell        -Path ./tools/Mayo -Destination ./modules/Mayo
+Move-NativeProject     -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo   # Windows
+
+# Validate without moving:
+Repair-SolutionReferences -RepositoryRoot . -Fix -WhatIf
+Test-SolutionConsistency  -RepositoryRoot .
+```
+
+An opt-in alias gives `git netscoot`, a single verb that forwards to `Invoke-Netscoot`. It sets one
+reversible git-config line and does not edit PATH or install anything.
+
+```powershell
+Register-NetscootGitAlias -Scope Local -WhatIf   # preview the exact git config command
+Register-NetscootGitAlias -Scope Local           # set it
+Unregister-NetscootGitAlias -Scope Local         # undo
+```
+
+```sh
+git netscoot src/Tarragon/Tarragon.csproj libs/Tarragon --whatif   # dry run
+git netscoot src/Tarragon/Tarragon.csproj libs/Tarragon            # do it (like git mv, no prompt)
+git netscoot Assets/Plugins/Tarragon Assets/Lib/Tarragon      # routes to the Unity engine
+git netscoot Aleppo/Aleppo.vcxproj native/Aleppo          # routes to the native engine (Windows)
+```
+
+Flags: `--whatif` (preview), `--force` (plain `Move-Item` fallback when git is unavailable),
+`--nobuild` (skip the .NET build step). Unity and native engines are loaded on demand.
+
+For AI agents, four Claude Code skills (`.claude/skills/`), one per engine, trigger on natural
+language and run the commands above:
+
+| Skill | Triggers on |
+| :--- | :--- |
+| `restructure-dotnet` | moving a `.csproj/.fsproj/.vbproj`, reorganizing a solution |
+| `restructure-powershell` | moving a `.ps1` script or a PowerShell module |
+| `restructure-unity` | moving a Unity asset, folder, or `.asmdef` |
+| `restructure-native` | moving a native C++ `.vcxproj` (Windows) |
 
 ### Moving
 
@@ -170,6 +162,65 @@ every OS (path-only); a `.vcxproj`'s native link settings are reconciled only by
 
 Every move supports `-WhatIf`/`-Confirm`; `-Force` enables the no-git fallback.
 
+### Repairing
+
+It can also fix a repository whose solution entries or `<ProjectReference>`s were left dangling by a
+move done outside netscoot, without moving anything itself. `Repair-SolutionReferences` finds
+entries pointing at a project that no longer exists at the recorded path and reports each as
+relocatable, missing, or ambiguous (read-only by default).
+
+| Flag | Does |
+| :--- | :--- |
+| (none) | report the dangling entries and whether each can be repaired |
+| `-Fix` | re-point each relocatable entry at the project's new location |
+| `-Prune` | remove entries whose project is gone for good |
+
+To resolve the membership divergence that `Test-SolutionConsistency` reports, `Sync-Solution` adds
+each project to the solutions missing it (via `dotnet sln add`), making membership uniform. It only
+adds, never removes; preview with `-WhatIf` first.
+
+### Inspecting
+
+netscoot can be used purely to inspect a repository. These commands are read-only and change nothing.
+
+| Command | Reports |
+| :--- | :--- |
+| `Test-SolutionConsistency` | projects with divergent solution membership across solutions |
+| `Get-SolutionInventory` | full solution contents beyond `dotnet sln list` (non-CLI types like `.pssproj`, folders, items) + projects in no solution |
+| `Find-PathReference` | path references in build/CI/hook scripts that no move reconciles |
+| `Test-UnityMetaIntegrity` | missing or orphan Unity `.meta` |
+| `Resolve-MoveEngine` | which engine a given path classifies to |
+| `Get-NetscootCapability` | whether git and dotnet are present, plus the platform |
+| `Test-NetscootUpdate` | whether a newer netscoot release is available on GitHub |
+
+Each returns objects, so results are filterable and scriptable, and print as a table by default:
+
+```text
+PS> Test-SolutionConsistency
+Project            PresentIn         AbsentFrom
+-------            ---------         ----------
+src/Lib/Lib.csproj App.sln, Api.sln  Tools.sln
+
+PS> Get-SolutionInventory
+Name          Kind                Type   Solution Path
+----          ----                ----   -------- ----
+Lib.csproj    Project             csproj App.sln  src/Lib/Lib.csproj
+build         SolutionFolder             App.sln
+Legacy.csproj UnreferencedProject csproj (none)   tools/Legacy/Legacy.csproj
+
+PS> Find-PathReference -Path ./src/Lib/Lib.csproj
+File                     Line Confidence Text
+----                     ---- ---------- ----
+.github/workflows/ci.yml   31 High       dotnet build src/Lib/Lib.csproj
+build.ps1                  12 Low        $proj = 'Lib.csproj'
+
+PS> Test-UnityMetaIntegrity ./Assets
+Kind        Path
+----        ----
+MissingMeta Assets/Art/logo.png
+OrphanMeta  Assets/Old/gone.cs.meta
+```
+
 ### Undoing
 
 Every move is recorded in a per-user journal (one file per repository), so you can reverse it later,
@@ -220,64 +271,64 @@ Clear-NetscootJournal                          # also discard the existing undo 
 The journal is **on by default**. For where it lives, the on-disk format, crash recovery, pruning,
 and the full opt-out precedence, see [How the journal works](#how-the-journal-works).
 
-### Inspecting
+### Updating
 
-netscoot can be used purely to inspect a repository. These commands are read-only and change nothing.
+Nothing updates automatically. For Gallery installs, `Update-Module Netscoot` is the one-liner.
+Otherwise `Test-NetscootUpdate` checks GitHub for a newer release and `Update-Netscoot` (or
+re-running the installer) applies it in place. The Claude Code skills are separate files: Refresh
+them with `git pull` in a clone, or re-sync `.claude/skills` if installed globally.
 
-| Command | Reports |
-| :--- | :--- |
-| `Test-SolutionConsistency` | projects with divergent solution membership across solutions |
-| `Get-SolutionInventory` | full solution contents beyond `dotnet sln list` (non-CLI types like `.pssproj`, folders, items) + projects in no solution |
-| `Find-PathReference` | path references in build/CI/hook scripts that no move reconciles |
-| `Test-UnityMetaIntegrity` | missing or orphan Unity `.meta` |
-| `Resolve-MoveEngine` | which engine a given path classifies to |
-| `Get-NetscootCapability` | whether git and dotnet are present, plus the platform |
-| `Test-NetscootUpdate` | whether a newer netscoot release is available on GitHub |
+A single policy governs automatic behavior, set with `Set-NetscootUpdatePolicy` (or read with
+`Get-NetscootUpdatePolicy`):
 
-Each returns objects, so results are filterable and scriptable, and print as a table by default:
+| State | Automatic check (`Test-NetscootUpdate -Auto`) | `Update-Netscoot` |
+| :--- | :--- | :--- |
+| `Enabled` | runs | allowed |
+| `Manual` (default) | no-op | allowed (when you run it) |
+| `Disabled` | no-op | refused (`-Force` overrides a Disabled you set yourself, not an admin one) |
 
-```text
-PS> Test-SolutionConsistency
-Project            PresentIn         AbsentFrom
--------            ---------         ----------
-src/Lib/Lib.csproj App.sln, Api.sln  Tools.sln
-
-PS> Get-SolutionInventory
-Name          Kind                Type   Solution Path
-----          ----                ----   -------- ----
-Lib.csproj    Project             csproj App.sln  src/Lib/Lib.csproj
-build         SolutionFolder             App.sln
-Legacy.csproj UnreferencedProject csproj (none)   tools/Legacy/Legacy.csproj
-
-PS> Find-PathReference -Path ./src/Lib/Lib.csproj
-File                     Line Confidence Text
-----                     ---- ---------- ----
-.github/workflows/ci.yml   31 High       dotnet build src/Lib/Lib.csproj
-build.ps1                  12 Low        $proj = 'Lib.csproj'
-
-PS> Test-UnityMetaIntegrity ./Assets
-Kind        Path
-----        ----
-MissingMeta Assets/Art/logo.png
-OrphanMeta  Assets/Old/gone.cs.meta
+```powershell
+Set-NetscootUpdatePolicy -State Enabled              # opt in: a SessionStart hook's -Auto check now runs
+Set-NetscootUpdatePolicy -State Disabled -Scope Machine   # block updates for every user (elevated)
+Get-NetscootUpdatePolicy                             # show the effective state and where it came from
 ```
 
-### Repairing
+The policy is stored in the `NETSCOOT_AUTOUPDATE` environment variable, so an administrator can set
+the same states fleet-wide through Group Policy / Intune (truthy = Enabled, falsy = Disabled). A
+manual `Update-Netscoot` you run yourself works unless the policy is Disabled; the automatic `-Auto`
+check stays silent unless the policy is Enabled. `-Force` overrides a Disabled you set for yourself,
+but never one an administrator pushed machine-wide.
 
-It can also fix a repository whose solution entries or `<ProjectReference>`s were left dangling by a
-move done outside netscoot, without moving anything itself. `Repair-SolutionReferences` finds
-entries pointing at a project that no longer exists at the recorded path and reports each as
-relocatable, missing, or ambiguous (read-only by default).
+## How the journal works
 
-| Flag | Does |
-| :--- | :--- |
-| (none) | report the dangling entries and whether each can be repaired |
-| `-Fix` | re-point each relocatable entry at the project's new location |
-| `-Prune` | remove entries whose project is gone for good |
+The journal lives in a per-user data directory (`%LOCALAPPDATA%\netscoot` on Windows,
+`~/Library/Application Support/netscoot` on macOS, `~/.local/share/netscoot` on Linux), one file per
+repository, so git never tracks it (and `git clean` cannot remove it) and your `.gitignore` is left
+untouched. Set `$env:NETSCOOT_JOURNAL_HOME` to relocate the store (for example a roaming or managed
+path).
 
-To resolve the membership divergence that `Test-SolutionConsistency` reports, `Sync-Solution` adds
-each project to the solutions missing it (via `dotnet sln add`), making membership uniform. It only
-adds, never removes; preview with `-WhatIf` first.
+On disk each entry is one JSON line recording the reversing invocation (the mover and the swapped
+splat that `Undo-Netscoot` replays):
+
+```json
+{"id":"a1b2c3d4","timestamp":"2026-05-27T14:02:11Z","command":"Move-DotnetProject","engine":"dotnet","source":"src/Tarragon","destination":"libs/Tarragon","undo":{"command":"Move-DotnetProject","params":{"Project":"libs/Tarragon/Tarragon.csproj","Destination":"src/Tarragon"}}}
+```
+
+Each move is written ahead of time: a `pending` record before it runs, then a `committed` record
+after, so a move interrupted by a crash is detectable (and recoverable with `Repair-NetscootJournal`).
+Writes are append-only; the journal prunes lazily, only once it outgrows its caps, dropping entries
+older than 180 days and, oldest first, anything beyond a 1 MB cap, always keeping the newest move.
+
+It is safe to delete at any time (`Clear-NetscootJournal`). Each entry is schema-versioned, so a
+newer netscoot reads an older journal, and an older netscoot ignores (never misreads) entries written
+by a newer one.
+
+The enabled state resolves in this order, first match wins: an internal suppression flag (set by
+`Undo-Netscoot` around its own reverse move) → the `NETSCOOT_JOURNAL` env var (`off`/`0`/`false`) →
+`git config netscoot.journal` (local wins over global, the durable per-repository setting) → on. The
+env var trumps git config so an admin can force the choice fleet-wide; the git setting is the
+persistent per-repository default. Installing with `-NoJournal` writes the global git setting (see
+[Install](#install)), and updates never flip it back on.
 
 ## Footprint
 
@@ -288,7 +339,7 @@ Everything netscoot writes, and where:
   zip to the system temp dir and are the only actions that touch the network (`github.com` /
   `api.github.com`).
 - **A move** edits the target repository's solution/project files to reconcile it, through first-party
-  tooling ([The Contract](#the-contract)). It writes a per-repository undo journal to the per-user
+  tooling (see [Guarantees](#netscoot)). It writes a per-repository undo journal to the per-user
   data directory (`%LOCALAPPDATA%\netscoot`, `~/Library/Application Support/netscoot`, or
   `~/.local/share/netscoot`), kept out of the working tree so `git status` stays clean, and snapshots
   the files it edits to the system temp dir for rollback, removed when the move finishes. On by
@@ -325,191 +376,7 @@ The full journaling precedence and how to turn it off live under
 > so you can force the choice fleet-wide; the journal sits in the standard per-user data dir,
 > relocatable via `NETSCOOT_JOURNAL_HOME`.
 
-## How the journal works
-
-The journal lives in a per-user data directory (`%LOCALAPPDATA%\netscoot` on Windows,
-`~/Library/Application Support/netscoot` on macOS, `~/.local/share/netscoot` on Linux), one file per
-repository, so git never tracks it (and `git clean` cannot remove it) and your `.gitignore` is left
-untouched. Set `$env:NETSCOOT_JOURNAL_HOME` to relocate the store (for example a roaming or managed
-path).
-
-On disk each entry is one JSON line recording the reversing invocation (the mover and the swapped
-splat that `Undo-Netscoot` replays):
-
-```json
-{"id":"a1b2c3d4","timestamp":"2026-05-27T14:02:11Z","command":"Move-DotnetProject","engine":"dotnet","source":"src/Tarragon","destination":"libs/Tarragon","undo":{"command":"Move-DotnetProject","params":{"Project":"libs/Tarragon/Tarragon.csproj","Destination":"src/Tarragon"}}}
-```
-
-Each move is written ahead of time: a `pending` record before it runs, then a `committed` record
-after, so a move interrupted by a crash is detectable (and recoverable with `Repair-NetscootJournal`).
-Writes are append-only; the journal prunes lazily, only once it outgrows its caps, dropping entries
-older than 180 days and, oldest first, anything beyond a 1 MB cap, always keeping the newest move.
-
-It is safe to delete at any time (`Clear-NetscootJournal`). Each entry is schema-versioned, so a
-newer netscoot reads an older journal, and an older netscoot ignores (never misreads) entries written
-by a newer one.
-
-The enabled state resolves in this order, first match wins: an internal suppression flag (set by
-`Undo-Netscoot` around its own reverse move) → the `NETSCOOT_JOURNAL` env var (`off`/`0`/`false`) →
-`git config netscoot.journal` (local wins over global, the durable per-repository setting) → on. The
-env var trumps git config so an admin can force the choice fleet-wide; the git setting is the
-persistent per-repository default. Installing with `-NoJournal` writes the global git setting (see
-[Install](#install)), and updates never flip it back on.
-
-## Interfaces
-
-### PowerShell usage
-
-```powershell
-Import-Module Netscoot   # all engines (native is loaded on Windows only)
-
-# Top-level dispatcher; works for any supported type:
-Invoke-Netscoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
-Invoke-Netscoot -Path ./build/helpers.ps1 -Destination ./shared/helpers.ps1
-Invoke-Netscoot -Path ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/Tarragon
-
-# Or call an engine command directly:
-Move-DotnetProject     -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
-Move-DotnetProjectTree -Path ./src/Group -Destination ./libs/Group
-Move-Solution          -Path ./Demo.slnx -Destination ./build/Demo.slnx
-Move-MSBuildImport     -Path ./Shared.props -Destination ./build/Shared.props
-Move-PowerShell        -Path ./tools/Mayo -Destination ./modules/Mayo
-Move-NativeProject     -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo   # Windows
-
-# Validate without moving:
-Repair-SolutionReferences -RepositoryRoot . -Fix -WhatIf
-Test-SolutionConsistency  -RepositoryRoot .
-```
-
-### git usage
-
-An opt-in alias gives `git netscoot`, a single verb that forwards to `Invoke-Netscoot`. It sets one
-reversible git-config line and does not edit PATH or install anything.
-
-```powershell
-Register-NetscootGitAlias -Scope Local -WhatIf   # preview the exact git config command
-Register-NetscootGitAlias -Scope Local           # set it
-Unregister-NetscootGitAlias -Scope Local         # undo
-```
-
-```sh
-git netscoot src/Tarragon/Tarragon.csproj libs/Tarragon --whatif   # dry run
-git netscoot src/Tarragon/Tarragon.csproj libs/Tarragon            # do it (like git mv, no prompt)
-git netscoot Assets/Plugins/Tarragon Assets/Lib/Tarragon      # routes to the Unity engine
-git netscoot Aleppo/Aleppo.vcxproj native/Aleppo          # routes to the native engine (Windows)
-```
-
-Flags: `--whatif` (preview), `--force` (plain `Move-Item` fallback when git is unavailable),
-`--nobuild` (skip the .NET build step). Unity and native engines are loaded on demand.
-
-### Skills
-
-Four Claude Code skills (`.claude/skills/`), one per engine, trigger on natural language and run
-the commands above:
-
-| Skill | Triggers on |
-| :--- | :--- |
-| `restructure-dotnet` | moving a `.csproj/.fsproj/.vbproj`, reorganizing a solution |
-| `restructure-powershell` | moving a `.ps1` script or a PowerShell module |
-| `restructure-unity` | moving a Unity asset, folder, or `.asmdef` |
-| `restructure-native` | moving a native C++ `.vcxproj` (Windows) |
-
-## For developers
-
-### The Contract
-
-What every move does, and won't do:
-
-- **Solution and project files are never hand-edited.** Membership, references, and GUIDs change
-  only through the tool that owns the format: `dotnet sln` and `dotnet add/remove reference`, `git mv`
-  for the move itself (a plain `Move-Item` only under `-Force`, when git is absent), and
-  `Update-ModuleManifest` for module manifests.
-- **The only direct rewrites are formats no tool reconciles:** a solution's stored project paths,
-  MSBuild `<Import>` paths, and a script's dot-source/call references. These are edited in place
-  (keeping the byte-order mark), because nothing else can.
-- **Files are read through their own tools,** and parsed directly only where those tools don't
-  surface what is needed.
-- **Detection is report-only.** `Find-PathReference` flags hardcoded paths in build/CI/hook/
-  automation files; it never edits them, and it does not scan application source for computed path
-  use (`Path.Combine`, config, environment variables, P/Invoke). Resolving that statically is
-  impossible, so it never claims to catch everything.
-- **These hold automatically:** `tests/FirstPartyDrift.Tests.ps1` fails the build if a new file
-  writes content or calls the raw writers.
-
-### Building
-
-```powershell
-./build.ps1                          # run the Pester suite (imports all modules first); CI-friendly exit code
-./build.ps1 -Task Analyze            # PSScriptAnalyzer over src/ (skipped if not installed)
-./build.ps1 -Task Install            # copy all modules into the per-user PowerShell module path
-./build.ps1 -Task Install -InstallPath D:\Modules
-./build.ps1 -Task Docs               # regenerate the README Command reference section from the cmdlets' help
-./build.ps1 -Task Release -Version 1.2.0           # prepare on develop: stamp manifests, gate on analyze + tests, commit + push
-./build.ps1 -Task Release -Version 1.2.0 -Publish  # finalize (after CI green): fast-forward master, tag vX.Y.Z, GitHub release
-./build.ps1 -Task Publish                          # stage + validate the single bundled package (dry run)
-./build.ps1 -Task Publish -ApiKey <key>            # publish that one netscoot package to the PowerShell Gallery
-```
-
-Building and testing needs PowerShell 7+ (or Windows PowerShell 5.1), the .NET SDK (the suite
-creates and builds real projects), git, and Pester 5. `-Task Test` prints the install command for
-Pester if it is missing; nothing here auto-installs.
-
-`Install` copies every module (Shared, the engines, and the `netscoot` umbrella) to your module
-path. Once it is on `$env:PSModulePath`, `Import-Module Netscoot` loads Shared and every
-available engine in one call (native on Windows only).
-
-Per-push CI (`.github/workflows/ci.yml`) runs the suite on windows-latest (PowerShell 7) and
-Windows PowerShell 5.1, plus lint. Linux and macOS are on-demand (`platforms.yml`, via
-`tools/Invoke-PlatformCI.ps1`); run them before a release.
-
-### Releasing
-
-Releases ship from `master`, which is branch-protected: the CI checks are required and enforced
-even for admins, so `master` only ever receives a commit that already passed CI. The release is
-therefore prepared on `develop` and `master` is fast-forwarded to it. Run both from `develop`:
-
-1. **Prepare:** `./build.ps1 -Task Release -Version X.Y.Z`. From a clean `develop`, it stamps the
-   version into every manifest, gates on PSScriptAnalyzer (required + clean) and the full suite,
-   then commits `release: vX.Y.Z` and pushes `develop` so CI runs on that exact commit.
-2. **Wait for green on all platforms:** `ci.yml` (Windows, Windows PowerShell 5.1, PSScriptAnalyzer)
-   runs on the push; run `platforms.yml` for Linux and macOS (`tools/Invoke-PlatformCI.ps1`).
-3. **Finalize:** `./build.ps1 -Task Release -Version X.Y.Z -Publish`. It fast-forwards `master` to
-   that commit (the protected push is accepted only because the checks passed on it), tags, pushes,
-   creates the GitHub release, and returns you to `develop`. `master` is protected and rejects any
-   commit whose CI checks are not green (admins included), so a tag can only ever sit on a
-   CI-passed commit, with `ModuleVersion` in every manifest equal to it.
-
-The PowerShell Gallery is a separate step: `./build.ps1 -Task Publish -ApiKey <key>` assembles and
-publishes the single bundled package (a dry run without `-ApiKey`).
-
-### Modules
-
-Split by platform so the cross-platform core never ships native, Windows-only code. It ships as
-one bundled Gallery package: the engines declare no `RequiredModules`; the `netscoot` umbrella
-loads Shared first, then each available engine, with `-Global` so all their commands surface
-together.
-
-- `Netscoot.Shared`: cross-platform path/git/MSBuild/solution helpers used by the engines. Not
-  imported directly.
-- `Netscoot.Core`: cross-platform (PowerShell 7 and Windows PowerShell 5.1). The .NET and
-  PowerShell engines, the `Invoke-Netscoot` dispatcher, and the utilities.
-- `Netscoot.Unity`: cross-platform Unity engine.
-- `Netscoot.Native`: Windows-only native C++ engine (loaded best-effort; absent elsewhere).
-- `netscoot`: the umbrella package (what you `Import-Module`).
-
-### Layout
-
-```text
-build.ps1                Test / Analyze / Install / Docs / Release / Publish tasks
-.github/workflows/      ci.yml (push: Windows + PS 5.1 + lint); platforms.yml (on-demand: Linux + macOS)
-src/Netscoot.Shared/   shared helpers module (Common/ + Dotnet/); loaded by the umbrella first
-src/Netscoot/          umbrella module (loads Shared + every available engine)
-src/Netscoot.Core/     cross-platform module; Private/ = helpers, Public/ = cmdlets
-src/Netscoot.Native/   Windows-only native module
-src/Netscoot.Unity/    cross-platform Unity module
-tests/                   Pester tests + fixtures
-.claude/skills/          restructure-dotnet / -powershell / -unity / -native
-```
+Contributing / building from source: see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Reference
 
