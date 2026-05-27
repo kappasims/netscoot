@@ -267,27 +267,8 @@ a1b2c3d4 2026-05-27 14:02 Move-DotnetProject src/Tarragon  libs/Tarragon
 `-Confirm:$false` does not silence; pass `-Force` to bypass it (for automation) or `-WhatIf` to list
 the reversals first.
 
-#### Turning the journal off
-
-The journal is **on by default** because undo is broadly useful, but it is fully opt-out. Turn it off
-if you would rather netscoot keep no out-of-tree per-user state (privacy or a clean machine), on
-ephemeral or CI agents where you will never undo, or in a locked-down/managed environment. It is a
-git/env setting, not an install option, so the same controls work no matter how you installed -
-**including the PowerShell Gallery**:
-
-```powershell
-# From the Gallery (or any install): turn it off for every repository on the machine
-Install-Module Netscoot -Scope CurrentUser
-Set-NetscootJournal -Enabled $false -Global
-
-Set-NetscootJournal -Enabled $false      # just this repository
-$env:NETSCOOT_JOURNAL = 0                 # this session only (or fleet-wide via Group Policy / Intune)
-./install.ps1 -NoJournal                  # GitHub-release installer: sets the global git setting for you
-Clear-NetscootJournal                     # also discard an existing journal
-```
-
-For where it lives, the on-disk format, crash recovery, pruning, and the full opt-out precedence, see
-[How the journal works](#how-the-journal-works).
+Journaling is **on by default**; to turn it off (any install method, the PowerShell Gallery
+included), see [Turning the journal off](#turning-the-journal-off).
 
 ### Updating
 
@@ -340,6 +321,25 @@ older than 180 days and, oldest first, anything beyond a 1 MB cap, always keepin
 It is safe to delete at any time (`Clear-NetscootJournal`). Each entry is schema-versioned, so a
 newer netscoot reads an older journal, and an older netscoot ignores (never misreads) entries written
 by a newer one.
+
+### Turning the journal off
+
+The journal is **on by default** because undo is broadly useful, but it is fully opt-out. Turn it off
+if you would rather netscoot keep no out-of-tree per-user state (privacy or a clean machine), on
+ephemeral or CI agents where you will never undo, or in a locked-down/managed environment. It is a
+git/env setting, not an install option, so the same controls work no matter how you installed -
+**including the PowerShell Gallery**:
+
+```powershell
+# From the Gallery (or any install): turn it off for every repository on the machine
+Install-Module Netscoot -Scope CurrentUser
+Set-NetscootJournal -Enabled $false -Global
+
+Set-NetscootJournal -Enabled $false      # just this repository
+$env:NETSCOOT_JOURNAL = 0                 # this session only (or fleet-wide via Group Policy / Intune)
+./install.ps1 -NoJournal                  # GitHub-release installer: sets the global git setting for you
+Clear-NetscootJournal                     # also discard an existing journal
+```
 
 The enabled state resolves in this order, first match wins: an internal suppression flag (set by
 `Undo-Netscoot` around its own reverse move) → the `NETSCOOT_JOURNAL` env var (`off`/`0`/`false`) →
