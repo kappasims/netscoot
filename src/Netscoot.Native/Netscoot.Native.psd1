@@ -1,6 +1,6 @@
 @{
     RootModule           = 'Netscoot.Native.psm1'
-    ModuleVersion        = '2.0.0'
+    ModuleVersion        = '2.0.1'
     GUID                 = 'a04eb714-497e-477b-99d3-ea09801d7dc5'
     Author               = 'kappasims'
     Description          = 'Windows-only extension of Netscoot for native / C++/CLI (.vcxproj) projects. Delegates solution membership + the folder move, and reports the native MSBuild path settings the dotnet CLI cannot reconcile.'
