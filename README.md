@@ -730,7 +730,7 @@ propagate; `-Force`/`-RepositoryRoot`/`-NoBuild` are forwarded where the target'
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue, ByPropertyName) | The item to move (file or folder). Accepts pipeline input. |
+| `‑Path` | String | true | true (ByValue) | The item to move (file or folder). Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
 | `‑Destination` | String | true | false | New path - passed through to the engine. |
 | `‑RepositoryRoot` | String | false | false | Repository root the engine scans for references. Defaults to the enclosing git repository root. Not used by the Unity engine. |
 | `‑NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build'. Only the .NET engine builds; ignored by the others. |
@@ -798,7 +798,7 @@ specialist; `-Force` and `-RepositoryRoot`/`-NoBuild` are forwarded where the sp
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue, ByPropertyName) | The .NET file to move. Accepts pipeline input. |
+| `‑Path` | String | true | true (ByValue) | The .NET file to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
 | `‑Destination` | String | true | false | New path (file or folder) - passed through to the specialist. |
 | `‑RepositoryRoot` | String | false | false | Repository root the specialist scans for references. Defaults to the enclosing git repository root. |
 | `‑NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build' (forwarded to the project/import specialist). |
@@ -855,7 +855,7 @@ propagate; `-Force`/`-RepositoryRoot`/`-NoBuild` are forwarded.
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue, ByPropertyName) | The folder to move. Accepts pipeline input. |
+| `‑Path` | String | true | true (ByValue) | The folder to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
 | `‑Destination` | String | true | false | New folder path. |
 | `‑RepositoryRoot` | String | false | false | Repository root scanned for references. Defaults to the enclosing git repository root. |
 | `‑NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build' (forwarded to Move-DotnetProjectTree). |
@@ -917,7 +917,7 @@ surfaced as a Warning (or, with `-Strict`, a non- terminating error honoring `-E
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Project` | String | true | true (ByValue, ByPropertyName) | Path to the project file (`.csproj/.fsproj/.vbproj`). Accepts pipeline input - pipe a path string or any object with a FullName/Path property (e.g. Get-Item output). |
+| `‑Project` | String | true | true (ByValue) | Path to the project file (`.csproj/.fsproj/.vbproj`). Accepts pipeline input - pipe a path string or a Get-ChildItem/Get-Item item. Other object types are rejected. |
 | `‑Destination` | String | true | false | Where to move the project folder, following `git mv` rules: if Destination is an existing directory the folder moves into it (keeping its name, e.g. './libs' -&gt; './libs/Tarragon'); otherwise Destination is the project's new folder path (a rename, './libs/Tarragon'). The project file and its sibling contents move as one. |
 | `‑RepositoryRoot` | String | false | false | Root to scan for solutions/consumers. Defaults to the enclosing git repository root. |
 | `‑Strict` | SwitchParameter | false | false | Escalate solution-divergence warnings to non-terminating errors. |
@@ -994,7 +994,7 @@ ShouldContinue); supports `-WhatIf`.
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue, ByPropertyName) | The folder to move. Accepts pipeline input. |
+| `‑Path` | String | true | true (ByValue) | The folder to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
 | `‑Destination` | String | true | false | Where to move the folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the folder's new path. |
 | `‑RepositoryRoot` | String | false | false | Root to scan. Defaults to the enclosing git repository root. |
 | `‑NoBuild` | SwitchParameter | false | false | Skip the verifying build of the moved projects. |
@@ -1065,7 +1065,7 @@ required here; git is used when available (else confirmed plain-move fallback vi
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue, ByPropertyName) | The `.props/.targets` file to move. Accepts pipeline input. |
+| `‑Path` | String | true | true (ByValue) | The `.props/.targets` file to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
 | `‑Destination` | String | true | false | New file path (or a folder, in which case the file keeps its name). |
 | `‑RepositoryRoot` | String | false | false | Root to scan for importers. Defaults to the enclosing git repository root. |
 | `‑Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
@@ -1126,7 +1126,7 @@ module specialist has no RepositoryRoot).
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue, ByPropertyName) | The PowerShell item to move: a `.ps1` script, a `.psd1` manifest, or a module folder. Accepts pipeline input. |
+| `‑Path` | String | true | true (ByValue) | The PowerShell item to move: a `.ps1` script, a `.psd1` manifest, or a module folder. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
 | `‑Destination` | String | true | false | New path - passed through to the specialist. |
 | `‑RepositoryRoot` | String | false | false | Repository root scanned for referencing scripts. Defaults to the enclosing git repository root. Forwarded to the script specialist only (the module specialist has no RepositoryRoot). |
 | `‑Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
@@ -1181,7 +1181,7 @@ automatically.
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑ModulePath` | String | true | true (ByValue, ByPropertyName) | Path to the module folder, or directly to its `.psd1` manifest. |
+| `‑ModulePath` | String | true | true (ByValue) | Path to the module folder, or directly to its `.psd1` manifest. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
 | `‑Destination` | String | true | false | Where to move the module folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the module's new folder path. |
 | `‑Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `‑NoJournal` | SwitchParameter | false | false | Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-Netscoot will not see this move). |
@@ -1243,7 +1243,7 @@ used when available (else confirmed plain-move fallback via `-Force`). `-WhatIf`
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue, ByPropertyName) | The `.ps1` to move. Accepts pipeline input. |
+| `‑Path` | String | true | true (ByValue) | The `.ps1` to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
 | `‑Destination` | String | true | false | New file path (or a folder, in which case the script keeps its name). |
 | `‑RepositoryRoot` | String | false | false | Root to scan for referencing scripts. Defaults to the enclosing git repository root. |
 | `‑Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
@@ -1306,7 +1306,7 @@ used when available (else confirmed plain-move fallback via `-Force`). `-WhatIf`
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue, ByPropertyName) | The `.sln/.slnx` file to move. Accepts pipeline input. |
+| `‑Path` | String | true | true (ByValue) | The `.sln/.slnx` file to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
 | `‑Destination` | String | true | false | New file path (or a folder, in which case the solution keeps its name). |
 | `‑Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `‑NoJournal` | SwitchParameter | false | false | Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-Netscoot will not see this move). |
@@ -2055,7 +2055,7 @@ surfacing them beats silently mis-editing them.
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Project` | String | true | true (ByValue, ByPropertyName) | Path to the `.vcxproj`. Accepts pipeline input. |
+| `‑Project` | String | true | true (ByValue) | Path to the `.vcxproj`. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
 | `‑Destination` | String | true | false | Where to move the project folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the new folder path. |
 | `‑RepositoryRoot` | String | false | false | Root to scan for solutions. Defaults to the enclosing git repository root. |
 | `‑Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
@@ -2120,7 +2120,7 @@ preserved.
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑AssetPath` | String | true | true (ByValue, ByPropertyName) | Asset file or folder to move (under Assets/ or a package). Accepts pipeline input. |
+| `‑AssetPath` | String | true | true (ByValue) | Asset file or folder to move (under Assets/ or a package). Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
 | `‑Destination` | String | true | false | Where to move the asset/folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the new path. |
 | `‑RepositoryRoot` | String | false | false | Root to scan for asmdef referencers. Defaults to the enclosing git repository root. |
 | `‑Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |

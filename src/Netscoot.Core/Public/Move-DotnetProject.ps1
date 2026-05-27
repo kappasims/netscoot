@@ -18,7 +18,7 @@ function Move-DotnetProject {
 
     .PARAMETER Project
         Path to the project file (.csproj/.fsproj/.vbproj). Accepts pipeline input - pipe a
-        path string or any object with a FullName/Path property (e.g. Get-Item output).
+        path string or a Get-ChildItem/Get-Item item. Other object types are rejected.
 
     .PARAMETER Destination
         Where to move the project folder, following `git mv` rules: if Destination is an existing
@@ -62,8 +62,8 @@ function Move-DotnetProject {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('Netscoot.MoveResult')]
     param(
-        [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [Alias('FullName', 'Path', 'PSPath')]
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [Netscoot.PathInputTransform()]
         [ValidateNotNullOrEmpty()]
         [string]$Project,
 

@@ -25,7 +25,7 @@ function Move-MSBuildImport {
         fallback via -Force). Supports -WhatIf.
 
     .PARAMETER Path
-        The .props/.targets file to move. Accepts pipeline input.
+        The .props/.targets file to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected).
 
     .PARAMETER Destination
         New file path (or a folder, in which case the file keeps its name).
@@ -54,8 +54,8 @@ function Move-MSBuildImport {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('Netscoot.ImportMoveResult')]
     param(
-        [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [Alias('FullName', 'PSPath')]
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [Netscoot.PathInputTransform()]
         [ValidateNotNullOrEmpty()]
         [string]$Path,
 

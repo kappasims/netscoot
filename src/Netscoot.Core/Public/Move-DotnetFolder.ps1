@@ -13,7 +13,7 @@ function Move-DotnetFolder {
         propagate; -Force/-RepositoryRoot/-NoBuild are forwarded.
 
     .PARAMETER Path
-        The folder to move. Accepts pipeline input.
+        The folder to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected).
 
     .PARAMETER Destination
         New folder path.
@@ -47,8 +47,8 @@ function Move-DotnetFolder {
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType('Netscoot.TreeMoveResult')]
     param(
-        [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [Alias('FullName', 'PSPath')]
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [Netscoot.PathInputTransform()]
         [ValidateNotNullOrEmpty()]
         [string]$Path,
 

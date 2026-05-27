@@ -19,7 +19,8 @@ function Move-UnityAsset {
         Android, etc.) are plain fields untouched by a move, so mobile layouts are preserved.
 
     .PARAMETER AssetPath
-        Asset file or folder to move (under Assets/ or a package). Accepts pipeline input.
+        Asset file or folder to move (under Assets/ or a package). Accepts pipeline input (a path
+        string or a Get-ChildItem/Get-Item item; other object types are rejected).
 
     .PARAMETER Destination
         Where to move the asset/folder, following `git mv` rules: An existing directory means move
@@ -49,8 +50,8 @@ function Move-UnityAsset {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('Netscoot.UnityMoveResult')]
     param(
-        [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [Alias('FullName', 'Path', 'PSPath')]
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [Netscoot.PathInputTransform()]
         [ValidateNotNullOrEmpty()]
         [string]$AssetPath,
 

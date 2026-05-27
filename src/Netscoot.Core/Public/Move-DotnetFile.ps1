@@ -12,7 +12,7 @@ function Move-DotnetFile {
         -RepositoryRoot/-NoBuild are forwarded where the specialist accepts them.
 
     .PARAMETER Path
-        The .NET file to move. Accepts pipeline input.
+        The .NET file to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected).
 
     .PARAMETER Destination
         New path (file or folder) - passed through to the specialist.
@@ -48,8 +48,8 @@ function Move-DotnetFile {
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType('Netscoot.MoveResult', 'Netscoot.SolutionMoveResult', 'Netscoot.ImportMoveResult')]
     param(
-        [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [Alias('FullName', 'PSPath')]
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [Netscoot.PathInputTransform()]
         [ValidateNotNullOrEmpty()]
         [string]$Path,
 

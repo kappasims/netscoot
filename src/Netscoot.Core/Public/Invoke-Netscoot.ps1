@@ -16,7 +16,8 @@ function Invoke-Netscoot {
         target's engine accepts them.
 
     .PARAMETER Path
-        The item to move (file or folder). Accepts pipeline input.
+        The item to move (file or folder). Accepts pipeline input (a path string or a
+        Get-ChildItem/Get-Item item; other object types are rejected).
 
     .PARAMETER Destination
         New path - passed through to the engine.
@@ -57,8 +58,8 @@ function Invoke-Netscoot {
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType('Netscoot.MoveResult', 'Netscoot.TreeMoveResult', 'Netscoot.SolutionMoveResult', 'Netscoot.ImportMoveResult', 'Netscoot.ScriptMoveResult', 'Netscoot.PSModuleMoveResult', 'Netscoot.NativeMoveResult', 'Netscoot.UnityMoveResult')]
     param(
-        [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [Alias('FullName', 'PSPath')]
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [Netscoot.PathInputTransform()]
         [ValidateNotNullOrEmpty()]
         [string]$Path,
 

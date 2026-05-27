@@ -17,7 +17,7 @@ function Move-Solution {
         supported. dotnet is not required.
 
     .PARAMETER Path
-        The .sln/.slnx file to move. Accepts pipeline input.
+        The .sln/.slnx file to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected).
 
     .PARAMETER Destination
         New file path (or a folder, in which case the solution keeps its name).
@@ -43,8 +43,8 @@ function Move-Solution {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('Netscoot.SolutionMoveResult')]
     param(
-        [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [Alias('FullName', 'PSPath')]
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [Netscoot.PathInputTransform()]
         [ValidateNotNullOrEmpty()]
         [string]$Path,
 
