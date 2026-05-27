@@ -45,4 +45,25 @@ Describe 'Update policy' {
         $r | Should -BeNullOrEmpty
         ($warn -join "`n") | Should -Match 'disabled by the update policy'
     }
+
+    It 'Update-Netscoot -Force does NOT override a machine-scope (admin) Disabled' {
+        # An administrator's GPO/Intune push resolves as Source=Machine; -Force must not defeat it.
+        Mock -ModuleName Netscoot.Core Get-NetscootUpdatePolicy {
+            [pscustomobject]@{ PSTypeName = 'Netscoot.UpdatePolicy'; State = 'Disabled'; Source = 'Machine'; Value = 'false' }
+        }
+        $r = Update-Netscoot -Force -WarningVariable warn -WarningAction SilentlyContinue
+        $r | Should -BeNullOrEmpty
+        ($warn -join "`n") | Should -Match 'administrator'
+    }
+
+    It 'Update-Netscoot -Force overrides a user-scope Disabled (gate passes to the check)' {
+        # A Disabled the user set for themselves (Source=User) is overridable; the gate should fall
+        # through to the version check. Stub the check so no network call happens.
+        Mock -ModuleName Netscoot.Core Get-NetscootUpdatePolicy {
+            [pscustomobject]@{ PSTypeName = 'Netscoot.UpdatePolicy'; State = 'Disabled'; Source = 'User'; Value = 'false' }
+        }
+        Mock -ModuleName Netscoot.Core Test-NetscootUpdate { $null }
+        Update-Netscoot -Force -WarningAction SilentlyContinue | Out-Null
+        Should -Invoke -ModuleName Netscoot.Core Test-NetscootUpdate -Times 1
+    }
 }
