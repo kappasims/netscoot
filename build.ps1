@@ -266,9 +266,11 @@ function Invoke-DocsTask {
             if ($f.Note) { $lines += ($prefix + '  # ' + $f.Note) }
             else { $lines += $prefix.TrimEnd() }
             # Expand a nested registered type inline (strip [] and ? decorations); stop on a cycle.
+            # Indent the nested block so its name column lands under this field's type column
+            # (one step past the parent's name-column width), making the nesting read at a glance.
             $bare = $f.Type -replace '[\[\]?]', ''
             if ($typeDefs.ContainsKey($bare) -and ($bare -notin $ancestorsNow)) {
-                $lines += (Format-TypeCodeView -Name $bare -Def $typeDefs[$bare] -Indent ($Indent + 4) -Ancestors $ancestorsNow)
+                $lines += (Format-TypeCodeView -Name $bare -Def $typeDefs[$bare] -Indent ($Indent + $nameW + 2) -Ancestors $ancestorsNow)
             }
         }
         $lines -join "`n"

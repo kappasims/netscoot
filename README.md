@@ -719,13 +719,13 @@ Netscoot.Capability
   PSEdition           string
   DotnetSupportsSlnx  bool
   Git                 Netscoot.ToolInfo
-      Present  bool    # found on PATH
-      Version  string
-      Path     string
+                      Present  bool    # found on PATH
+                      Version  string
+                      Path     string
   Dotnet              Netscoot.ToolInfo
-      Present  bool    # found on PATH
-      Version  string
-      Path     string
+                      Present  bool    # found on PATH
+                      Version  string
+                      Path     string
 ```
 
 **Examples**
@@ -2384,13 +2384,13 @@ Netscoot.Capability
   PSEdition           string
   DotnetSupportsSlnx  bool
   Git                 Netscoot.ToolInfo
-      Present  bool    # found on PATH
-      Version  string
-      Path     string
+                      Present  bool    # found on PATH
+                      Version  string
+                      Path     string
   Dotnet              Netscoot.ToolInfo
-      Present  bool    # found on PATH
-      Version  string
-      Path     string
+                      Present  bool    # found on PATH
+                      Version  string
+                      Path     string
 ```
 
 <small>[Back to Output types](#output-types)</small>
