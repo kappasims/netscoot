@@ -26,7 +26,7 @@ function Move-DotnetProject {
         otherwise Destination is the project's new folder path (a rename, './libs/Tarragon'). The
         project file and its sibling contents move as one. Errors if the resulting folder exists.
 
-    .PARAMETER RepoRoot
+    .PARAMETER RepositoryRoot
         Root to scan for solutions/consumers. Defaults to the enclosing git repository root.
 
     .PARAMETER Strict
@@ -71,7 +71,7 @@ function Move-DotnetProject {
         [ValidateNotNullOrEmpty()]
         [string]$Destination,
 
-        [string]$RepoRoot,
+        [string]$RepositoryRoot,
         [switch]$Strict,
         [switch]$NoBuild,
         [switch]$Force,
@@ -103,8 +103,8 @@ function Move-DotnetProject {
 
         $oldDir = Split-Path -Parent $projFull
         $projFile = Split-Path -Leaf $projFull
-        if (-not $RepoRoot) { $RepoRoot = Get-RepoRoot -StartPath $oldDir }
-        $repoFull = Resolve-FullPath $RepoRoot
+        if (-not $RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath $oldDir }
+        $repoFull = Resolve-FullPath $RepositoryRoot
 
         # git mv semantics: an existing destination directory means "move the project folder into
         # it" (libs -> libs/Tarragon); otherwise Destination is the project's new folder path.
@@ -164,7 +164,7 @@ function Move-DotnetProject {
             }
         }
 
-        Test-DirectoryBuildInheritance -OldDir $oldDir -NewDir $newDir -RepoRoot $repoFull
+        Test-DirectoryBuildInheritance -OldDir $oldDir -NewDir $newDir -RepositoryRoot $repoFull
         Write-UnreconcilableReferenceWarning -MovedProject $projFull -AllProjects $allProjects -LiteralConsumers $consumers
 
         $built = $null
@@ -177,7 +177,7 @@ function Move-DotnetProject {
 
             $items = New-DotnetReferenceItems -Solutions $solutions -Consumers $consumers -OwnRefs $ownRefs `
                 -OldProj $projFull -NewProj $newProj
-            $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repository }
+            $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 
             # Files the reconciliation edits (for rollback): each solution, each consumer project,
             # and the moved project's own file. Reverse-move returns the folder to its old place.
@@ -187,7 +187,7 @@ function Move-DotnetProject {
                 -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $oldDir, $repoFull)
             $performed = $true
             $skippedCount = $planResult.Skipped
-            Register-MoveUndo -RepoRoot $repoFull -Command 'Move-DotnetProject' -Engine 'dotnet' `
+            Register-MoveUndo -RepositoryRoot $repoFull -Command 'Move-DotnetProject' -Engine 'dotnet' `
                 -Source $projFull -Destination $newProj `
                 -UndoParams @{ Project = $newProj; Destination = $oldDir; Force = [bool]$Force } -NoJournal:$NoJournal
 

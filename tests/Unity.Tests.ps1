@@ -43,7 +43,7 @@ Describe 'Move-UnityAsset' {
         try {
             $bar = Join-Path (Join-Path (Join-Path $root 'Assets') 'Foo') 'Bar.cs'
             $dest = Join-Path (Join-Path (Join-Path $root 'Assets') 'Baz') 'Bar.cs'
-            $r = Move-UnityAsset -AssetPath $bar -Destination $dest -RepoRoot $root -Confirm:$false -WarningAction SilentlyContinue
+            $r = Move-UnityAsset -AssetPath $bar -Destination $dest -RepositoryRoot $root -Confirm:$false -WarningAction SilentlyContinue
             $dest | Should -Exist
             "$dest.meta" | Should -Exist
             $bar | Should -Not -Exist
@@ -57,7 +57,7 @@ Describe 'Move-UnityAsset' {
         try {
             $foo = Join-Path (Join-Path $root 'Assets') 'Foo'
             $dest = Join-Path (Join-Path (Join-Path $root 'Assets') 'Sub') 'Foo'
-            Move-UnityAsset -AssetPath $foo -Destination $dest -RepoRoot $root -Confirm:$false -WarningAction SilentlyContinue | Out-Null
+            Move-UnityAsset -AssetPath $foo -Destination $dest -RepositoryRoot $root -Confirm:$false -WarningAction SilentlyContinue | Out-Null
             $dest | Should -Exist
             "$dest.meta" | Should -Exist                                   # sibling folder meta moved
             (Join-Path $dest 'Bar.cs.meta') | Should -Exist               # descendant meta rode along
@@ -69,7 +69,7 @@ Describe 'Move-UnityAsset' {
         $root = New-UnityFixture
         try {
             $bar = Join-Path (Join-Path (Join-Path $root 'Assets') 'Foo') 'Bar.cs'
-            $r = Get-Item $bar | Move-UnityAsset -Destination (Join-Path (Split-Path $bar) 'Renamed.cs') -RepoRoot $root -WhatIf
+            $r = Get-Item $bar | Move-UnityAsset -Destination (Join-Path (Split-Path $bar) 'Renamed.cs') -RepositoryRoot $root -WhatIf
             $r.Performed | Should -BeFalse
             $bar | Should -Exist
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
@@ -79,7 +79,7 @@ Describe 'Move-UnityAsset' {
         $root = New-UnityAsmdefFixture
         try {
             $lib = Join-Path (Join-Path (Join-Path $root 'Assets') 'Lib') 'Lib.asmdef'
-            $r = Move-UnityAsset -AssetPath $lib -Destination (Join-Path (Join-Path $root 'Assets') 'Core/Lib.asmdef') -RepoRoot $root -WhatIf -WarningAction SilentlyContinue
+            $r = Move-UnityAsset -AssetPath $lib -Destination (Join-Path (Join-Path $root 'Assets') 'Core/Lib.asmdef') -RepositoryRoot $root -WhatIf -WarningAction SilentlyContinue
             $r.IsAsmdef | Should -BeTrue
             $r.ReferencedBy | Should -Contain 'App'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
@@ -90,7 +90,7 @@ Describe 'Move-UnityAsset' {
         try {
             $foo = Join-Path (Join-Path $root 'Assets') 'Foo'
             Set-Content -LiteralPath (Join-Path $foo 'NoMeta.cs') -Value 'x'
-            Move-UnityAsset -AssetPath (Join-Path $foo 'NoMeta.cs') -Destination (Join-Path $foo 'Moved.cs') -RepoRoot $root -WhatIf -WarningVariable w -WarningAction SilentlyContinue | Out-Null
+            Move-UnityAsset -AssetPath (Join-Path $foo 'NoMeta.cs') -Destination (Join-Path $foo 'Moved.cs') -RepositoryRoot $root -WhatIf -WarningVariable w -WarningAction SilentlyContinue | Out-Null
             ($w -join "`n") | Should -Match 'No .meta'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }

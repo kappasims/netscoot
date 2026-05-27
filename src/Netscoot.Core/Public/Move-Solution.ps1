@@ -93,7 +93,7 @@ function Move-Solution {
         if ($PSCmdlet.ShouldProcess("$src -> $newPath", "Move solution and rebase $($entries.Count) project path(s)")) {
             $ctx = Resolve-MoveContext -Cmdlet $PSCmdlet -Force:$Force -TargetForError $src
             if (-not $ctx) { return }
-            $repoFull = Get-RepoRoot -StartPath (Split-Path -Parent $src)
+            $repoFull = Get-RepositoryRoot -StartPath (Split-Path -Parent $src)
 
             # The solution-path rebases happen after the move, so they are Reattach-only items.
             $counter = @{ N = 0 }
@@ -106,14 +106,14 @@ function Move-Solution {
                 $items += New-MoveItem -Description "rebase path: $($e.Stored) -> $rel" `
                     -Reattach $rebaseSb -ReattachArgs @($newPath, $old, $new, $counter)
             }
-            $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repository }
+            $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 
             $planResult = Invoke-MovePlan -Caption "Move solution $name" -Items $items -Move $move `
                 -MoveArgs @($ctx.UseGit, $src, $newPath, $repoFull)
             $performed = $true
             $rebased = $counter.N
             $skippedCount = $planResult.Skipped
-            Register-MoveUndo -RepoRoot $repoFull -Command 'Move-Solution' -Engine 'dotnet' `
+            Register-MoveUndo -RepositoryRoot $repoFull -Command 'Move-Solution' -Engine 'dotnet' `
                 -Source $src -Destination $newPath `
                 -UndoParams @{ Path = $newPath; Destination = $src; Force = [bool]$Force } -NoJournal:$NoJournal
         }

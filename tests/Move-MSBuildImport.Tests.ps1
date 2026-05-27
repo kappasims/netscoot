@@ -64,7 +64,7 @@ Describe 'Move-MSBuildImport' {
         try {
             $props = Join-Path $root 'Shared.props'
             $dest = Join-Path (Join-Path $root 'build') 'Shared.props'
-            $r = Move-MSBuildImport -Path $props -Destination $dest -RepoRoot $root -Confirm:$false -WarningAction SilentlyContinue
+            $r = Move-MSBuildImport -Path $props -Destination $dest -RepositoryRoot $root -Confirm:$false -WarningAction SilentlyContinue
             $r.ImportersFixed | Should -Be 1
             $dest | Should -Exist
             $props | Should -Not -Exist
@@ -83,7 +83,7 @@ Describe 'Move-MSBuildImport' {
             Set-Content -LiteralPath (Join-Path $root 'Directory.Build.props') -Encoding UTF8 -Value "<Project></Project>"
             $r = Move-MSBuildImport -Path (Join-Path $root 'Directory.Build.props') `
                 -Destination (Join-Path (Join-Path $root 'build') 'Directory.Build.props') `
-                -RepoRoot $root -Confirm:$false -WarningVariable w -WarningAction SilentlyContinue
+                -RepositoryRoot $root -Confirm:$false -WarningVariable w -WarningAction SilentlyContinue
             $r.AutoImported | Should -BeTrue
             ($w -join "`n") | Should -Match 'imported by LOCATION'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
@@ -94,7 +94,7 @@ Describe 'Move-MSBuildImport' {
         try {
             $r = Move-MSBuildImport -Path (Join-Path $root 'Shared.props') `
                 -Destination (Join-Path (Join-Path $root 'build') 'Shared.props') `
-                -RepoRoot $root -Confirm:$false -WarningAction SilentlyContinue
+                -RepositoryRoot $root -Confirm:$false -WarningAction SilentlyContinue
             $r.ImportersFixed | Should -Be 1
             (Get-Content (Join-Path $root (Join-Path 'Native' ('Native.vcxproj'))) -Raw) |
                 Should -Match 'Project="\.\.[\\/]build[\\/]Shared\.props"'

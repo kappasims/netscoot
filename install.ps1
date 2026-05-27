@@ -36,9 +36,9 @@ param(
     [string]$InstallPath,
     [string]$Repository = 'kappasims/netscoot',
     # Opt out of the retroactive-undo journal. Prefers git config (git config --global
-    # netscoot.journal false) when git is present - the durable, config-first switch; falls back to
-    # the NETSCOOT_JOURNAL env var with no git. Either way the choice survives future
-    # installs/updates - they never switch journaling back on.
+    # netscoot.journal false) when git is present - the durable per-user setting; falls back to the
+    # NETSCOOT_JOURNAL env var with no git. Either way the choice survives future installs/updates,
+    # which never switch journaling back on. (An explicit NETSCOOT_JOURNAL env var still trumps it.)
     [switch]$NoJournal
 )
 
@@ -91,8 +91,8 @@ try {
     Write-Host "    Import-Module Netscoot" -ForegroundColor Green
 
     if ($NoJournal) {
-        # Persist the opt-out where the module reads it. Prefer the durable, config-first switch
-        # (global git config), so it holds for every repository; fall back to the env var with no git.
+        # Persist the opt-out where the module reads it. Prefer the durable global git config, so it
+        # holds for every repository; fall back to the env var with no git.
         $gitAvailable = [bool](Get-Command git -ErrorAction SilentlyContinue)
         if ($gitAvailable) {
             & git config --global netscoot.journal false 2>$null

@@ -25,7 +25,7 @@ Describe 'Test-SolutionConsistency' {
     It 'warns about and emits the divergent project' {
         $root = New-DivergentRepo
         try {
-            $result = Test-SolutionConsistency -RepoRoot $root -WarningVariable warns -WarningAction SilentlyContinue
+            $result = Test-SolutionConsistency -RepositoryRoot $root -WarningVariable warns -WarningAction SilentlyContinue
             $result.Project | Should -Match 'Lib\.csproj'
             ($result.AbsentFrom -join ',') | Should -Match 'Partial\.slnx'
             $warns | Should -Not -BeNullOrEmpty
@@ -35,13 +35,13 @@ Describe 'Test-SolutionConsistency' {
     It 'escalates to a non-terminating error under -Strict' {
         $root = New-DivergentRepo
         try {
-            Test-SolutionConsistency -RepoRoot $root -Strict -ErrorVariable errs -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
+            Test-SolutionConsistency -RepositoryRoot $root -Strict -ErrorVariable errs -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
             $errs | Should -Not -BeNullOrEmpty
             $errs[0].FullyQualifiedErrorId | Should -Match 'SolutionDivergence'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
-    It 'accepts RepoRoot from the pipeline (Get-Item)' {
+    It 'accepts RepositoryRoot from the pipeline (Get-Item)' {
         $root = New-DivergentRepo
         try {
             $result = Get-Item $root | Test-SolutionConsistency -WarningAction SilentlyContinue

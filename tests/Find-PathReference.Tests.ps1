@@ -25,7 +25,7 @@ Describe 'Find-PathReference' {
     It 'flags build/CI/hook references (High) and bare-leaf references (Low)' {
         $root = New-RefFixture
         try {
-            $r = Find-PathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepoRoot $root -WarningAction SilentlyContinue
+            $r = Find-PathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -WarningAction SilentlyContinue
             $highFiles = ($r | Where-Object Confidence -eq 'High').File
             ($highFiles | ForEach-Object { Split-Path -Leaf $_ }) | Should -Contain 'build.ps1'
             ($highFiles | ForEach-Object { Split-Path -Leaf $_ }) | Should -Contain 'ci.yml'
@@ -37,7 +37,7 @@ Describe 'Find-PathReference' {
     It 'does NOT scan ordinary source scripts (only automation dirs/roots)' {
         $root = New-RefFixture
         try {
-            $r = Find-PathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepoRoot $root -WarningAction SilentlyContinue
+            $r = Find-PathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -WarningAction SilentlyContinue
             ($r.File | ForEach-Object { Split-Path -Leaf $_ }) | Should -Not -Contain 'Other.ps1'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -45,7 +45,7 @@ Describe 'Find-PathReference' {
     It 'warns and emits objects with the common reference shape' {
         $root = New-RefFixture
         try {
-            $r = Find-PathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepoRoot $root -WarningVariable w -WarningAction SilentlyContinue
+            $r = Find-PathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -WarningVariable w -WarningAction SilentlyContinue
             ($w -join "`n") | Should -Match 'NOT auto-reconciled'
             foreach ($f in 'File', 'Line', 'Confidence', 'Text') { $r[0].PSObject.Properties.Name | Should -Contain $f }
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

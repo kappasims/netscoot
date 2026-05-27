@@ -10,7 +10,7 @@ function Move-DotnetFolder {
         project under the folder as one co-moving set and reconciles only the references that
         cross the folder boundary (internal references ride along unchanged). If the folder
         contains no managed projects, that specialist reports it. -WhatIf/-Confirm/-Verbose
-        propagate; -Force/-RepoRoot/-NoBuild are forwarded.
+        propagate; -Force/-RepositoryRoot/-NoBuild are forwarded.
 
     .PARAMETER Path
         The folder to move. Accepts pipeline input.
@@ -18,7 +18,7 @@ function Move-DotnetFolder {
     .PARAMETER Destination
         New folder path.
 
-    .PARAMETER RepoRoot
+    .PARAMETER RepositoryRoot
         Repository root scanned for references. Defaults to the enclosing git repository root.
 
     .PARAMETER NoBuild
@@ -56,7 +56,7 @@ function Move-DotnetFolder {
         [ValidateNotNullOrEmpty()]
         [string]$Destination,
 
-        [string]$RepoRoot,
+        [string]$RepositoryRoot,
         [switch]$NoBuild,
         [switch]$Force,
         [switch]$NoJournal
@@ -71,7 +71,7 @@ function Move-DotnetFolder {
             return
         }
         $fwd = @{ Destination = $Destination }
-        if ($PSBoundParameters.ContainsKey('RepoRoot')) { $fwd.RepoRoot = $RepoRoot }
+        if ($PSBoundParameters.ContainsKey('RepositoryRoot')) { $fwd.RepositoryRoot = $RepositoryRoot }
         if ($Force) { $fwd.Force = $true }
         if ($NoBuild) { $fwd.NoBuild = $true }
         if ($NoJournal) { $fwd.NoJournal = $true }

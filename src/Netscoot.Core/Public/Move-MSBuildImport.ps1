@@ -30,7 +30,7 @@ function Move-MSBuildImport {
     .PARAMETER Destination
         New file path (or a folder, in which case the file keeps its name).
 
-    .PARAMETER RepoRoot
+    .PARAMETER RepositoryRoot
         Root to scan for importers. Defaults to the enclosing git repository root.
 
     .PARAMETER Force
@@ -63,7 +63,7 @@ function Move-MSBuildImport {
         [ValidateNotNullOrEmpty()]
         [string]$Destination,
 
-        [string]$RepoRoot,
+        [string]$RepositoryRoot,
         [switch]$Force,
         [switch]$NoJournal
     )
@@ -94,8 +94,8 @@ function Move-MSBuildImport {
             return
         }
 
-        if (-not $RepoRoot) { $RepoRoot = Get-RepoRoot -StartPath (Split-Path -Parent $src) }
-        $repoFull = Resolve-FullPath $RepoRoot
+        if (-not $RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath (Split-Path -Parent $src) }
+        $repoFull = Resolve-FullPath $RepositoryRoot
 
         $autoImported = ($srcName -match '^Directory\.(Build|Packages|Solution)\.(props|targets)$')
 
@@ -148,13 +148,13 @@ function Move-MSBuildImport {
                         -Reattach $fixSb -ReattachArgs @($newPath, $own.Raw, $newRaw)
                 }
             }
-            $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repository }
+            $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 
             $planResult = Invoke-MovePlan -Caption "Move import $srcName" -Items $items -Move $move `
                 -MoveArgs @($ctx.UseGit, $src, $newPath, $repoFull)
             $performed = $true
             $skippedCount = $planResult.Skipped
-            Register-MoveUndo -RepoRoot $repoFull -Command 'Move-MSBuildImport' -Engine 'dotnet' `
+            Register-MoveUndo -RepositoryRoot $repoFull -Command 'Move-MSBuildImport' -Engine 'dotnet' `
                 -Source $src -Destination $newPath `
                 -UndoParams @{ Path = $newPath; Destination = $src; Force = [bool]$Force } -NoJournal:$NoJournal
         }

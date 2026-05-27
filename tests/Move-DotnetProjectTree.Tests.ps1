@@ -29,7 +29,7 @@ Describe 'Move-DotnetProjectTree' {
         try {
             $group = Join-Path $root 'group'
             $dest = Join-Path (Join-Path $root 'moved') 'group'
-            $r = Move-DotnetProjectTree -Path $group -Destination $dest -RepoRoot $root -NoBuild -Confirm:$false -WarningAction SilentlyContinue
+            $r = Move-DotnetProjectTree -Path $group -Destination $dest -RepositoryRoot $root -NoBuild -Confirm:$false -WarningAction SilentlyContinue
             $r.ProjectsMoved | Should -Be 2
             $r.ConsumerCount | Should -Be 1                      # only App is external
 
@@ -50,7 +50,7 @@ Describe 'Move-DotnetProjectTree' {
         try {
             $group = Join-Path $root 'group'
             $dest = Join-Path $group 'nested'   # under the source folder
-            Move-DotnetProjectTree -Path $group -Destination $dest -RepoRoot $root -NoBuild -Confirm:$false `
+            Move-DotnetProjectTree -Path $group -Destination $dest -RepositoryRoot $root -NoBuild -Confirm:$false `
                 -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
             $errs[0].FullyQualifiedErrorId | Should -Match 'PathOverlap'
             (Join-Path $group (Join-Path 'Lib' ('Lib.csproj'))) | Should -Exist   # nothing moved
@@ -69,7 +69,7 @@ Describe 'Move-DotnetProjectTree' {
             & git add -A; & git commit -qm fixture | Out-Null
             # Moving area/Proj out of area/ drops the area Directory.Build.targets from its chain.
             Move-DotnetProjectTree -Path (Join-Path $root (Join-Path 'area' ('Proj'))) -Destination (Join-Path $root 'movedProj') `
-                -RepoRoot $root -NoBuild -Confirm:$false -WarningVariable w -WarningAction SilentlyContinue | Out-Null
+                -RepositoryRoot $root -NoBuild -Confirm:$false -WarningVariable w -WarningAction SilentlyContinue | Out-Null
             ($w -join "`n") | Should -Match 'inheritance changes'
             ($w -join "`n") | Should -Match 'Directory\.Build\.targets'
         } finally { Pop-Location; Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
@@ -86,7 +86,7 @@ Describe 'Move-DotnetProjectTree' {
             New-StubClassLib -Name Proj -Directory (Join-Path $root (Join-Path 'area' ('Proj'))) | Out-Null
             & git add -A; & git commit -qm fixture | Out-Null
             Move-DotnetProjectTree -Path (Join-Path $root (Join-Path 'area' ('Proj'))) -Destination (Join-Path $root 'movedProj') `
-                -RepoRoot $root -NoBuild -Confirm:$false -WarningVariable w -WarningAction SilentlyContinue | Out-Null
+                -RepositoryRoot $root -NoBuild -Confirm:$false -WarningVariable w -WarningAction SilentlyContinue | Out-Null
             ($w -join "`n") | Should -Match 'inheritance changes'
             ($w -join "`n") | Should -Match 'Directory\.Packages\.props'
         } finally { Pop-Location; Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

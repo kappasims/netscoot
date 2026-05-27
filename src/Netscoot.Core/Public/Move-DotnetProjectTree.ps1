@@ -25,7 +25,7 @@ function Move-DotnetProjectTree {
         Where to move the folder, following `git mv` rules: An existing directory means move into
         it (keeping the name); otherwise it is the folder's new path. Errors if the result exists.
 
-    .PARAMETER RepoRoot
+    .PARAMETER RepositoryRoot
         Root to scan. Defaults to the enclosing git repository root.
 
     .PARAMETER NoBuild
@@ -63,7 +63,7 @@ function Move-DotnetProjectTree {
         [ValidateNotNullOrEmpty()]
         [string]$Destination,
 
-        [string]$RepoRoot,
+        [string]$RepositoryRoot,
         [switch]$NoBuild,
         [switch]$Force,
         [switch]$NoJournal
@@ -99,8 +99,8 @@ function Move-DotnetProjectTree {
             return
         }
 
-        if (-not $RepoRoot) { $RepoRoot = Get-RepoRoot -StartPath $srcDir }
-        $repoFull = Resolve-FullPath $RepoRoot
+        if (-not $RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath $srcDir }
+        $repoFull = Resolve-FullPath $RepositoryRoot
 
         $moved = @(Find-ProjectFiles -Root $srcDir | ForEach-Object { Resolve-FullPath $_.FullName })
         if ($moved.Count -eq 0) {
@@ -139,7 +139,7 @@ function Move-DotnetProjectTree {
         # files apply differs at the destination. Checked once at the tree root (files inside
         # the tree move with it; only ancestors outside it change) and before the move so the
         # source chain still resolves.
-        Test-DirectoryBuildInheritance -OldDir $srcDir -NewDir $newDir -RepoRoot $repoFull
+        Test-DirectoryBuildInheritance -OldDir $srcDir -NewDir $newDir -RepositoryRoot $repoFull
 
         # Warn about references the CLI cannot reconcile on a move (non-literal path or conditional).
         foreach ($p in $moved) {
@@ -162,7 +162,7 @@ function Move-DotnetProjectTree {
                 $items += New-DotnetReferenceItems -Solutions $item.Solutions -Consumers $item.ExtConsumers -OwnRefs $item.ExtRefs `
                     -OldProj $item.Old -NewProj $item.New -Label (Split-Path -Leaf $item.Old)
             }
-            $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repository }
+            $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 
             # Files the reconciliation edits (for rollback): every touched solution, every external
             # consumer, and each moved project's own file. Reverse-move returns the whole tree.
@@ -177,7 +177,7 @@ function Move-DotnetProjectTree {
                 -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $srcDir, $repoFull)
             $performed = $true
             $skippedCount = $planResult.Skipped
-            Register-MoveUndo -RepoRoot $repoFull -Command 'Move-DotnetProjectTree' -Engine 'dotnet' `
+            Register-MoveUndo -RepositoryRoot $repoFull -Command 'Move-DotnetProjectTree' -Engine 'dotnet' `
                 -Source $srcDir -Destination $newDir `
                 -UndoParams @{ Path = $newDir; Destination = $srcDir; Force = [bool]$Force } -NoJournal:$NoJournal
 

@@ -34,7 +34,7 @@ Describe 'Move-DotnetProject' {
             $dest = Join-Path $root (Join-Path 'libs' ('Lib'))
             $sln = (Get-ChildItem -LiteralPath $root -File -Include '*.sln', '*.slnx').FullName
 
-            Move-DotnetProject -Project $lib -Destination $dest -RepoRoot $root -NoBuild -Confirm:$false
+            Move-DotnetProject -Project $lib -Destination $dest -RepositoryRoot $root -NoBuild -Confirm:$false
 
             # File physically moved.
             Join-Path $dest 'Lib.csproj' | Should -Exist
@@ -56,7 +56,7 @@ Describe 'Move-DotnetProject' {
         $root = New-Fixture
         try {
             $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
-            $result = Move-DotnetProject -Project $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepoRoot $root -WhatIf
+            $result = Move-DotnetProject -Project $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepositoryRoot $root -WhatIf
             $lib | Should -Exist
             (Join-Path $root (Join-Path 'libs' (Join-Path 'Lib' ('Lib.csproj')))) | Should -Not -Exist
             $result.Performed | Should -BeFalse
@@ -70,7 +70,7 @@ Describe 'Move-DotnetProject' {
         $root = New-Fixture
         try {
             $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
-            $result = Get-Item $lib | Move-DotnetProject -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepoRoot $root -WhatIf
+            $result = Get-Item $lib | Move-DotnetProject -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepositoryRoot $root -WhatIf
             $result.Source | Should -Match 'Lib\.csproj'
         } finally {
             Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
@@ -91,7 +91,7 @@ Describe 'Move-DotnetProject' {
             New-Item -ItemType Directory -Path $libsDir | Out-Null   # destination already exists
             $sln = (Get-ChildItem -LiteralPath $root -File -Include '*.sln', '*.slnx').FullName
 
-            Move-DotnetProject -Project $lib -Destination $libsDir -RepoRoot $root -NoBuild -Confirm:$false
+            Move-DotnetProject -Project $lib -Destination $libsDir -RepositoryRoot $root -NoBuild -Confirm:$false
 
             # Moved INTO libs/, under its own leaf name (libs/Lib), not merged into libs/ directly.
             (Join-Path $libsDir (Join-Path 'Lib' ('Lib.csproj'))) | Should -Exist
@@ -108,7 +108,7 @@ Describe 'Move-DotnetProject' {
             $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
             New-Item -ItemType Directory -Path (Join-Path $root (Join-Path 'libs' ('Lib'))) -Force | Out-Null
             # Destination 'libs' is a dir -> resolves to libs/Lib, which already exists -> refuse.
-            Move-DotnetProject -Project $lib -Destination (Join-Path $root 'libs') -RepoRoot $root -NoBuild -Confirm:$false `
+            Move-DotnetProject -Project $lib -Destination (Join-Path $root 'libs') -RepositoryRoot $root -NoBuild -Confirm:$false `
                 -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
             $errs[0].FullyQualifiedErrorId | Should -Match 'DestinationExists'
             $lib | Should -Exist   # nothing moved
@@ -120,7 +120,7 @@ Describe 'Move-DotnetProject' {
         try {
             $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
             $dest = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('nested')))   # under the source
-            Move-DotnetProject -Project $lib -Destination $dest -RepoRoot $root -NoBuild -Confirm:$false `
+            Move-DotnetProject -Project $lib -Destination $dest -RepositoryRoot $root -NoBuild -Confirm:$false `
                 -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
             $errs[0].FullyQualifiedErrorId | Should -Match 'PathOverlap'
             $lib | Should -Exist   # nothing moved

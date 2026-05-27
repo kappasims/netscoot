@@ -4,8 +4,8 @@
 # state (more robust than restoring a stale snapshot).
 #
 # Storage lives in the per-user application-data directory (not the working tree, not a volatile temp
-# dir, not inside .git/ where prune/clean and repo deletion churn it). One folder, "netscoot",
-# holds one <repo-leaf>-<hash>.jsonl per repository (the hash of the repo root keeps repos separate in
+# dir, not inside .git/ where prune/clean and repository deletion churn it). One folder, "netscoot",
+# holds one <leaf>-<hash>.jsonl per repository (the hash of the repository root keeps repositories separate in
 # the shared store). Resolves per OS:
 #   Windows: %LOCALAPPDATA%                         (e.g. C:\Users\<u>\AppData\Local\netscoot\)
 #   macOS:   ~/Library/Application Support          (Apple's LocalAppData equivalent)
@@ -15,8 +15,8 @@
 #
 # Enabled resolution, first match wins:
 #   1. an explicit suppression (NETSCOOT_JOURNAL_SUPPRESS, set by Undo around its reverse move)
-#   2. git config netscoot.journal   (local config wins over global - the persistent "git thing")
-#   3. $env:NETSCOOT_JOURNAL          (the no-git / CI escape hatch)
+#   2. $env:NETSCOOT_JOURNAL          (trumps git config, so an admin can force it on/off fleet-wide)
+#   3. git config netscoot.journal    (local config wins over global - the persistent "git thing")
 #   4. default: ON
 #
 # Pruning keeps the journal small: on each write it drops entries older than the age cap and, oldest
@@ -38,17 +38,19 @@ function ConvertTo-JournalBool {
 function Test-MoveJournalEnabled {
     [CmdletBinding()]
     [OutputType([bool])]
-    param([string]$RepoRoot)
+    param([string]$RepositoryRoot)
     if ((ConvertTo-JournalBool $env:NETSCOOT_JOURNAL_SUPPRESS) -eq $true) { return $false }
-    if ($RepoRoot) {
+    # The env var trumps git config: an admin can force journaling on/off fleet-wide (GPO/Intune/
+    # profile) regardless of any repository's git setting.
+    $envBool = ConvertTo-JournalBool $env:NETSCOOT_JOURNAL
+    if ($null -ne $envBool) { return $envBool }
+    if ($RepositoryRoot) {
         try {
-            $cfg = "$(& git -C $RepoRoot config --get netscoot.journal 2>$null)"
+            $cfg = "$(& git -C $RepositoryRoot config --get netscoot.journal 2>$null)"
             $b = ConvertTo-JournalBool $cfg
             if ($null -ne $b) { return $b }
         } catch { Write-Verbose "git config probe failed: $_" }
     }
-    $b = ConvertTo-JournalBool $env:NETSCOOT_JOURNAL
-    if ($null -ne $b) { return $b }
     return $true
 }
 
@@ -69,18 +71,18 @@ function Get-MoveJournalAppDataRoot {
 }
 
 function Get-MoveJournalPath {
-    # Resolve the journal file for a repo in the per-user store: <appdata>/netscoot/<leaf>-<hash>.jsonl.
-    # The hash of the (lowercased) repo root keeps different repositories separate in the shared store;
+    # Resolve the journal file for a repository in the per-user store: <appdata>/netscoot/<leaf>-<hash>.jsonl.
+    # The hash of the (lowercased) repository root keeps different repositories separate in the shared store;
     # the readable leaf name makes the file identifiable.
     [CmdletBinding()]
     [OutputType([string])]
-    param([Parameter(Mandatory)][string]$RepoRoot)
+    param([Parameter(Mandatory)][string]$RepositoryRoot)
     $dir = Join-Path (Get-MoveJournalAppDataRoot) 'netscoot'
     $sha = [System.Security.Cryptography.SHA1]::Create()
-    try { $hash = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($RepoRoot.ToLowerInvariant())) }
+    try { $hash = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($RepositoryRoot.ToLowerInvariant())) }
     finally { $sha.Dispose() }
     $key = -join ($hash[0..3] | ForEach-Object { $_.ToString('x2') })
-    $leaf = (Split-Path -Leaf $RepoRoot) -replace '[^A-Za-z0-9._-]', '_'
+    $leaf = (Split-Path -Leaf $RepositoryRoot) -replace '[^A-Za-z0-9._-]', '_'
     if (-not $leaf) { $leaf = 'repo' }
     return (Join-Path $dir "$leaf-$key.jsonl")
 }
@@ -97,7 +99,14 @@ function Select-RecentJournalLine {
     for ($i = $Lines.Count - 1; $i -ge 0; $i--) {
         $line = $Lines[$i]
         $ts = $null
-        try { $ts = ([datetimeoffset]::Parse((($line | ConvertFrom-Json).timestamp))).UtcDateTime } catch { $ts = $null }
+        # ConvertFrom-Json may return the timestamp as a string OR an already-parsed [datetime];
+        # normalize either to a UTC instant (stored values are UTC) for the age comparison.
+        try {
+            $t = ($line | ConvertFrom-Json).timestamp
+            if ($t -is [datetime]) { $ts = if ($t.Kind -eq 'Local') { $t.ToUniversalTime() } else { [datetime]::SpecifyKind($t, [System.DateTimeKind]::Utc) } }
+            elseif ($t -is [datetimeoffset]) { $ts = $t.UtcDateTime }
+            elseif ($t) { $ts = ([datetimeoffset]::Parse([string]$t)).UtcDateTime }
+        } catch { $ts = $null }
         if ($ts -and $ts -lt $cutoff) { break }   # older than the age cap: this and all earlier drop
         $sz = [System.Text.Encoding]::UTF8.GetByteCount($line) + 1
         if ($keep.Count -gt 0 -and ($bytes + $sz) -gt $script:JournalMaxBytes) { break }
@@ -111,14 +120,14 @@ function Add-MoveJournalEntry {
     # Append one completed move (then prune). $Undo is @{ Command = '<mover>'; Params = @{ <splat> } }.
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$RepositoryRoot,
         [Parameter(Mandatory)][string]$Command,
         [Parameter(Mandatory)][string]$Engine,
         [Parameter(Mandatory)][string]$Source,
         [Parameter(Mandatory)][string]$Destination,
         [Parameter(Mandatory)][hashtable]$Undo
     )
-    $path = Get-MoveJournalPath -RepoRoot $RepoRoot
+    $path = Get-MoveJournalPath -RepositoryRoot $RepositoryRoot
     $dir = Split-Path -Parent $path
     if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
     $entry = [ordered]@{
@@ -138,8 +147,8 @@ function Add-MoveJournalEntry {
 function Get-MoveJournalEntries {
     # All journal entries, oldest first.
     [CmdletBinding()]
-    param([Parameter(Mandatory)][string]$RepoRoot)
-    $path = Get-MoveJournalPath -RepoRoot $RepoRoot
+    param([Parameter(Mandatory)][string]$RepositoryRoot)
+    $path = Get-MoveJournalPath -RepositoryRoot $RepositoryRoot
     if (-not (Test-Path -LiteralPath $path)) { return @() }
     @(Get-Content -LiteralPath $path | Where-Object { $_.Trim() } | ForEach-Object { $_ | ConvertFrom-Json })
 }
@@ -147,8 +156,8 @@ function Get-MoveJournalEntries {
 function Remove-MoveJournalEntry {
     # Drop one entry by id (called after a successful undo).
     [CmdletBinding()]
-    param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)][string]$Id)
-    $path = Get-MoveJournalPath -RepoRoot $RepoRoot
+    param([Parameter(Mandatory)][string]$RepositoryRoot, [Parameter(Mandatory)][string]$Id)
+    $path = Get-MoveJournalPath -RepositoryRoot $RepositoryRoot
     if (-not (Test-Path -LiteralPath $path)) { return }
     $kept = @(Get-Content -LiteralPath $path | Where-Object { $_.Trim() } | Where-Object { ($_ | ConvertFrom-Json).id -ne $Id })
     if ($kept.Count) { Set-Content -LiteralPath $path -Value $kept -Encoding utf8 }
@@ -161,7 +170,7 @@ function Register-MoveUndo {
     # same mover with source/destination swapped).
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$RepositoryRoot,
         [Parameter(Mandatory)][string]$Command,
         [Parameter(Mandatory)][string]$Engine,
         [Parameter(Mandatory)][string]$Source,
@@ -175,8 +184,8 @@ function Register-MoveUndo {
                 if ($_.Value -is [bool]) { if ($_.Value) { "-$($_.Key)" } }
                 else { "-$($_.Key) '$($_.Value)'" }
             }) -join ' ')
-    if (-not $NoJournal -and (Test-MoveJournalEnabled -RepoRoot $RepoRoot)) {
-        Add-MoveJournalEntry -RepoRoot $RepoRoot -Command $Command -Engine $Engine -Source $Source `
+    if (-not $NoJournal -and (Test-MoveJournalEnabled -RepositoryRoot $RepositoryRoot)) {
+        Add-MoveJournalEntry -RepositoryRoot $RepositoryRoot -Command $Command -Engine $Engine -Source $Source `
             -Destination $Destination -Undo @{ Command = $Command; Params = $UndoParams }
         Write-Host "Undo with: Undo-Netscoot   (replays: $inv)" -ForegroundColor DarkGray
     } else {

@@ -33,10 +33,10 @@ function Get-PathBearingFile {
     # Discover the class of path-hardcoding files in a repository (see Test-PathBearingFile).
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$RepositoryRoot,
         [string[]]$AdditionalGlob = @()
     )
-    $root = (Resolve-FullPath $RepoRoot).TrimEnd('\', '/')
+    $root = (Resolve-FullPath $RepositoryRoot).TrimEnd('\', '/')
     $rootLen = $root.Length
 
     $nested = Get-NestedWorktreePath -Root $root   # linked worktrees hold duplicate copies

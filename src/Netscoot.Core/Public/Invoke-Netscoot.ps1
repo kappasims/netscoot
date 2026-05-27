@@ -12,7 +12,7 @@ function Invoke-Netscoot {
 
         "dotnet" here is the .NET-platform umbrella (CLR/CoreCLR), not just the dotnet CLI - the
         verb spans every engine. Each engine's behavior lives in its own cmdlet; this only routes.
-        -WhatIf/-Confirm/-Verbose propagate; -Force/-RepoRoot/-NoBuild are forwarded where the
+        -WhatIf/-Confirm/-Verbose propagate; -Force/-RepositoryRoot/-NoBuild are forwarded where the
         target's engine accepts them.
 
     .PARAMETER Path
@@ -21,7 +21,7 @@ function Invoke-Netscoot {
     .PARAMETER Destination
         New path - passed through to the engine.
 
-    .PARAMETER RepoRoot
+    .PARAMETER RepositoryRoot
         Repository root the engine scans for references. Defaults to the enclosing git repository root.
         Not used by the Unity engine.
 
@@ -66,7 +66,7 @@ function Invoke-Netscoot {
         [ValidateNotNullOrEmpty()]
         [string]$Destination,
 
-        [string]$RepoRoot,
+        [string]$RepositoryRoot,
         [switch]$NoBuild,
         [switch]$Force,
         [switch]$NoJournal
@@ -95,7 +95,7 @@ function Invoke-Netscoot {
         $common = @{ Destination = $Destination }
         if ($Force) { $common.Force = $true }
         if ($NoJournal) { $common.NoJournal = $true }
-        if ($PSBoundParameters.ContainsKey('RepoRoot')) { $common.RepoRoot = $RepoRoot }
+        if ($PSBoundParameters.ContainsKey('RepositoryRoot')) { $common.RepositoryRoot = $RepositoryRoot }
         # Forward -WhatIf/-Confirm explicitly: $ConfirmPreference/$WhatIfPreference do not reliably
         # inherit into cmdlets in the sibling engine modules (Unity/Native), so an unforwarded
         # High-impact ShouldProcess would prompt - and hang a non-interactive caller such as the
@@ -120,7 +120,7 @@ function Invoke-Netscoot {
                             'UnityEngineUnavailable', [System.Management.Automation.ErrorCategory]::NotInstalled, $full))
                     return
                 }
-                # Move-UnityAsset handles file and folder; it has no -RepoRoot/-NoBuild.
+                # Move-UnityAsset handles file and folder; it has no -RepositoryRoot/-NoBuild.
                 $u = @{ Destination = $Destination }
                 if ($Force) { $u.Force = $true }
                 if ($NoJournal) { $u.NoJournal = $true }

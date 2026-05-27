@@ -132,7 +132,7 @@ try {
         -CommandText 'Invoke-Netscoot -Path ./src/Lib/Lib.csproj -Destination ./libs/Lib -WhatIf' `
         -Command {
             Invoke-Netscoot -Path (Join-Path $r1 (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) `
-                -Destination (Join-Path $r1 (Join-Path 'libs' 'Lib')) -RepoRoot $r1 -WhatIf
+                -Destination (Join-Path $r1 (Join-Path 'libs' 'Lib')) -RepositoryRoot $r1 -WhatIf
         }
 
     # 3. Perform a move
@@ -142,7 +142,7 @@ try {
         -CommandText 'Invoke-Netscoot -Path ./src/Lib/Lib.csproj -Destination ./libs/Lib' `
         -Command {
             Invoke-Netscoot -Path (Join-Path $r2 (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) `
-                -Destination (Join-Path $r2 (Join-Path 'libs' 'Lib')) -RepoRoot $r2 -Confirm:$false
+                -Destination (Join-Path $r2 (Join-Path 'libs' 'Lib')) -RepositoryRoot $r2 -Confirm:$false
         }
 
     # 4. Error: missing project
@@ -160,15 +160,15 @@ try {
         -CommandText 'Invoke-Netscoot -Path ./src/Lib/Lib.csproj -Destination ./src/Lib/nested' `
         -Command {
             Invoke-Netscoot -Path (Join-Path $r3 (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) `
-                -Destination (Join-Path $r3 (Join-Path 'src' (Join-Path 'Lib' 'nested'))) -RepoRoot $r3 -Confirm:$false -ErrorAction Continue
+                -Destination (Join-Path $r3 (Join-Path 'src' (Join-Path 'Lib' 'nested'))) -RepositoryRoot $r3 -Confirm:$false -ErrorAction Continue
         }
 
     # 6. Inspect: consistency (clean)
     $r4 = New-AppLibRepo; $sandboxes.Add($r4)
     Add-Scenario -Title 'Inspect: solution consistency' `
         -Narrative 'Read-only check across solutions.' `
-        -CommandText 'Test-SolutionConsistency -RepoRoot .' `
-        -Command { Test-SolutionConsistency -RepoRoot $r4 }
+        -CommandText 'Test-SolutionConsistency -RepositoryRoot .' `
+        -Command { Test-SolutionConsistency -RepositoryRoot $r4 }
 
     # 7. Repair: report-only on a hand-moved project
     $r5 = New-AppLibRepo; $sandboxes.Add($r5)
@@ -176,13 +176,13 @@ try {
     Move-Item -LiteralPath (Join-Path $r5 (Join-Path 'src' 'Lib')) -Destination (Join-Path $r5 (Join-Path 'libs' 'Lib'))
     Add-Scenario -Title 'Repair: report dangling entries' `
         -Narrative 'Someone moved Lib by hand; this shows what netscoot found, read-only.' `
-        -CommandText 'Repair-SolutionReferences -RepoRoot .' `
-        -Command { Repair-SolutionReferences -RepoRoot $r5 }
+        -CommandText 'Repair-SolutionReferences -RepositoryRoot .' `
+        -Command { Repair-SolutionReferences -RepositoryRoot $r5 }
 
     Add-Scenario -Title 'Repair: fix them' `
         -Narrative 'The same repo, now repaired with -Fix.' `
-        -CommandText 'Repair-SolutionReferences -RepoRoot . -Fix' `
-        -Command { Repair-SolutionReferences -RepoRoot $r5 -Fix -Confirm:$false }
+        -CommandText 'Repair-SolutionReferences -RepositoryRoot . -Fix' `
+        -Command { Repair-SolutionReferences -RepositoryRoot $r5 -Fix -Confirm:$false }
 
     $rendered = $script:sb.ToString()
     Set-Content -LiteralPath $OutFile -Value $rendered -Encoding UTF8

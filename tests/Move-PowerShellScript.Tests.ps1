@@ -26,7 +26,7 @@ Describe 'Move-PowerShellScript' {
         try {
             $helpers = Join-Path $root (Join-Path 'lib' ('helpers.ps1'))
             $dest = Join-Path (Join-Path $root 'shared') 'helpers.ps1'
-            $r = Move-PowerShellScript -Path $helpers -Destination $dest -RepoRoot $root -Confirm:$false -WarningAction SilentlyContinue
+            $r = Move-PowerShellScript -Path $helpers -Destination $dest -RepositoryRoot $root -Confirm:$false -WarningAction SilentlyContinue
             $r.ReferencersFixed | Should -Be 1
             $dest | Should -Exist
 
@@ -48,7 +48,7 @@ $libDir = "$PSScriptRoot\..\lib"
 '@
             $r = Move-PowerShellScript -Path (Join-Path $root (Join-Path 'lib' ('helpers.ps1'))) `
                 -Destination (Join-Path (Join-Path $root 'shared') 'helpers.ps1') `
-                -RepoRoot $root -WhatIf -WarningVariable w -WarningAction SilentlyContinue
+                -RepositoryRoot $root -WhatIf -WarningVariable w -WarningAction SilentlyContinue
             # WhatIf: nothing moved, but the dynamic reference is reported.
             ($w -join "`n") | Should -Match 'dynamic reference'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

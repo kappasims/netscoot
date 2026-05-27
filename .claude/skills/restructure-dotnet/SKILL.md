@@ -66,12 +66,12 @@ folder already exists, so it never silently overwrites or double-nests.
 These work on an existing repository without moving anything. Inspect first, then repair if needed.
 
 ```powershell
-Get-SolutionInventory     -RepoRoot .          # full contents of every solution + projects in none
-Test-SolutionConsistency  -RepoRoot .          # projects whose solution membership diverges
-Sync-Solution             -RepoRoot . -WhatIf  # resolve divergence: add each project where it is missing
-Repair-SolutionReferences -RepoRoot .          # report dangling entries (relocatable / missing / ambiguous)
-Repair-SolutionReferences -RepoRoot . -Fix     # re-point dangling entries at the project's new location
-Repair-SolutionReferences -RepoRoot . -Prune   # remove entries whose project is gone for good
+Get-SolutionInventory     -RepositoryRoot .          # full contents of every solution + projects in none
+Test-SolutionConsistency  -RepositoryRoot .          # projects whose solution membership diverges
+Sync-Solution             -RepositoryRoot . -WhatIf  # resolve divergence: add each project where it is missing
+Repair-SolutionReferences -RepositoryRoot .          # report dangling entries (relocatable / missing / ambiguous)
+Repair-SolutionReferences -RepositoryRoot . -Fix     # re-point dangling entries at the project's new location
+Repair-SolutionReferences -RepositoryRoot . -Prune   # remove entries whose project is gone for good
 Find-PathReference -Path ./src/Tarragon/Tarragon.csproj  # build/CI/hook scripts that hardcode the path (report-only)
 ```
 

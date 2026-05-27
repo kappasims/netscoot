@@ -59,7 +59,7 @@ Describe 'Repair-SolutionReferences' {
     It 'reports dangling entries and whether each can be relocated' {
         $root = New-MovedFixture
         try {
-            $probs = Repair-SolutionReferences -RepoRoot $root
+            $probs = Repair-SolutionReferences -RepositoryRoot $root
             ($probs.Kind | Sort-Object -Unique) | Should -Contain 'Solution'
             ($probs.Kind | Sort-Object -Unique) | Should -Contain 'Reference'
             ($probs.Resolution | Sort-Object -Unique) | Should -Contain 'Relocatable'
@@ -69,7 +69,7 @@ Describe 'Repair-SolutionReferences' {
     It 're-points dangling entries at the moved project with -Fix (and it builds)' {
         $root = New-MovedFixture
         try {
-            Repair-SolutionReferences -RepoRoot $root -Fix -Confirm:$false | Out-Null
+            Repair-SolutionReferences -RepositoryRoot $root -Fix -Confirm:$false | Out-Null
             $list = (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n"
             $list | Should -Match 'libs[\\/]Lib[\\/]Lib\.csproj'
             $bo = & dotnet build (Join-Path $root 'Demo.slnx') 2>&1
@@ -86,13 +86,13 @@ Describe 'Repair-SolutionReferences' {
             New-Item -ItemType Directory -Path (Join-Path $root 'tools') | Out-Null
             Move-Item -LiteralPath (Join-Path $root (Join-Path 'src' 'Widgets')) -Destination (Join-Path $root (Join-Path 'tools' 'Widgets'))
 
-            $probs = Repair-SolutionReferences -RepoRoot $root
+            $probs = Repair-SolutionReferences -RepositoryRoot $root
             ($probs | Where-Object { $_.Resolution -eq 'Ambiguous' }) | Should -BeNullOrEmpty
             ($probs | Where-Object { $_.Resolution -eq 'Relocatable' }) | Should -Not -BeNullOrEmpty
             (($probs.NewPath | Where-Object { $_ }) -join ';') | Should -Match 'tools[\\/]Widgets[\\/]Widgets\.csproj'
             (($probs.NewPath | Where-Object { $_ }) -join ';') | Should -Not -Match 'legacy'
 
-            Repair-SolutionReferences -RepoRoot $root -Fix -Confirm:$false | Out-Null
+            Repair-SolutionReferences -RepositoryRoot $root -Fix -Confirm:$false | Out-Null
             (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n" | Should -Match 'tools[\\/]Widgets[\\/]Widgets\.csproj'
             $bo = & dotnet build (Join-Path $root 'Demo.slnx') 2>&1
             $LASTEXITCODE | Should -Be 0 -Because ($bo -join [Environment]::NewLine)
@@ -107,11 +107,11 @@ Describe 'Repair-SolutionReferences' {
             New-Item -ItemType Directory -Path (Join-Path $root 'a') | Out-Null
             Move-Item -LiteralPath (Join-Path $root (Join-Path 'src' 'Widgets')) -Destination (Join-Path $root (Join-Path 'a' 'Widgets'))
 
-            $probs = Repair-SolutionReferences -RepoRoot $root
+            $probs = Repair-SolutionReferences -RepositoryRoot $root
             ($probs | Where-Object { $_.Resolution -eq 'Ambiguous' }) | Should -Not -BeNullOrEmpty
 
             # -Fix cannot resolve a tie, so the stale src/Widgets entry remains in the solution.
-            Repair-SolutionReferences -RepoRoot $root -Fix -Confirm:$false | Out-Null
+            Repair-SolutionReferences -RepositoryRoot $root -Fix -Confirm:$false | Out-Null
             (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n" | Should -Match 'src[\\/]Widgets[\\/]Widgets\.csproj'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -120,10 +120,10 @@ Describe 'Repair-SolutionReferences' {
         $root = New-DeletedFixture
         try {
             # -Fix cannot relocate a deleted project; the entry stays.
-            Repair-SolutionReferences -RepoRoot $root -Fix -Confirm:$false | Out-Null
+            Repair-SolutionReferences -RepositoryRoot $root -Fix -Confirm:$false | Out-Null
             (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n" | Should -Match 'Lib[\\/]Lib\.csproj'
             # -Prune removes the gone entries.
-            Repair-SolutionReferences -RepoRoot $root -Prune -Confirm:$false | Out-Null
+            Repair-SolutionReferences -RepositoryRoot $root -Prune -Confirm:$false | Out-Null
             (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n" | Should -Not -Match 'Lib[\\/]Lib\.csproj'
             (Get-Content (Join-Path $root (Join-Path 'App' 'App.csproj')) -Raw) | Should -Not -Match 'Lib\.csproj'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

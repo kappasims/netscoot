@@ -41,7 +41,7 @@ Describe 'Optional-tool fallback (git)' {
         try {
             $lib = Join-Path $root (Join-Path 'Lib' ('Lib.csproj'))
             $dest = Join-Path $root (Join-Path 'libs' ('Lib'))
-            $r = Move-DotnetProject -Project $lib -Destination $dest -RepoRoot $root -NoBuild -Force -Confirm:$false -WarningAction SilentlyContinue
+            $r = Move-DotnetProject -Project $lib -Destination $dest -RepositoryRoot $root -NoBuild -Force -Confirm:$false -WarningAction SilentlyContinue
             $r.Performed | Should -BeTrue
             (Join-Path $dest 'Lib.csproj') | Should -Exist
             $lib | Should -Not -Exist

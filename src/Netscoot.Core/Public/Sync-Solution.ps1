@@ -14,7 +14,7 @@ function Sync-Solution {
         Uniform membership is the assumption. If a solution is intentionally a subset, do not run
         this against the whole repository; preview with -WhatIf first and add specific projects by hand.
 
-    .PARAMETER RepoRoot
+    .PARAMETER RepositoryRoot
         Root to scan. Accepts pipeline input. Defaults to the enclosing git repository root. Nested git
         worktrees are skipped.
 
@@ -23,27 +23,27 @@ function Sync-Solution {
 
     .EXAMPLE
         # Preview which projects would be added to which solutions to make membership uniform
-        Sync-Solution -RepoRoot . -WhatIf
+        Sync-Solution -RepositoryRoot . -WhatIf
         # Add each divergent project to the solutions missing it (only adds, never removes)
-        Sync-Solution -RepoRoot .
+        Sync-Solution -RepositoryRoot .
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType('Netscoot.SyncResult')]
     param(
         [Parameter(Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path', 'PSPath')]
-        [string]$RepoRoot
+        [string]$RepositoryRoot
     )
 
     process {
         if (-not (Assert-DotnetAvailable -Cmdlet $PSCmdlet)) { return }
-        if (-not $RepoRoot) { $RepoRoot = Get-RepoRoot -StartPath (Get-Location).Path }
-        $RepoRoot = Resolve-FullPath $RepoRoot
-        function _rel([string]$p) { (Get-RelativePathSafe -From $RepoRoot -To $p) }
+        if (-not $RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath (Get-Location).Path }
+        $RepositoryRoot = Resolve-FullPath $RepositoryRoot
+        function _rel([string]$p) { (Get-RelativePathSafe -From $RepositoryRoot -To $p) }
 
-        $solutions = @(Find-Solutions -Root $RepoRoot)
+        $solutions = @(Find-Solutions -Root $RepositoryRoot)
         if ($solutions.Count -lt 2) {
-            Write-Verbose "Fewer than two solutions under $RepoRoot; nothing to sync."
+            Write-Verbose "Fewer than two solutions under $RepositoryRoot; nothing to sync."
             return
         }
 

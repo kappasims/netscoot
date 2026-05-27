@@ -92,13 +92,13 @@ function Move-PowerShellModule {
         }
         $items = @( New-MoveItem -Description "refresh manifest $manifestName (FileList + validate)" -Reattach $manifestFix -ReattachArgs @($newDir, $newManifest) )
 
-        $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repository }
-        $repoRoot = Get-RepoRoot -StartPath $moduleDir
+        $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
+        $repoRoot = Get-RepositoryRoot -StartPath $moduleDir
         $planResult = Invoke-MovePlan -Caption "Move module $manifestName" -Items $items -Move $move `
             -MoveArgs @($ctx.UseGit, $moduleDir, $newDir, $repoRoot)
         $performed = $true
         $skippedCount = $planResult.Skipped
-        Register-MoveUndo -RepoRoot $repoRoot -Command 'Move-PowerShellModule' -Engine 'powershell' `
+        Register-MoveUndo -RepositoryRoot $repoRoot -Command 'Move-PowerShellModule' -Engine 'powershell' `
             -Source $moduleDir -Destination $newDir `
             -UndoParams @{ ModulePath = $newDir; Destination = $moduleDir; Force = [bool]$Force } -NoJournal:$NoJournal
 

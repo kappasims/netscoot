@@ -43,7 +43,7 @@ Describe 'Native project handling' {
     It 'Move-NativeProject (Windows) reports unreconciled native settings under -WhatIf' -Skip:(-not ($IsWindows -or $PSVersionTable.PSEdition -eq 'Desktop')) {
         $vcx = New-NativeFixture
         try {
-            $r = Move-NativeProject -Project $vcx -Destination (Join-Path (Split-Path $vcx) (Join-Path '..' ('moved'))) -RepoRoot (Split-Path (Split-Path $vcx)) -WhatIf -WarningAction SilentlyContinue
+            $r = Move-NativeProject -Project $vcx -Destination (Join-Path (Split-Path $vcx) (Join-Path '..' ('moved'))) -RepositoryRoot (Split-Path (Split-Path $vcx)) -WhatIf -WarningAction SilentlyContinue
             $r.Performed | Should -BeFalse
             $r.UnreconciledSettings.Count | Should -BeGreaterThan 0
         } finally { Remove-Item -LiteralPath (Split-Path (Split-Path $vcx)) -Recurse -Force -ErrorAction SilentlyContinue }

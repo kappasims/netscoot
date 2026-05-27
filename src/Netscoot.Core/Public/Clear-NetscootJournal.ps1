@@ -10,7 +10,7 @@ function Clear-NetscootJournal {
         history outright. After clearing, Undo-Netscoot has nothing to reverse until the next move.
         It does not change whether journaling is on - use Set-NetscootJournal for that.
 
-    .PARAMETER RepoRoot
+    .PARAMETER RepositoryRoot
         Repository whose journal to delete. Defaults to the enclosing git repository root.
 
     .OUTPUTS
@@ -24,11 +24,11 @@ function Clear-NetscootJournal {
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([void])]
-    param([string]$RepoRoot)
+    param([string]$RepositoryRoot)
 
-    if (-not $RepoRoot) { $RepoRoot = Get-RepoRoot -StartPath (Get-Location).Path }
-    $repoFull = Resolve-FullPath $RepoRoot
-    $path = Get-MoveJournalPath -RepoRoot $repoFull
+    if (-not $RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath (Get-Location).Path }
+    $repoFull = Resolve-FullPath $RepositoryRoot
+    $path = Get-MoveJournalPath -RepositoryRoot $repoFull
 
     if (-not (Test-Path -LiteralPath $path)) {
         Write-Host "No journal to clear for '$repoFull'." -ForegroundColor DarkGray

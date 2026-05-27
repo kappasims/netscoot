@@ -24,7 +24,7 @@ function Move-NativeProject {
         Where to move the project folder, following `git mv` rules: An existing directory means
         move into it (keeping the name); otherwise it is the new folder path. Errors if it exists.
 
-    .PARAMETER RepoRoot
+    .PARAMETER RepositoryRoot
         Root to scan for solutions. Defaults to the enclosing git repository root.
 
     .PARAMETER Force
@@ -56,7 +56,7 @@ function Move-NativeProject {
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
         [string]$Destination,
-        [string]$RepoRoot,
+        [string]$RepositoryRoot,
         [switch]$Force,
         [switch]$NoJournal
     )
@@ -92,8 +92,8 @@ function Move-NativeProject {
 
         $oldDir = Split-Path -Parent $projFull
         $projFile = Split-Path -Leaf $projFull
-        if (-not $RepoRoot) { $RepoRoot = Get-RepoRoot -StartPath $oldDir }
-        $repoFull = Resolve-FullPath $RepoRoot
+        if (-not $RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath $oldDir }
+        $repoFull = Resolve-FullPath $RepositoryRoot
         # git mv semantics: an existing destination directory means "move the project folder into
         # it"; otherwise Destination is the project's new folder path.
         $newDir = Resolve-MoveTarget -Source $oldDir -Destination $Destination
@@ -131,13 +131,13 @@ function Move-NativeProject {
             if (-not $ctx) { return }
 
             $items = New-DotnetReferenceItems -Solutions $solutions -OldProj $projFull -NewProj $newProj
-            $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repository }
+            $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 
             $planResult = Invoke-MovePlan -Caption "Move native $projFile" -Items $items -Move $move `
                 -MoveArgs @($ctx.UseGit, $oldDir, $newDir, $repoFull)
             $performed = $true
             $skippedCount = $planResult.Skipped
-            Register-MoveUndo -RepoRoot $repoFull -Command 'Move-NativeProject' -Engine 'native' `
+            Register-MoveUndo -RepositoryRoot $repoFull -Command 'Move-NativeProject' -Engine 'native' `
                 -Source $projFull -Destination $newProj `
                 -UndoParams @{ Project = $newProj; Destination = $oldDir; Force = [bool]$Force } -NoJournal:$NoJournal
         }

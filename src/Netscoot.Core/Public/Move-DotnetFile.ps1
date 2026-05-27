@@ -9,7 +9,7 @@ function Move-DotnetFile {
         routing). Native (.vcxproj), PowerShell (.ps1/.psd1) and Unity assets are deliberately not
         handled here - use Move-NativeProject / Move-PowerShellScript / Move-PowerShellModule /
         Move-UnityAsset. -WhatIf/-Confirm/-Verbose propagate to the specialist; -Force and
-        -RepoRoot/-NoBuild are forwarded where the specialist accepts them.
+        -RepositoryRoot/-NoBuild are forwarded where the specialist accepts them.
 
     .PARAMETER Path
         The .NET file to move. Accepts pipeline input.
@@ -17,7 +17,7 @@ function Move-DotnetFile {
     .PARAMETER Destination
         New path (file or folder) - passed through to the specialist.
 
-    .PARAMETER RepoRoot
+    .PARAMETER RepositoryRoot
         Repository root the specialist scans for references. Defaults to the enclosing git repository root.
 
     .PARAMETER NoBuild
@@ -57,7 +57,7 @@ function Move-DotnetFile {
         [ValidateNotNullOrEmpty()]
         [string]$Destination,
 
-        [string]$RepoRoot,
+        [string]$RepositoryRoot,
         [switch]$NoBuild,
         [switch]$Force,
         [switch]$NoJournal
@@ -76,7 +76,7 @@ function Move-DotnetFile {
         switch -regex ($ext) {
             '\.(cs|fs|vb)proj$' {
                 $fwd = @{ Destination = $Destination }
-                if ($PSBoundParameters.ContainsKey('RepoRoot')) { $fwd.RepoRoot = $RepoRoot }
+                if ($PSBoundParameters.ContainsKey('RepositoryRoot')) { $fwd.RepositoryRoot = $RepositoryRoot }
                 if ($Force) { $fwd.Force = $true }
                 if ($NoBuild) { $fwd.NoBuild = $true }
                 if ($NoJournal) { $fwd.NoJournal = $true }
@@ -92,7 +92,7 @@ function Move-DotnetFile {
             }
             '\.(props|targets)$' {
                 $fwd = @{ Destination = $Destination }
-                if ($PSBoundParameters.ContainsKey('RepoRoot')) { $fwd.RepoRoot = $RepoRoot }
+                if ($PSBoundParameters.ContainsKey('RepositoryRoot')) { $fwd.RepositoryRoot = $RepositoryRoot }
                 if ($Force) { $fwd.Force = $true }
                 if ($NoJournal) { $fwd.NoJournal = $true }
                 Write-Verbose "Routing $ext -> Move-MSBuildImport"

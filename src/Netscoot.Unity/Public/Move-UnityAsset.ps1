@@ -25,7 +25,7 @@ function Move-UnityAsset {
         Where to move the asset/folder, following `git mv` rules: An existing directory means move
         into it (keeping the name); otherwise it is the new path. Errors if it exists.
 
-    .PARAMETER RepoRoot
+    .PARAMETER RepositoryRoot
         Root to scan for asmdef referencers. Defaults to the enclosing git repository root.
 
     .PARAMETER Force
@@ -57,7 +57,7 @@ function Move-UnityAsset {
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
         [string]$Destination,
-        [string]$RepoRoot,
+        [string]$RepositoryRoot,
         [switch]$Force,
         [switch]$NoJournal
     )
@@ -83,8 +83,8 @@ function Move-UnityAsset {
             return
         }
 
-        if (-not $RepoRoot) { $RepoRoot = Get-RepoRoot -StartPath (Split-Path -Parent $src) }
-        $repoFull = Resolve-FullPath $RepoRoot
+        if (-not $RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath (Split-Path -Parent $src) }
+        $repoFull = Resolve-FullPath $RepositoryRoot
 
         if ($src -notmatch '[\\/](Assets|Packages)[\\/]') {
             Write-Warning "Asset is not under an 'Assets/' or 'Packages/' folder; .meta/GUID semantics only apply inside a Unity project."
@@ -96,7 +96,7 @@ function Move-UnityAsset {
         # When moving an .asmdef, report who references it (name/GUID refs are stable - info only).
         $referencers = @()
         $isAsmdef = ([System.IO.Path]::GetExtension($src) -eq '.asmdef')
-        if ($isAsmdef) { $referencers = @(Get-AsmdefReferencers -AsmdefPath $src -RepoRoot $repoFull) }
+        if ($isAsmdef) { $referencers = @(Get-AsmdefReferencers -AsmdefPath $src -RepositoryRoot $repoFull) }
 
         Write-Verbose "Plan: $([System.IO.Path]::GetFileName($src))  $src -> $dst  (meta: $hasMeta)"
         if ($referencers.Count -gt 0) {
@@ -113,13 +113,13 @@ function Move-UnityAsset {
             # reference edits to confirm - moving the asset + its .meta is the whole operation.
             $move = {
                 param($UseGit, $Src, $Dst, $SrcMeta, $DstMeta, $HasMeta, $RepoFull)
-                Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $RepoFull
-                if ($HasMeta) { Move-PathTracked -UseGit $UseGit -Source $SrcMeta -Destination $DstMeta -RepoRoot $RepoFull }
+                Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $RepoFull
+                if ($HasMeta) { Move-PathTracked -UseGit $UseGit -Source $SrcMeta -Destination $DstMeta -RepositoryRoot $RepoFull }
             }
             Invoke-MovePlan -Caption "Move Unity asset $(Split-Path -Leaf $src)" -Items @() -Move $move `
                 -MoveArgs @($ctx.UseGit, $src, $dst, $srcMeta, $dstMeta, $hasMeta, $repoFull) | Out-Null
             $performed = $true
-            Register-MoveUndo -RepoRoot $repoFull -Command 'Move-UnityAsset' -Engine 'unity' `
+            Register-MoveUndo -RepositoryRoot $repoFull -Command 'Move-UnityAsset' -Engine 'unity' `
                 -Source $src -Destination $dst `
                 -UndoParams @{ AssetPath = $dst; Destination = $src; Force = [bool]$Force } -NoJournal:$NoJournal
             Write-Verbose "Moved asset$(if ($hasMeta) { ' + .meta' })."

@@ -36,7 +36,7 @@ Describe 'Move-DotnetProject rolls back on a failed reattach (-Force / no-git pa
                 if ($LASTEXITCODE -ne 0) { throw "dotnet $($Arguments -join ' ') failed" }
             }
 
-            { Move-DotnetProject -Project $lib -Destination $dest -RepoRoot $root -NoBuild -Force -Confirm:$false } |
+            { Move-DotnetProject -Project $lib -Destination $dest -RepositoryRoot $root -NoBuild -Force -Confirm:$false } |
                 Should -Throw -ExpectedMessage '*rolled back*'
 
             # Project is back at its original location, not at the destination.

@@ -21,7 +21,7 @@ function Find-PathReference {
     .PARAMETER Path
         The item being/that was moved. Accepts pipeline input.
 
-    .PARAMETER RepoRoot
+    .PARAMETER RepositoryRoot
         Root to scan. Defaults to the enclosing git repository root.
 
     .PARAMETER AdditionalGlob
@@ -45,17 +45,17 @@ function Find-PathReference {
         [Alias('FullName', 'PSPath')]
         [ValidateNotNullOrEmpty()]
         [string]$Path,
-        [string]$RepoRoot,
+        [string]$RepositoryRoot,
         [string[]]$AdditionalGlob = @()
     )
 
     process {
         $target = Resolve-FullPath $Path
-        if (-not $RepoRoot) {
+        if (-not $RepositoryRoot) {
             $start = if (Test-Path -LiteralPath $target -PathType Container) { $target } else { Split-Path -Parent $target }
-            $RepoRoot = Get-RepoRoot -StartPath $start
+            $RepositoryRoot = Get-RepositoryRoot -StartPath $start
         }
-        $root = (Resolve-FullPath $RepoRoot).TrimEnd('\', '/')
+        $root = (Resolve-FullPath $RepositoryRoot).TrimEnd('\', '/')
 
         $rel = ($target.Substring($root.Length).TrimStart('\', '/'))
         $relFwd = $rel -replace '\\', '/'
@@ -63,7 +63,7 @@ function Find-PathReference {
         $leaf = Split-Path -Leaf $target
 
         $hits = 0
-        foreach ($file in (Get-PathBearingFile -RepoRoot $root -AdditionalGlob $AdditionalGlob)) {
+        foreach ($file in (Get-PathBearingFile -RepositoryRoot $root -AdditionalGlob $AdditionalGlob)) {
             $n = 0
             foreach ($line in (Get-Content -LiteralPath $file.FullName -ErrorAction SilentlyContinue)) {
                 $n++

@@ -16,6 +16,17 @@ if (-not $env:NETSCOOT_JOURNAL_HOME) {
     $env:NETSCOOT_JOURNAL_HOME = Join-Path ([System.IO.Path]::GetTempPath()) ('dnm-jhome-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
 }
 
+# Fixtures `git init` + `git commit` a starting state. A bare CI runner has no git identity, so the
+# commit fails with "empty ident name" - the move still works (git mv stages the index), but the
+# output is noisy and any fixture relying on a real HEAD runs degraded. Set an identity for the test
+# process via GIT_* env vars (authoritative, bypasses the config requirement) without mutating the
+# machine's global git config. Only fill what is unset, so a developer's real identity is respected.
+foreach ($kv in @(
+        @('GIT_AUTHOR_NAME', 'netscoot tests'), @('GIT_AUTHOR_EMAIL', 'tests@netscoot.invalid'),
+        @('GIT_COMMITTER_NAME', 'netscoot tests'), @('GIT_COMMITTER_EMAIL', 'tests@netscoot.invalid'))) {
+    if (-not [Environment]::GetEnvironmentVariable($kv[0])) { Set-Item -Path "Env:$($kv[0])" -Value $kv[1] }
+}
+
 function New-TempRoot {
     # Create a throwaway temp directory and return its CANONICAL path. On macOS the temp root
     # /var/folders/... is a symlink to /private/var/folders/...; if a fixture used the /var form,

@@ -19,7 +19,7 @@
         'Get-PathSuffixScore',
         'Get-ProjectReferencePaths',
         'Get-RelativePathSafe',
-        'Get-RepoRoot',
+        'Get-RepositoryRoot',
         'Get-SolutionContent',
         'Get-SolutionMembership',
         'Get-SolutionProjectEntries',

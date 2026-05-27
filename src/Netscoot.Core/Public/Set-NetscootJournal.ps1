@@ -19,7 +19,7 @@ function Set-NetscootJournal {
     .PARAMETER Global
         Write the user's global git config instead of the repository's local config.
 
-    .PARAMETER RepoRoot
+    .PARAMETER RepositoryRoot
         Repository whose local config to write. Defaults to the enclosing git repository root.
         Ignored with -Global.
 
@@ -39,7 +39,7 @@ function Set-NetscootJournal {
     param(
         [Parameter(Mandatory)][bool]$Enabled,
         [switch]$Global,
-        [string]$RepoRoot
+        [string]$RepositoryRoot
     )
 
     $value = if ($Enabled) { 'true' } else { 'false' }
@@ -48,8 +48,8 @@ function Set-NetscootJournal {
         $scope = 'global git config'
         $gitArgs = @('config', '--global', 'netscoot.journal', $value)
     } else {
-        if (-not $RepoRoot) { $RepoRoot = Get-RepoRoot -StartPath (Get-Location).Path }
-        $repoFull = Resolve-FullPath $RepoRoot
+        if (-not $RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath (Get-Location).Path }
+        $repoFull = Resolve-FullPath $RepositoryRoot
         $scope = "local git config of '$repoFull'"
         $gitArgs = @('-C', $repoFull, 'config', 'netscoot.journal', $value)
     }

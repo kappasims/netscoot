@@ -23,7 +23,7 @@
         Array   = $true
         EmptyIsNull = $true
         Fields  = @(
-            @{ Name = 'File';       Type = 'string'; Note = 'repo-relative file containing the line' }
+            @{ Name = 'File';       Type = 'string'; Note = 'repository-relative file containing the line' }
             @{ Name = 'Line';       Type = 'int';    Note = '1-based line number' }
             @{ Name = 'Confidence'; Type = 'string'; Note = 'High | Low' }
             @{ Name = 'Text';       Type = 'string'; Note = 'the matching line' }
@@ -57,11 +57,11 @@
         Array   = $true
         EmptyIsNull = $false
         Fields  = @(
-            @{ Name = 'Solution'; Type = 'string';                       Note = "repo-relative, or '(none)' for an unreferenced project" }
+            @{ Name = 'Solution'; Type = 'string';                       Note = "repository-relative, or '(none)' for an unreferenced project" }
             @{ Name = 'Kind';     Type = 'Netscoot.SolutionItemKind'; Note = 'enum: Project | SolutionFolder | SolutionItem | UnreferencedProject' }
             @{ Name = 'Type';     Type = 'string'; Note = 'project extension without the dot, else empty' }
             @{ Name = 'Name';     Type = 'string'; Note = '' }
-            @{ Name = 'Path';     Type = 'string'; Note = 'as stored in the solution, or repo-relative' }
+            @{ Name = 'Path';     Type = 'string'; Note = 'as stored in the solution, or repository-relative' }
         )
     }
 
@@ -213,13 +213,13 @@
         Array   = $true
         EmptyIsNull = $true
         Fields  = @(
-            @{ Name = 'Solution'; Type = 'string'; Note = 'repo-relative' }
-            @{ Name = 'Added';    Type = 'string'; Note = 'repo-relative project path' }
+            @{ Name = 'Solution'; Type = 'string'; Note = 'repository-relative' }
+            @{ Name = 'Added';    Type = 'string'; Note = 'repository-relative project path' }
         )
     }
 
     'Netscoot.ConsistencyResult' = @{
-        Summary = 'One project whose solution membership diverges across the repo.'
+        Summary = 'One project whose solution membership diverges across the repository.'
         Array   = $true
         EmptyIsNull = $true
         Fields  = @(

@@ -25,7 +25,7 @@ Describe 'Move-DotnetFile (routing)' {
         $root = New-DispatchFixture
         try {
             $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
-            Move-DotnetFile -Path $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepoRoot $root -NoBuild -Confirm:$false -WarningAction SilentlyContinue | Out-Null
+            Move-DotnetFile -Path $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepositoryRoot $root -NoBuild -Confirm:$false -WarningAction SilentlyContinue | Out-Null
             (Join-Path $root (Join-Path 'libs' (Join-Path 'Lib' ('Lib.csproj')))) | Should -Exist
             $lib | Should -Not -Exist
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
@@ -43,7 +43,7 @@ Describe 'Move-DotnetFile (routing)' {
     It 'routes a .props to Move-MSBuildImport' {
         $root = New-DispatchFixture
         try {
-            $r = Move-DotnetFile -Path (Join-Path $root 'Shared.props') -Destination (Join-Path $root (Join-Path 'build' ('Shared.props'))) -RepoRoot $root -Confirm:$false -WarningAction SilentlyContinue
+            $r = Move-DotnetFile -Path (Join-Path $root 'Shared.props') -Destination (Join-Path $root (Join-Path 'build' ('Shared.props'))) -RepositoryRoot $root -Confirm:$false -WarningAction SilentlyContinue
             $r.PSObject.TypeNames[0] | Should -Be 'Netscoot.ImportMoveResult'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -61,7 +61,7 @@ Describe 'Move-DotnetFile (routing)' {
         $root = New-DispatchFixture
         try {
             $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
-            Move-DotnetFile -Path $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepoRoot $root -WhatIf | Out-Null
+            Move-DotnetFile -Path $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepositoryRoot $root -WhatIf | Out-Null
             $lib | Should -Exist
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -85,7 +85,7 @@ Describe 'Move-DotnetFolder (routing)' {
     It 'routes a folder to Move-DotnetProjectTree' {
         $root = New-DispatchFixture
         try {
-            $r = Move-DotnetFolder -Path (Join-Path $root 'src') -Destination (Join-Path $root 'source') -RepoRoot $root -NoBuild -Confirm:$false -WarningAction SilentlyContinue
+            $r = Move-DotnetFolder -Path (Join-Path $root 'src') -Destination (Join-Path $root 'source') -RepositoryRoot $root -NoBuild -Confirm:$false -WarningAction SilentlyContinue
             $r.PSObject.TypeNames[0] | Should -Be 'Netscoot.TreeMoveResult'
             (Join-Path $root (Join-Path 'source' (Join-Path 'Lib' ('Lib.csproj')))) | Should -Exist
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

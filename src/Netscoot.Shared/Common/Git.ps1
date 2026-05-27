@@ -1,4 +1,4 @@
-function Get-RepoRoot {
+function Get-RepositoryRoot {
     # Walk up from $StartPath looking for a .git dir/file; fall back to the start path.
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$StartPath)
@@ -45,14 +45,14 @@ function Move-PathTracked {
         [Parameter(Mandatory)][bool]$UseGit,
         [Parameter(Mandatory)][string]$Source,
         [Parameter(Mandatory)][string]$Destination,
-        [Parameter(Mandatory)][string]$RepoRoot
+        [Parameter(Mandatory)][string]$RepositoryRoot
     )
     $parent = Split-Path -Parent $Destination
     if ($parent -and -not (Test-Path -LiteralPath $parent)) {
         New-Item -ItemType Directory -Path $parent -Force | Out-Null
     }
     if ($UseGit -and (Test-GitTracked -Path $Source)) {
-        Push-Location $RepoRoot
+        Push-Location $RepositoryRoot
         try { & git mv -- $Source $Destination; if ($LASTEXITCODE -ne 0) { throw "git mv failed: $Source -> $Destination" } }
         finally { Pop-Location }
     } else {

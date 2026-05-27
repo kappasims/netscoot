@@ -20,7 +20,7 @@ function Repair-SolutionReferences {
         With -Prune it removes the Missing entries, the genuinely deleted ones, through the dotnet
         CLI. -Prune never touches Relocatable or Ambiguous entries. -Fix and -Prune can be combined.
 
-    .PARAMETER RepoRoot
+    .PARAMETER RepositoryRoot
         Root to scan. Defaults to the enclosing git repository root of the current directory.
 
     .PARAMETER Fix
@@ -35,31 +35,31 @@ function Repair-SolutionReferences {
 
     .EXAMPLE
         # Report dangling entries only - read-only (each tagged Relocatable, Missing, or Ambiguous)
-        Repair-SolutionReferences -RepoRoot .
+        Repair-SolutionReferences -RepositoryRoot .
         # Re-point relocatable entries at the project's new location (relocates; never deletes)
-        Repair-SolutionReferences -RepoRoot . -Fix
+        Repair-SolutionReferences -RepositoryRoot . -Fix
         # Also remove entries whose project is gone for good - preview the whole thing first
-        Repair-SolutionReferences -RepoRoot . -Fix -Prune -WhatIf
+        Repair-SolutionReferences -RepositoryRoot . -Fix -Prune -WhatIf
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType('Netscoot.RepairResult')]
     param(
         [Parameter(Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path', 'PSPath')]
-        [string]$RepoRoot,
+        [string]$RepositoryRoot,
         [switch]$Fix,
         [switch]$Prune
     )
 
     process {
         if (-not (Assert-DotnetAvailable -Cmdlet $PSCmdlet)) { return }
-        if (-not $RepoRoot) { $RepoRoot = Get-RepoRoot -StartPath (Get-Location).Path }
-        $RepoRoot = Resolve-FullPath $RepoRoot
+        if (-not $RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath (Get-Location).Path }
+        $RepositoryRoot = Resolve-FullPath $RepositoryRoot
 
         # Index existing project files by leaf name, so a dangling target can be matched to where
         # its project now lives.
         $byLeaf = @{}
-        foreach ($pf in (Find-ProjectFiles -Root $RepoRoot)) {
+        foreach ($pf in (Find-ProjectFiles -Root $RepositoryRoot)) {
             if (-not $byLeaf.ContainsKey($pf.Name)) { $byLeaf[$pf.Name] = [System.Collections.Generic.List[string]]::new() }
             $byLeaf[$pf.Name].Add($pf.FullName)
         }
@@ -67,7 +67,7 @@ function Repair-SolutionReferences {
         # First pass: collect the dangling entries (a path recorded somewhere points at a project
         # file that no longer exists there).
         $dangling = [System.Collections.Generic.List[object]]::new()
-        foreach ($sln in (Find-Solutions -Root $RepoRoot)) {
+        foreach ($sln in (Find-Solutions -Root $RepositoryRoot)) {
             $slnDir = Split-Path -Parent $sln.FullName
             $listed = Invoke-DotnetRead sln $sln.FullName list
             if ($LASTEXITCODE -ne 0) { continue }
@@ -80,7 +80,7 @@ function Repair-SolutionReferences {
                 }
             }
         }
-        foreach ($proj in (Find-ProjectFiles -Root $RepoRoot)) {
+        foreach ($proj in (Find-ProjectFiles -Root $RepositoryRoot)) {
             foreach ($ref in (Get-ProjectReferencePaths -ProjectFile $proj.FullName)) {
                 # Non-literal references (MSBuild property / glob / conditional) have no single
                 # resolved path, so they cannot be "dangling" in a way we could repair - skip them.

@@ -1,10 +1,10 @@
 function Get-AsmdefReferencers {
-    # asmdef files (under $RepoRoot) whose "references" include the given asmdef by name or
+    # asmdef files (under $RepositoryRoot) whose "references" include the given asmdef by name or
     # "GUID:<guid>". References are logical (not paths) so they survive a move - info only.
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$AsmdefPath,
-        [Parameter(Mandatory)][string]$RepoRoot
+        [Parameter(Mandatory)][string]$RepositoryRoot
     )
     $full = Resolve-FullPath $AsmdefPath
     $name = $null
@@ -18,8 +18,8 @@ function Get-AsmdefReferencers {
     $referencers = @()
     # Exclude Unity caches anchored at the repository root (not "Temp" anywhere - the OS temp dir
     # itself contains that segment), plus .git.
-    $rootLen = (Resolve-FullPath $RepoRoot).TrimEnd('\', '/').Length
-    $asmdefs = Get-ChildItem -LiteralPath $RepoRoot -Recurse -File -ErrorAction SilentlyContinue |
+    $rootLen = (Resolve-FullPath $RepositoryRoot).TrimEnd('\', '/').Length
+    $asmdefs = Get-ChildItem -LiteralPath $RepositoryRoot -Recurse -File -ErrorAction SilentlyContinue |
         Where-Object {
             $_.Extension -eq '.asmdef' -and
             $_.FullName.Substring($rootLen) -notmatch '^[\\/](Library|Temp|obj)[\\/]' -and

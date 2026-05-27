@@ -26,7 +26,7 @@ function Move-PowerShellScript {
     .PARAMETER Destination
         New file path (or a folder, in which case the script keeps its name).
 
-    .PARAMETER RepoRoot
+    .PARAMETER RepositoryRoot
         Root to scan for referencing scripts. Defaults to the enclosing git repository root.
 
     .PARAMETER Force
@@ -45,7 +45,7 @@ function Move-PowerShellScript {
         # Move it for real
         Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1
         # Limit the scan for referencing scripts to a specific root
-        Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -RepoRoot ./lib
+        Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -RepositoryRoot ./lib
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('Netscoot.ScriptMoveResult')]
@@ -59,7 +59,7 @@ function Move-PowerShellScript {
         [ValidateNotNullOrEmpty()]
         [string]$Destination,
 
-        [string]$RepoRoot,
+        [string]$RepositoryRoot,
         [switch]$Force,
         [switch]$NoJournal
     )
@@ -90,8 +90,8 @@ function Move-PowerShellScript {
         }
         $newDir = Split-Path -Parent $newPath
 
-        if (-not $RepoRoot) { $RepoRoot = Get-RepoRoot -StartPath (Split-Path -Parent $src) }
-        $repoFull = Resolve-FullPath $RepoRoot
+        if (-not $RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath (Split-Path -Parent $src) }
+        $repoFull = Resolve-FullPath $RepositoryRoot
 
         # Referencers: scripts that dot-source/call the moved file.
         $referencers = @()
@@ -138,13 +138,13 @@ function Move-PowerShellScript {
                         -Reattach $fixSb -ReattachArgs @($newPath, $own.Raw, $newRaw)
                 }
             }
-            $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepoRoot $Repository }
+            $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 
             $planResult = Invoke-MovePlan -Caption "Move script $name" -Items $items -Move $move `
                 -MoveArgs @($ctx.UseGit, $src, $newPath, $repoFull)
             $performed = $true
             $skippedCount = $planResult.Skipped
-            Register-MoveUndo -RepoRoot $repoFull -Command 'Move-PowerShellScript' -Engine 'powershell' `
+            Register-MoveUndo -RepositoryRoot $repoFull -Command 'Move-PowerShellScript' -Engine 'powershell' `
                 -Source $src -Destination $newPath `
                 -UndoParams @{ Path = $newPath; Destination = $src; Force = [bool]$Force } -NoJournal:$NoJournal
         }

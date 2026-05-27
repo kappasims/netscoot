@@ -127,9 +127,9 @@ function Test-DirectoryBuildInheritance {
     param(
         [Parameter(Mandatory)][string]$OldDir,
         [Parameter(Mandatory)][string]$NewDir,
-        [Parameter(Mandatory)][string]$RepoRoot
+        [Parameter(Mandatory)][string]$RepositoryRoot
     )
-    $rootFull = (Resolve-FullPath $RepoRoot)
+    $rootFull = (Resolve-FullPath $RepositoryRoot)
     function _nearest([string]$start, [string]$name) {
         $d = [System.IO.DirectoryInfo]::new((Resolve-FullPath $start))
         while ($null -ne $d) {

@@ -54,7 +54,7 @@ if ($noBuild) { $params.NoBuild = $true }
 # Let Invoke-Netscoot derive the repository root from the target path. Do NOT use
 # `git rev-parse --show-toplevel`: git canonicalizes symlinks (on macOS the temp/repository path
 # /var/folders/... becomes /private/var/folders/...), which would not match the OS-form paths the
-# rest of the toolkit uses (Get-ChildItem, Get-RepoRoot), breaking path comparisons on a repository that
+# rest of the toolkit uses (Get-ChildItem, Get-RepositoryRoot), breaking path comparisons on a repository that
 # sits under a symlinked directory.
 
 Invoke-Netscoot @params

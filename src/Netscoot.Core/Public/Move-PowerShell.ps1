@@ -8,8 +8,8 @@ function Move-PowerShell {
         Dispatches a PowerShell item to the right specialist by type (see Output for the routing):
         the script specialist fixes dot-source/call references (AST-based), the module specialist
         reconciles the manifest. -WhatIf/-Confirm/-Verbose propagate to the specialist; -Force is
-        forwarded, and -RepoRoot is forwarded to the script specialist (the module specialist has
-        no RepoRoot).
+        forwarded, and -RepositoryRoot is forwarded to the script specialist (the module specialist has
+        no RepositoryRoot).
 
     .PARAMETER Path
         The PowerShell item to move: a .ps1 script, a .psd1 manifest, or a module folder.
@@ -18,9 +18,9 @@ function Move-PowerShell {
     .PARAMETER Destination
         New path - passed through to the specialist.
 
-    .PARAMETER RepoRoot
+    .PARAMETER RepositoryRoot
         Repository root scanned for referencing scripts. Defaults to the enclosing git repository root.
-        Forwarded to the script specialist only (the module specialist has no RepoRoot).
+        Forwarded to the script specialist only (the module specialist has no RepositoryRoot).
 
     .PARAMETER Force
         Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
@@ -56,7 +56,7 @@ function Move-PowerShell {
         [ValidateNotNullOrEmpty()]
         [string]$Destination,
 
-        [string]$RepoRoot,
+        [string]$RepositoryRoot,
         [switch]$Force,
         [switch]$NoJournal
     )
@@ -75,7 +75,7 @@ function Move-PowerShell {
 
         if (-not $isContainer -and $ext -eq '.ps1') {
             $fwd = @{ Destination = $Destination }
-            if ($PSBoundParameters.ContainsKey('RepoRoot')) { $fwd.RepoRoot = $RepoRoot }
+            if ($PSBoundParameters.ContainsKey('RepositoryRoot')) { $fwd.RepositoryRoot = $RepositoryRoot }
             if ($Force) { $fwd.Force = $true }
             if ($NoJournal) { $fwd.NoJournal = $true }
             Write-Verbose 'Routing .ps1 -> Move-PowerShellScript'

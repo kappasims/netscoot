@@ -217,6 +217,11 @@ function Invoke-DocsTask {
     # Output section for cmdlets that route by extension/type, in place of a prose description.
     $dispatchDiagrams = Import-PowerShellDataFile ([System.IO.Path]::Combine($root, 'docs', 'dispatch-diagrams.psd1'))
 
+    # Functional taxonomy for the Command-reference index (Move / Inspect / Manage, with sub-tables).
+    # Single source of truth; the coverage check in Assert-DocsNotStale fails on any command that is
+    # missing from, or duplicated across, this map (so a new cmdlet must be categorized to ship).
+    $commandCategories = Import-PowerShellDataFile ([System.IO.Path]::Combine($root, 'docs', 'command-categories.psd1'))
+
     # Fields (Name+Type) present in every one of the given types - the shared shape of a cmdlet
     # that emits several result types, so the reference can say whether they are related or wholly
     # heterogeneous. Returns the common field objects (from the first type), in declared order.
@@ -279,29 +284,54 @@ function Invoke-DocsTask {
 
     $sb = [System.Text.StringBuilder]::new()
     $emittedBy = @{}   # type name -> @(command names) that declare it via [OutputType]
-    $nsLabel = @{ 'Netscoot.Core' = '.NET and PowerShell'; 'Netscoot.Unity' = 'Unity'; 'Netscoot.Native' = 'Native C++ (Windows)' }
 
     # Two subsections under the hand-written "# Reference": the commands, then the output types.
     [void]$sb.AppendLine('## Command reference')
     [void]$sb.AppendLine()
 
-    # Table of contents, grouped by namespace: each command links to its detail entry, with a
-    # one-sentence blurb from the synopsis.
+    # One-sentence "what it does" blurb per command, from its synopsis (first sentence). Built once
+    # so the category tables below can look any command up regardless of which module declares it.
+    $blurbs = @{}
     foreach ($m in $docModules) {
-        $label = if ($nsLabel.ContainsKey($m)) { $nsLabel[$m] } else { $m }
-        [void]$sb.AppendLine("**$label**")
-        [void]$sb.AppendLine()
+        foreach ($c in (Get-Command -Module $m -CommandType Function)) {
+            $h = Get-Help $c.Name -Full | Where-Object { $_.Name -eq $c.Name } | Select-Object -First 1
+            $b = ("$($h.Synopsis)" -replace '\s+', ' ').Trim()
+            if ($b -match '^(.*?[.])(\s|$)') { $b = $matches[1] }
+            $blurbs[$c.Name] = $b
+        }
+    }
+
+    # Render one index table (link + blurb) for a list of command names, in the order given by the
+    # taxonomy map. Names are emitted verbatim; the coverage gate guarantees each one exists.
+    function Add-IndexTable {
+        param([string[]]$Commands)
         [void]$sb.AppendLine('| ' + (Format-Small 'Command') + ' | ' + (Format-Small 'What it does') + ' |')
         [void]$sb.AppendLine('|:---|:---|')
-        foreach ($c in (Get-Command -Module $m -CommandType Function | Sort-Object Name)) {
-            $h = Get-Help $c.Name -Full | Where-Object { $_.Name -eq $c.Name } | Select-Object -First 1
-            $blurb = ("$($h.Synopsis)" -replace '\s+', ' ').Trim()
-            if ($blurb -match '^(.*?[.])(\s|$)') { $blurb = $matches[1] }
-            $link = Format-Small ('[' + $c.Name + '](#' + $c.Name.ToLower() + ')')
-            $blurbCell = Format-Small ((ConvertTo-MdText $blurb).Replace('|', '\|'))
+        foreach ($name in $Commands) {
+            $link = Format-Small ('[' + $name + '](#' + $name.ToLower() + ')')
+            $blurbCell = Format-Small ((ConvertTo-MdText ("$($blurbs[$name])")).Replace('|', '\|'))
             [void]$sb.AppendLine('| ' + $link + ' | ' + $blurbCell + ' |')
         }
         [void]$sb.AppendLine()
+    }
+
+    # Table of contents, grouped by function (Move / Inspect / Manage). Each category opens with a
+    # bold name and a blurb paragraph, then a command table; Manage splits into italic-headed
+    # sub-tables (Reconcile, Undo & journal, ...). Driven by docs/command-categories.psd1.
+    foreach ($cat in $commandCategories.Categories) {
+        [void]$sb.AppendLine("**$($cat.Name)**")
+        [void]$sb.AppendLine()
+        if ($cat.Blurb) { [void]$sb.AppendLine((ConvertTo-MdText $cat.Blurb)); [void]$sb.AppendLine() }
+        if ($cat.Commands) {
+            Add-IndexTable -Commands $cat.Commands
+        }
+        if ($cat.Subcategories) {
+            foreach ($sub in $cat.Subcategories) {
+                [void]$sb.AppendLine("*$($sub.Name)*")
+                [void]$sb.AppendLine()
+                Add-IndexTable -Commands $sub.Commands
+            }
+        }
     }
 
     # Per-command detail (flat; the TOC above provides the namespace grouping).
@@ -412,6 +442,11 @@ function Invoke-DocsTask {
                     [void]$sb.AppendLine()
                 }
             }
+
+            # Back-link to the index, so a reader who jumped to one command can return without
+            # scrolling. Anchor matches the "## Command reference" heading.
+            [void]$sb.AppendLine((Format-Small '[Back to Command reference](#command-reference)'))
+            [void]$sb.AppendLine()
         }
     }
 
@@ -453,6 +488,9 @@ function Invoke-DocsTask {
         [void]$sb.AppendLine('```text')
         [void]$sb.AppendLine((Format-TypeCodeView $name $def))
         [void]$sb.AppendLine('```')
+        [void]$sb.AppendLine()
+        # Back-link to the types index, mirroring the per-command one. Anchor matches "## Output types".
+        [void]$sb.AppendLine((Format-Small '[Back to Output types](#output-types)'))
         [void]$sb.AppendLine()
     }
 
@@ -519,6 +557,25 @@ function Assert-DocsNotStale {
             if ($mch.Value -notin $exported) { throw "Docs name a cmdlet that does not exist: '$($mch.Value)' in $(Split-Path -Leaf $f) (renamed or removed?). Update the docs." }
         }
     }
+
+    # (2c) Category-map coverage. Every documented (public engine) cmdlet must appear in the
+    # functional taxonomy exactly once, and the map must name no command that is not exported. This
+    # is what forces a new cmdlet to be categorized before it can ship (the index is generated from
+    # this map, so an uncategorized command would otherwise just be silently absent from the index).
+    $documented = @(Get-Command -Module ($modules | Where-Object { $_ -ne 'Netscoot.Shared' }) -CommandType Function | ForEach-Object Name)
+    $categories = Import-PowerShellDataFile ([System.IO.Path]::Combine($root, 'docs', 'command-categories.psd1'))
+    $mapped = foreach ($cat in $categories.Categories) {
+        if ($cat.Commands) { $cat.Commands }
+        foreach ($sub in $cat.Subcategories) { $sub.Commands }
+    }
+    $mapped = @($mapped | Where-Object { $_ })
+    $dupes = @($mapped | Group-Object | Where-Object Count -gt 1 | ForEach-Object Name)
+    if ($dupes.Count) { throw "command-categories.psd1 lists these command(s) more than once: $($dupes -join ', '). Each command must be categorized exactly once." }
+    $uncategorized = @($documented | Where-Object { $_ -notin $mapped })
+    if ($uncategorized.Count) { throw "These exported cmdlet(s) are not in command-categories.psd1: $($uncategorized -join ', '). Add each to a category so it appears in the Command reference." }
+    $ghosts = @($mapped | Where-Object { $_ -notin $documented })
+    if ($ghosts.Count) { throw "command-categories.psd1 names cmdlet(s) that are not exported: $($ghosts -join ', '). Remove or rename them." }
+
     Write-Host 'Docs are current.' -ForegroundColor Green
 }
 

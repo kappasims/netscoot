@@ -60,7 +60,7 @@ Describe 'Move-DotnetProject with a non-literal reference' {
 
             # -WhatIf: the warning is emitted before any mutation, so this is side-effect free.
             Move-DotnetProject -Project (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) `
-                -Destination (Join-Path $root (Join-Path 'libs' 'Lib')) -RepoRoot $root -NoBuild -WhatIf `
+                -Destination (Join-Path $root (Join-Path 'libs' 'Lib')) -RepositoryRoot $root -NoBuild -WhatIf `
                 -WarningVariable w -WarningAction SilentlyContinue | Out-Null
             ($w -join "`n") | Should -Match 'unreconcilable ProjectReference'
             ($w -join "`n") | Should -Match 'SharedDir'
@@ -76,7 +76,7 @@ Describe 'Repair-SolutionReferences and non-literal references' {
             & git init -q
             New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
             Add-ProjectReference -ProjectFile (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) -Include '$(PluginDir)\Plugin.csproj'
-            $probs = Repair-SolutionReferences -RepoRoot $root
+            $probs = Repair-SolutionReferences -RepositoryRoot $root
             # The only csproj has just a non-literal reference, so there is nothing dangling.
             ($probs | Where-Object { $_.Kind -eq 'Reference' }) | Should -BeNullOrEmpty
         } finally { Pop-Location; Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

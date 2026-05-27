@@ -12,7 +12,7 @@ function Test-SolutionConsistency {
         -Strict escalates each to a non-terminating error (honoring -ErrorAction); -Debug adds the
         full membership matrix of every solution and its projects.
 
-    .PARAMETER RepoRoot
+    .PARAMETER RepositoryRoot
         Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path
         property such as Get-Item output). Defaults to the enclosing git repository root.
 
@@ -24,11 +24,11 @@ function Test-SolutionConsistency {
 
     .EXAMPLE
         # Report projects whose membership diverges across solutions (warnings)
-        Test-SolutionConsistency -RepoRoot .
+        Test-SolutionConsistency -RepositoryRoot .
         # Add the full solution/project membership matrix
-        Test-SolutionConsistency -RepoRoot . -Debug
+        Test-SolutionConsistency -RepositoryRoot . -Debug
         # Escalate divergence to non-terminating errors (e.g. to gate CI)
-        Test-SolutionConsistency -RepoRoot . -Strict
+        Test-SolutionConsistency -RepositoryRoot . -Strict
         # Check several repositories from the pipeline
         Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
     #>
@@ -37,18 +37,18 @@ function Test-SolutionConsistency {
     param(
         [Parameter(Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path', 'PSPath')]
-        [string]$RepoRoot,
+        [string]$RepositoryRoot,
         [switch]$Strict
     )
 
     process {
         if (-not (Assert-DotnetAvailable -Cmdlet $PSCmdlet)) { return }
-        if (-not $RepoRoot) { $RepoRoot = Get-RepoRoot -StartPath (Get-Location).Path }
-        $RepoRoot = Resolve-FullPath $RepoRoot
+        if (-not $RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath (Get-Location).Path }
+        $RepositoryRoot = Resolve-FullPath $RepositoryRoot
 
-        $solutions = @(Find-Solutions -Root $RepoRoot)
+        $solutions = @(Find-Solutions -Root $RepositoryRoot)
         if ($solutions.Count -lt 2) {
-            Write-Verbose "Fewer than two solutions under $RepoRoot; nothing to diverge."
+            Write-Verbose "Fewer than two solutions under $RepositoryRoot; nothing to diverge."
             return
         }
 
@@ -62,7 +62,7 @@ function Test-SolutionConsistency {
 
         # Repository-relative solution names so two solutions with the same file name in different
         # folders are still distinguishable (a bare leaf would render them identically).
-        function _rel([string]$p) { (Get-RelativePathSafe -From $RepoRoot -To $p) }
+        function _rel([string]$p) { (Get-RelativePathSafe -From $RepositoryRoot -To $p) }
 
         # Union of every project across all solutions.
         $allProjects = $membership.Projects | Sort-Object -Unique
