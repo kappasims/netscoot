@@ -518,7 +518,7 @@ tests/                   Pester tests + fixtures
 
 ## Command reference
 
-**Move**
+### Move
 
 Relocate a project, folder, file, module, or asset and reconcile what the move would otherwise break.
 
@@ -537,7 +537,7 @@ Relocate a project, folder, file, module, or asset and reconcile what the move w
 | [Move-NativeProject](#move-nativeproject) | Move a native / C++/CLI project (`.vcxproj`). |
 | [Move-UnityAsset](#move-unityasset) | Move a Unity asset or folder while keeping its paired `.meta` file(s), so the GUIDs that scene/prefab/asmdef references depend on survive the move. |
 
-**Inspect**
+### Inspect
 
 Read-only audits. These change nothing.
 
@@ -550,18 +550,18 @@ Read-only audits. These change nothing.
 | [Find-PathReference](#find-pathreference) | Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party tool reconciles. |
 | [Test-UnityMetaIntegrity](#test-unitymetaintegrity) | Report Unity `.meta` integrity problems under a root: Assets missing a `.meta`, and orphan `.meta` files whose asset is gone. |
 
-**Manage**
+### Manage
 
 Reconcile a repository, undo moves, and control the journal.
 
-*Reconcile*
+#### Reconcile
 
 | Command | What it does |
 | :--- | :--- |
 | [Repair-SolutionReferences](#repair-solutionreferences) | Scan a repository for broken solution membership and dangling ProjectReferences and repair them by re-pointing each entry at the project's new location. |
 | [Sync-Solution](#sync-solution) | Resolve solution-membership divergence by adding each project to the solutions that are missing it, so every solution in the repository lists the same projects. |
 
-*Undo & journal*
+#### Undo & journal
 
 | Command | What it does |
 | :--- | :--- |
@@ -570,25 +570,25 @@ Reconcile a repository, undo moves, and control the journal.
 | [Set-NetscootJournal](#set-netscootjournal) | Turn the move journal on or off, per repository (default) or for every repository (`-Global`). |
 | [Clear-NetscootJournal](#clear-netscootjournal) | Delete a repository's move journal, discarding its undo history. |
 
-**Install & environment**
+### Install & environment
 
 Manage the installation itself and wire up the git integration.
 
-*Stay current*
+#### Stay current
 
 | Command | What it does |
 | :--- | :--- |
 | [Test-NetscootUpdate](#test-netscootupdate) | Check GitHub for a newer netscoot release and report whether the installed version is behind. |
 | [Update-Netscoot](#update-netscoot) | Update an installed netscoot to the latest GitHub release, in place. |
 
-*Update policy*
+#### Update policy
 
 | Command | What it does |
 | :--- | :--- |
 | [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) | Report the effective auto-update policy and where it was resolved from. |
 | [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) | Set netscoot's auto-update policy to Enabled, Disabled, or Manual. |
 
-*Git verb*
+#### Git verb
 
 | Command | What it does |
 | :--- | :--- |
@@ -601,7 +601,7 @@ Manage the installation itself and wire up the git integration.
 
 Delete a repository's move journal, discarding its undo history.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Clear-NetscootJournal [[-RepositoryRoot] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -613,7 +613,7 @@ cap, then oldest-first past the size cap), so this is rarely needed; use it to w
 history outright. After clearing, Undo-Netscoot has nothing to reverse until the next move.
 It does not change whether journaling is on - use Set-NetscootJournal for that.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -621,11 +621,11 @@ It does not change whether journaling is on - use Set-NetscootJournal for that.
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 None.
 
-**Examples**
+#### Examples
 
 ```powershell
 # Discard the undo history for this repository
@@ -644,7 +644,7 @@ Clear-NetscootJournal -WhatIf
 Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/
 container scripts) that no first-party tool reconciles. report-only.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Find-PathReference [-Path] <string> [-RepositoryRoot <string>] [-AdditionalGlob <string[]>] [<CommonParameters>]
@@ -663,7 +663,7 @@ Two confidence tiers: High when the item's repository-relative path appears (e.g
 
 Run it before a move (to see what will break) or after (searching the old path).
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -671,7 +671,7 @@ Run it before a move (to see what will break) or after (searching the old path).
 | `‑RepositoryRoot` | String | false | false | Root to scan. Defaults to the enclosing git repository root. |
 | `‑AdditionalGlob` | String[] | false | false | Extra repository-relative globs to include in the candidate set (e.g. 'deploy/*.sh'). |
 
-**Output**
+#### Output
 
 Returns zero or more [Netscoot.PathReference](#netscootpathreference), collected as an array (`$null` when none).
 One per matching line.
@@ -684,7 +684,7 @@ Netscoot.PathReference
   Text        string  # the matching line
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Build/CI/hook lines that hardcode the path (report-only)
@@ -706,7 +706,7 @@ Find-PathReference -Path ./lib/Tarragon.csproj -AdditionalGlob 'deploy/*.sh','*.
 Resolve Netscoot's external-tool capabilities (git, dotnet) and platform. This is the
 canonical "what can I do here" probe - netscoot does not auto-install anything.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Get-NetscootCapability [<CommonParameters>]
@@ -716,7 +716,7 @@ PowerShell has no manifest mechanism to declare external-CLI prerequisites, so t
 runtime probe via Get-Command; dotnet is required for .NET project moves (the delegation
 target), and git is optional (without it, moves fall back to a plain move (PowerShell `Move-Item`) with no history preserved).
 
-**Output**
+#### Output
 
 Returns a single [Netscoot.Capability](#netscootcapability).
 
@@ -735,7 +735,7 @@ Netscoot.Capability
                       Path     string
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 Get-NetscootCapability
@@ -751,7 +751,7 @@ Returns an object with Platform, PSEdition, Git, Dotnet, and DotnetSupportsSlnx.
 
 Report the effective auto-update policy and where it was resolved from.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Get-NetscootUpdatePolicy [<CommonParameters>]
@@ -768,7 +768,7 @@ This resolves the value in precedence order: the current process, then (on Windo
 environment, then the machine environment. A truthy value (`1`/`true`/`on`) is Enabled, a
 falsy one (`0`/`false`/`off`) is Disabled, and absent or unrecognized is Manual.
 
-**Output**
+#### Output
 
 Returns a single [Netscoot.UpdatePolicy](#netscootupdatepolicy).
 
@@ -779,7 +779,7 @@ Netscoot.UpdatePolicy
   Value   string  # the raw NETSCOOT_AUTOUPDATE value, or $null
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # See the current policy and where it came from
@@ -795,7 +795,7 @@ Get-NetscootUpdatePolicy
 List the full contents of every solution in a repository (projects of any type, solution
 folders, and solution items), plus on-disk projects that no solution references.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Get-SolutionInventory [[-RepositoryRoot] <string>] [<CommonParameters>]
@@ -810,13 +810,13 @@ and flags any that are in no solution at all.
 
 Read-only: One record per item, so you can group, filter, or format it however you like.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `‑RepositoryRoot` | String | false | true (ByValue, ByPropertyName) | Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path property). Defaults to the enclosing git repository root. Nested git worktrees are skipped. |
 
-**Output**
+#### Output
 
 Returns zero or more [Netscoot.SolutionItem](#netscootsolutionitem), collected as an array.
 One per item.
@@ -830,7 +830,7 @@ Netscoot.SolutionItem
   Path      string                     # as stored in the solution, or repository-relative
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Everything across all solutions, plus projects in none
@@ -856,7 +856,7 @@ Move any supported item and reconcile references, routing by detected type to th
 per-namespace front door. The single top-level entry point (the `git netscoot` alias
 calls this).
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Invoke-Netscoot [-Path] <string> -Destination <string> [-RepositoryRoot <string>] [-NoBuild] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -871,7 +871,7 @@ verb spans every engine. Each engine's behavior lives in its own cmdlet; this on
 `-WhatIf`/`-Confirm`/`-Verbose` propagate; `-Force`/`-RepositoryRoot`/`-NoBuild` are forwarded where the
 target's engine accepts them.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -884,7 +884,7 @@ target's engine accepts them.
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 ```text
 .csproj  .fsproj  .vbproj  ->  Netscoot.MoveResult
@@ -899,7 +899,7 @@ Unity asset  .meta         ->  Netscoot.UnityMoveResult
 
 These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields; they are plain pscustomobjects with no shared base type. See [Output types](#output-types).
 
-**Examples**
+#### Examples
 
 ```powershell
 # Preview any move - detects the engine, changes nothing
@@ -927,7 +927,7 @@ Invoke-Netscoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarrago
 Move a single managed .NET file and reconcile references, routing by extension to the
 right specialist. The front door for file moves in the .NET family.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Move-DotnetFile [-Path] <string> -Destination <string> [-RepositoryRoot <string>] [-NoBuild] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -939,7 +939,7 @@ handled here - use Move-NativeProject / Move-PowerShellScript / Move-PowerShellM
 Move-UnityAsset. `-WhatIf`/`-Confirm`/`-Verbose` propagate to the specialist; `-Force` and
 `-RepositoryRoot`/`-NoBuild` are forwarded where the specialist accepts them.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -952,7 +952,7 @@ Move-UnityAsset. `-WhatIf`/`-Confirm`/`-Verbose` propagate to the specialist; `-
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 ```text
 .csproj  .fsproj  .vbproj  ->  Move-DotnetProject   ->  Netscoot.MoveResult
@@ -962,7 +962,7 @@ Move-UnityAsset. `-WhatIf`/`-Confirm`/`-Verbose` propagate to the specialist; `-
 
 These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields; they are plain pscustomobjects with no shared base type. See [Output types](#output-types).
 
-**Examples**
+#### Examples
 
 ```powershell
 # A project file routes to Move-DotnetProject
@@ -985,7 +985,7 @@ Move a folder of managed .NET projects, reconciling references. The front door f
 folder moves in the .NET family; delegates to Move-DotnetProjectTree (which handles a
 single project or many).
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Move-DotnetFolder [-Path] <string> -Destination <string> [-RepositoryRoot <string>] [-NoBuild] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -997,7 +997,7 @@ cross the folder boundary (internal references ride along unchanged). If the fol
 contains no managed projects, that specialist reports it. `-WhatIf`/`-Confirm`/`-Verbose`
 propagate; `-Force`/`-RepositoryRoot`/`-NoBuild` are forwarded.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -1010,7 +1010,7 @@ propagate; `-Force`/`-RepositoryRoot`/`-NoBuild` are forwarded.
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 Returns a single [Netscoot.TreeMoveResult](#netscoottreemoveresult).
 From Move-DotnetProjectTree.
@@ -1027,7 +1027,7 @@ Netscoot.TreeMoveResult
   Built          bool?   # $null with -NoBuild
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Preview moving a folder of .NET projects (delegates to the tree mover)
@@ -1046,7 +1046,7 @@ Move-DotnetFolder -Path ./src/Group -Destination ./libs
 Move a .NET project folder and reconcile every solution and project reference
 that points at it, delegating all path/GUID changes to the dotnet CLI.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Move-DotnetProject [-Project] <string> -Destination <string> [-RepositoryRoot <string>] [-Strict] [-NoBuild] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -1063,7 +1063,7 @@ solution-membership matrix, and divergence (the project living in some but not a
 of the repository's solutions) is surfaced as a Warning (or, with `-Strict`, a non-
 terminating error honoring `-ErrorAction`).
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -1077,7 +1077,7 @@ terminating error honoring `-ErrorAction`).
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 Returns a single [Netscoot.MoveResult](#netscootmoveresult).
 
@@ -1094,7 +1094,7 @@ Netscoot.MoveResult
   Built          bool?     # $null with -NoBuild
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Preview the move and emit the plan object; nothing changes
@@ -1126,7 +1126,7 @@ Move a folder that contains one or more managed .NET projects, reconciling solut
 membership and every external project reference in one operation. This is the bulk
 "restructure" case (e.g. wrapping several projects into a new parent folder).
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Move-DotnetProjectTree [-Path] <string> -Destination <string> [-RepositoryRoot <string>] [-NoBuild] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -1144,7 +1144,7 @@ CLI; nothing is hand-edited.
 Like Move-DotnetProject: dotnet is required; git is used when available (else a
 confirmed plain-move fallback via `-Force` / ShouldContinue); supports `-WhatIf`.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -1157,7 +1157,7 @@ confirmed plain-move fallback via `-Force` / ShouldContinue); supports `-WhatIf`
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 Returns a single [Netscoot.TreeMoveResult](#netscoottreemoveresult).
 
@@ -1173,7 +1173,7 @@ Netscoot.TreeMoveResult
   Built          bool?   # $null with -NoBuild
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Preview moving a whole folder of projects as one set
@@ -1198,7 +1198,7 @@ Move-DotnetProjectTree -Path ./src/Group -Destination ./libs/Group -NoBuild
 Move a shared MSBuild `.props/.targets` file and fix every project (or other
 props/targets) that imports it via `<Import Project="...">`.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Move-MSBuildImport [-Path] <string> -Destination <string> [-RepositoryRoot <string>] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -1223,7 +1223,7 @@ reconciled off Windows; that remains Move-NativeProject's Windows-only job.
 dotnet is not required here; git is used when available (else confirmed plain-move
 fallback via `-Force`). Supports `-WhatIf`.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -1235,7 +1235,7 @@ fallback via `-Force`). Supports `-WhatIf`.
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 Returns a single [Netscoot.ImportMoveResult](#netscootimportmoveresult).
 
@@ -1251,7 +1251,7 @@ Netscoot.ImportMoveResult
   AutoImported     bool    # true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Move a shared props/targets and fix every consumer's Import path
@@ -1273,7 +1273,7 @@ Move-MSBuildImport -Path ./src/Directory.Build.props -Destination ./Directory.Bu
 Move a PowerShell item and reconcile references, routing by type to the right
 specialist. The front door for PowerShell moves.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Move-PowerShell [-Path] <string> -Destination <string> [-RepositoryRoot <string>] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -1285,7 +1285,7 @@ reconciles the manifest. `-WhatIf`/`-Confirm`/`-Verbose` propagate to the specia
 forwarded, and `-RepositoryRoot` is forwarded to the script specialist (the module specialist has
 no RepositoryRoot).
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -1297,7 +1297,7 @@ no RepositoryRoot).
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 ```text
 .ps1                   ->  Move-PowerShellScript  ->  Netscoot.ScriptMoveResult
@@ -1306,7 +1306,7 @@ no RepositoryRoot).
 
 These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields; they are plain pscustomobjects with no shared base type. See [Output types](#output-types).
 
-**Examples**
+#### Examples
 
 ```powershell
 # A .ps1 routes to the script mover (fixes dot-source/call references)
@@ -1328,7 +1328,7 @@ Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared
 Move a PowerShell module folder and reconcile its manifest, delegating manifest
 edits to Update-ModuleManifest rather than hand-editing the `.psd1`.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Move-PowerShellModule [-ModulePath] <string> -Destination <string> [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -1341,7 +1341,7 @@ references stay valid. Validates the result with Test-ModuleManifest.
 Limits (warned, not fixed): Dot-sourced relative paths inside `.psm1/.ps1` files,
 and any path computed at runtime, cannot be reconciled automatically.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -1352,7 +1352,7 @@ and any path computed at runtime, cannot be reconciled automatically.
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 Returns a single [Netscoot.PSModuleMoveResult](#netscootpsmodulemoveresult).
 
@@ -1366,7 +1366,7 @@ Netscoot.PSModuleMoveResult
   Manifest      string  # the manifest file name
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Preview; reconciles RootModule/NestedModules/FileList via Update-ModuleManifest
@@ -1388,7 +1388,7 @@ Move-PowerShellModule -ModulePath ./tools/Mayo/Mayo.psd1 -Destination ./modules/
 Move a standalone `.ps1` script and fix the relative paths in scripts that dot-source or
 call it (and the moved script's own dot-source/call paths).
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Move-PowerShellScript [-Path] <string> -Destination <string> [-RepositoryRoot <string>] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -1409,7 +1409,7 @@ be proven," not "guaranteed complete."
 git is used when available (else confirmed plain-move fallback via `-Force`). `-WhatIf`
 supported; dotnet not required.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -1421,7 +1421,7 @@ supported; dotnet not required.
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 Returns a single [Netscoot.ScriptMoveResult](#netscootscriptmoveresult).
 
@@ -1437,7 +1437,7 @@ Netscoot.ScriptMoveResult
   UnresolvedRefs    int     # count of possible dynamic references to verify, not a list
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Preview; rewrites dot-source/call paths in referencing scripts and the script's own refs
@@ -1459,7 +1459,7 @@ Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 
 Move a solution file (`.sln/.slnx`) and rebase the relative project paths it stores, so
 every project it references still resolves from the solution's new location.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Move-Solution [-Path] <string> -Destination <string> [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -1476,7 +1476,7 @@ references are unaffected by a solution move and are left alone.
 git is used when available (else confirmed plain-move fallback via `-Force`). `-WhatIf`
 supported. dotnet is not required.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -1487,7 +1487,7 @@ supported. dotnet is not required.
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 Returns a single [Netscoot.SolutionMoveResult](#netscootsolutionmoveresult).
 
@@ -1501,7 +1501,7 @@ Netscoot.SolutionMoveResult
   ProjectsRebased  int     # stored paths rewritten
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Preview moving a solution and rebasing the project paths it stores
@@ -1523,7 +1523,7 @@ Move-Solution -Path ./Demo.sln -Destination ./build/Demo.sln
 Opt-in: register a `git netscoot` alias pointing at Netscoot's forwarder. Sets a single
 reversible git-config line - it never edits PATH or installs anything.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Register-NetscootGitAlias [[-Scope] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -1536,7 +1536,7 @@ branches by target type to the right engine - the .NET project model
 (`.vcxproj`). Scope is your choice (repository-local or global). Undo with
 Unregister-NetscootGitAlias. Use `-WhatIf` to see the exact `git config` command.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -1544,7 +1544,7 @@ Unregister-NetscootGitAlias. Use `-WhatIf` to see the exact `git config` command
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 Returns a single [Netscoot.GitAlias](#netscootgitalias).
 
@@ -1556,7 +1556,7 @@ Netscoot.GitAlias
   Command    string  # the git config command that was/would be run
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Preview the exact git config command (changes nothing)
@@ -1578,7 +1578,7 @@ Register-NetscootGitAlias -Scope Global
 Report and recover moves the journal recorded as started but never finished (interrupted by a
 crash), and clear orphaned recovery snapshots.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Repair-NetscootJournal [-RepositoryRoot <string>] [-ClearOrphanSnapshots] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -1601,7 +1601,7 @@ Read-only by default: It lists the interrupted moves and changes nothing. Then c
 `-Id` limits the action to one entry (by its journal id). `-ClearOrphanSnapshots` deletes leftover
 `netscoot_snap_*` recovery directories in the temp folder that no pending entry references.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -1614,7 +1614,7 @@ Read-only by default: It lists the interrupted moves and changes nothing. Then c
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 Returns zero or more [Netscoot.JournalEntry](#netscootjournalentry), collected as an array.
 The interrupted entries (report mode), or those acted on.
@@ -1630,7 +1630,7 @@ Netscoot.JournalEntry
   destination  string
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # See what was interrupted (read-only)
@@ -1655,7 +1655,7 @@ Repair-NetscootJournal -ClearOrphanSnapshots
 Scan a repository for broken solution membership and dangling ProjectReferences and repair them
 by re-pointing each entry at the project's new location.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Repair-SolutionReferences [[-RepositoryRoot] <string>] [-Fix] [-Prune] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -1676,7 +1676,7 @@ reported, Missing (no such project anywhere) or Ambiguous (several equally-good 
 With `-Prune` it removes the Missing entries, the genuinely deleted ones, through the dotnet
 CLI. `-Prune` never touches Relocatable or Ambiguous entries. `-Fix` and `-Prune` can be combined.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -1686,7 +1686,7 @@ CLI. `-Prune` never touches Relocatable or Ambiguous entries. `-Fix` and `-Prune
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 Returns zero or more [Netscoot.RepairResult](#netscootrepairresult), collected as an array (`$null` when none).
 One per dangling entry.
@@ -1702,7 +1702,7 @@ Netscoot.RepairResult
   Candidates  string[]  # same-named project files found, used to resolve NewPath
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Report dangling entries only - read-only (each tagged Relocatable, Missing, or Ambiguous)
@@ -1725,7 +1725,7 @@ Classify a path to the reconciliation engine that should move it: dotnet, native
 unity, ps-script, ps-module, or unknown. Used by the `git netscoot` forwarder and
 available for introspection.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Resolve-MoveEngine [-Path] <string> [<CommonParameters>]
@@ -1735,13 +1735,13 @@ Classification is by target type (extension + location + `.meta` pairing), not b
 beyond a folder's project/manifest scan. The path need not exist (extension-based cases
 classify regardless); folder cases require the directory.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `‑Path` | String | true | true (ByValue, ByPropertyName) | The item to classify. Accepts pipeline input. |
 
-**Output**
+#### Output
 
 ```text
 .vcxproj                                            ->  native
@@ -1754,7 +1754,7 @@ folder containing a .psd1                           ->  ps-module
 anything else                                       ->  unknown
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # A managed project classifies as 'dotnet'
@@ -1778,7 +1778,7 @@ Resolve-MoveEngine ./Aleppo/Aleppo.vcxproj
 
 Turn the move journal on or off, per repository (default) or for every repository (`-Global`).
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Set-NetscootJournal [-Enabled] <bool> [[-RepositoryRoot] <string>] [-Global] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -1793,7 +1793,7 @@ With `-Global` it writes the user's global git config, switching the default for
 repository on the machine in one place. Requires git; with no git, set `$env:NETSCOOT_JOURNAL`
 instead.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -1803,11 +1803,11 @@ instead.
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 None.
 
-**Examples**
+#### Examples
 
 ```powershell
 # Stop journaling in this repository only
@@ -1828,7 +1828,7 @@ Set-NetscootJournal -Enabled $false -Global
 
 Set netscoot's auto-update policy to Enabled, Disabled, or Manual.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Set-NetscootUpdatePolicy [-State] <string> [[-Scope] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -1846,7 +1846,7 @@ value and prints the line to add to your shell profile.
 An administrator can achieve the same fleet-wide by pushing `NETSCOOT_AUTOUPDATE` through
 Group Policy / Intune; this cmdlet is the per-user equivalent.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -1855,7 +1855,7 @@ Group Policy / Intune; this cmdlet is the per-user equivalent.
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 Returns a single [Netscoot.UpdatePolicy](#netscootupdatepolicy).
 The resulting effective policy.
@@ -1867,7 +1867,7 @@ Netscoot.UpdatePolicy
   Value   string  # the raw NETSCOOT_AUTOUPDATE value, or $null
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Opt in to automatic checks (the SessionStart hook will now run)
@@ -1889,7 +1889,7 @@ Set-NetscootUpdatePolicy -State Manual
 Resolve solution-membership divergence by adding each project to the solutions that are
 missing it, so every solution in the repository lists the same projects.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Sync-Solution [[-RepositoryRoot] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -1904,7 +1904,7 @@ solution is left alone (use Get-SolutionInventory to find those).
 Uniform membership is the assumption. If a solution is intentionally a subset, do not run
 this against the whole repository; preview with `-WhatIf` first and add specific projects by hand.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -1912,7 +1912,7 @@ this against the whole repository; preview with `-WhatIf` first and add specific
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 Returns zero or more [Netscoot.SyncResult](#netscootsyncresult), collected as an array (`$null` when none).
 One per project added.
@@ -1923,7 +1923,7 @@ Netscoot.SyncResult
   Added     string  # repository-relative project path
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Preview which projects would be added to which solutions to make membership uniform
@@ -1942,7 +1942,7 @@ Sync-Solution -RepositoryRoot .
 Check GitHub for a newer netscoot release and report whether the installed version is
 behind. On-demand and read-only: It never updates anything itself.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Test-NetscootUpdate [[-Repository] <string>] [-Auto] [<CommonParameters>]
@@ -1963,14 +1963,14 @@ is a silent no-op otherwise. So a hook can call it unconditionally; nothing happ
 policy is opted in, and an administrator can disable it fleet-wide. Either way it never
 updates - it only reports.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `‑Repository` | String | false | false | owner/name of the GitHub repository to check. Defaults to the project repository. |
 | `‑Auto` | SwitchParameter | false | false | Run as the automatic check (for a SessionStart hook or other automation): proceed only when the update policy is Enabled, otherwise do nothing. Still read-only - it never updates. |
 
-**Output**
+#### Output
 
 Returns a single [Netscoot.Update](#netscootupdate).
 None (writes a non-terminating error) when the release cannot be fetched, and nothing at all when `-Auto` is set but the update policy is not Enabled.
@@ -1984,7 +1984,7 @@ Netscoot.Update
   Url              string
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Compare the installed module to the latest GitHub release
@@ -2006,7 +2006,7 @@ Test-NetscootUpdate -Auto
 Report projects whose membership diverges across the solution files in a repository
 (present in some solutions but absent from others).
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Test-SolutionConsistency [[-RepositoryRoot] <string>] [-Strict] [<CommonParameters>]
@@ -2019,14 +2019,14 @@ so behavior follows invocation: By default it writes a Warning per divergent pro
 `-Strict` escalates each to a non-terminating error (honoring `-ErrorAction`); `-Debug` adds the
 full membership matrix of every solution and its projects.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `‑RepositoryRoot` | String | false | true (ByValue, ByPropertyName) | Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path property such as Get-Item output). Defaults to the enclosing git repository root. |
 | `‑Strict` | SwitchParameter | false | false | Escalate divergences from warnings to non-terminating errors. |
 
-**Output**
+#### Output
 
 Returns zero or more [Netscoot.ConsistencyResult](#netscootconsistencyresult), collected as an array (`$null` when none).
 One per divergent project.
@@ -2038,7 +2038,7 @@ Netscoot.ConsistencyResult
   AbsentFrom  string[]  # solution paths that do not
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Report projects whose membership diverges across solutions (warnings)
@@ -2062,7 +2062,7 @@ Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
 
 Reverse previous netscoot moves from the per-user journal.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Undo-Netscoot [-RepositoryRoot <string>] [-Last] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -2100,7 +2100,7 @@ running them.
 Journaling must have been on when the moves ran (it is by default; opt out with
 `$env:NETSCOOT_JOURNAL` or git config netscoot.journal false).
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -2114,12 +2114,12 @@ Journaling must have been on when the moves ran (it is by default; opt out with
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 The move-result object(s) from the reversing move(s); their type matches the original mover.
 With `-List`, the journal entries. Nothing when there is nothing to undo.
 
-**Examples**
+#### Examples
 
 ```powershell
 # See what can be undone
@@ -2149,13 +2149,13 @@ Undo-Netscoot -All
 
 Remove the `git netscoot` alias registered by Register-NetscootGitAlias.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Unregister-NetscootGitAlias [[-Scope] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -2163,11 +2163,11 @@ Unregister-NetscootGitAlias [[-Scope] <string>] [-WhatIf] [-Confirm] [<CommonPar
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 None.
 
-**Examples**
+#### Examples
 
 ```powershell
 # Remove the alias for this repository (default scope is Local)
@@ -2186,7 +2186,7 @@ Unregister-NetscootGitAlias -Scope Global
 Update an installed netscoot to the latest GitHub release, in place. The one-command
 update for non-clone installs.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Update-Netscoot [[-Repository] <string>] [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -2204,7 +2204,7 @@ Policy kill-switch: when the update policy is Disabled (see Set-NetscootUpdatePo
 administrator's Group Policy / Intune push), this refuses to update so machine state stays
 managed. `-Force` overrides the policy (and also reinstalls when current).
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -2213,7 +2213,7 @@ managed. `-Force` overrides the policy (and also reinstalls when current).
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 Returns a single [Netscoot.Update](#netscootupdate).
 The record from Test-NetscootUpdate, so the decision is inspectable. Nothing on a failed check.
@@ -2227,7 +2227,7 @@ Netscoot.Update
   Url              string
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Update to the latest release if the installed copy is behind
@@ -2250,7 +2250,7 @@ Move a native / C++/CLI project (`.vcxproj`). Windows-only. Does the parts the
 dotnet CLI can delegate (solution membership, the move itself) and reports the
 native path-bearing settings it cannot reconcile so they are never silently broken.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Move-NativeProject [-Project] <string> -Destination <string> [-RepositoryRoot <string>] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -2267,7 +2267,7 @@ and then emit a report of every relative/SolutionDir-relative native setting tha
 human (or a future native engine) must verify. It deliberately does not rewrite those
 MSBuild paths yet - surfacing them beats silently mis-editing them.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -2279,7 +2279,7 @@ MSBuild paths yet - surfacing them beats silently mis-editing them.
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 Returns a single [Netscoot.NativeMoveResult](#netscootnativemoveresult).
 
@@ -2295,7 +2295,7 @@ Netscoot.NativeMoveResult
   UnreconciledSettings  object[]  # one per native path setting to verify by hand; each has the setting name and value
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Preview; reports the native path settings it cannot reconcile (verify by hand after)
@@ -2317,7 +2317,7 @@ Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native
 Move a Unity asset or folder while keeping its paired `.meta` file(s), so the GUIDs
 that scene/prefab/asmdef references depend on survive the move.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Move-UnityAsset [-AssetPath] <string> -Destination <string> [-RepositoryRoot <string>] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
@@ -2336,7 +2336,7 @@ moved too. asmdef references are by name/GUID (not path), so they do not need ed
 Cross-platform and target-agnostic: asmdef includePlatforms/excludePlatforms (iOS,
 Android, etc.) are plain fields untouched by a move, so mobile layouts are preserved.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -2348,7 +2348,7 @@ Android, etc.) are plain fields untouched by a move, so mobile layouts are prese
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
-**Output**
+#### Output
 
 Returns a single [Netscoot.UnityMoveResult](#netscootunitymoveresult).
 
@@ -2364,7 +2364,7 @@ Netscoot.UnityMoveResult
   ReferencedBy  string[]  # asmdefs that reference a moved .asmdef; informational, refs are by name/GUID and survive
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 # Preview; moves the asset/folder together with its .meta so GUIDs survive
@@ -2387,7 +2387,7 @@ Report Unity `.meta` integrity problems under a root: Assets missing a `.meta`, 
 orphan `.meta` files whose asset is gone. These are the Unity analog of dangling
 references - both lead to broken/regenerated GUIDs.
 
-**Syntax**
+#### Syntax
 
 ```powershell
 Test-UnityMetaIntegrity [[-Root] <string>] [-Strict] [<CommonParameters>]
@@ -2402,14 +2402,14 @@ capturable/filterable.
 Ignores Unity-hidden entries (names starting with '.', folders ending with '~')
 and the Library/Temp/obj caches.
 
-**Parameters**
+#### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `‑Root` | String | false | true (ByValue, ByPropertyName) | Folder to scan (typically an 'Assets' folder). Accepts pipeline input. Defaults to the current directory. |
 | `‑Strict` | SwitchParameter | false | false | Escalate problems from warnings to non-terminating errors. |
 
-**Output**
+#### Output
 
 Returns zero or more [Netscoot.MetaIntegrity](#netscootmetaintegrity), collected as an array (`$null` when none).
 One per problem.
@@ -2420,7 +2420,7 @@ Netscoot.MetaIntegrity
   Path  string
 ```
 
-**Examples**
+#### Examples
 
 ```powershell
 Test-UnityMetaIntegrity -Root ./Assets -Strict
