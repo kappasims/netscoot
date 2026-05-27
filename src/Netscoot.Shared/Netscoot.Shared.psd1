@@ -31,6 +31,7 @@
         'Get-UnreconcilableReferences',
         'Invoke-Dotnet',
         'Invoke-DotnetRead',
+        'Invoke-MovePhase',
         'Invoke-MovePlan',
         'Move-PathTracked',
         'New-DotnetReferenceItems',

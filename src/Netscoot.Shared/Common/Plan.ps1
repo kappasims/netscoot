@@ -63,13 +63,74 @@ function New-MoveItem {
         [object[]]$DetachArgs = @(),
         [scriptblock]$Reattach,
         [object[]]$ReattachArgs = @(),
-        [switch]$Optional
+        [switch]$Optional,
+        # Optional batch metadata (see New-DotnetReferenceItems). When present, Invoke-MovePlan
+        # coalesces every item sharing a .Key into one dotnet spawn instead of running the
+        # per-item scriptblock. Items without it run individually via Detach/Reattach as before.
+        [hashtable]$DetachBatch,
+        [hashtable]$ReattachBatch
     )
     [pscustomobject]@{
-        Description  = $Description
-        Detach       = $Detach;   DetachArgs   = $DetachArgs
-        Reattach     = $Reattach; ReattachArgs = $ReattachArgs
-        Optional     = [bool]$Optional
+        Description   = $Description
+        Detach        = $Detach;   DetachArgs    = $DetachArgs
+        Reattach      = $Reattach; ReattachArgs  = $ReattachArgs
+        Optional      = [bool]$Optional
+        DetachBatch   = $DetachBatch
+        ReattachBatch = $ReattachBatch
+    }
+}
+
+function Invoke-MovePhase {
+    # Run one phase (Detach or Reattach) of a move's reconciliation items.
+    #
+    # Performance: items carrying batch metadata for the phase (a hashtable { Key; Prefix; Item })
+    # are coalesced - every item sharing a .Key collapses into ONE `dotnet` spawn whose command line
+    # is the shared .Prefix followed by each item's .Item token. So all removes from one solution
+    # become one `dotnet sln <sln> remove p1 p2 ...`, all re-adds become one `... add p1 p2 ...`,
+    # and likewise per consumer/own-ref file - turning the old per-edge spawn count into one per file.
+    #
+    # Items WITHOUT batch metadata for this phase fall back to their per-item scriptblock (Detach/
+    # Reattach), exactly as before, so generic non-dotnet items (e.g. Move-Solution's path rebases)
+    # are unaffected.
+    #
+    # Groups and singletons run in first-appearance order; ordering across phases (detach-before-
+    # move-before-reattach) is enforced by the caller. A batched spawn failing throws like any other,
+    # so the caller's snapshot/rollback restores the whole pre-move state regardless of how far the
+    # batch got (rollback restores file *content*, not individual CLI edits, so a partially-applied
+    # multi-project spawn is reverted just the same).
+    [CmdletBinding()]
+    param(
+        [object[]]$Items = @(),
+        [Parameter(Mandatory)][ValidateSet('Detach', 'Reattach')][string]$Phase
+    )
+    $sbProp = $Phase                       # 'Detach' / 'Reattach'
+    $argProp = "${Phase}Args"              # 'DetachArgs' / 'ReattachArgs'
+    $batchProp = "${Phase}Batch"           # 'DetachBatch' / 'ReattachBatch'
+
+    # Accumulate batched item tokens by Key (first appearance fixes both group order and the
+    # project order within each spawn), and run un-batched items inline in place.
+    $order = [System.Collections.Generic.List[string]]::new()
+    $groups = @{}
+    foreach ($it in $Items) {
+        $batch = $it.$batchProp
+        if ($batch) {
+            $key = $batch.Key
+            if (-not $groups.ContainsKey($key)) {
+                $order.Add($key)
+                $groups[$key] = [pscustomobject]@{ Prefix = @($batch.Prefix); Items = [System.Collections.Generic.List[string]]::new() }
+            }
+            $groups[$key].Items.Add([string]$batch.Item)
+        } else {
+            $sb = $it.$sbProp
+            if ($sb) { $a = @($it.$argProp); & $sb @a }
+        }
+    }
+    # NOTE: @var is the splat operator (needs a bare variable); @(expr) is array-subexpression and
+    # would pass the whole array as one argument. So build the bare arg array, then splat it.
+    foreach ($key in $order) {
+        $g = $groups[$key]
+        $callArgs = @($g.Prefix) + @($g.Items)
+        Invoke-Dotnet @callArgs
     }
 }
 
@@ -141,16 +202,13 @@ function Invoke-MovePlan {
 
     $moved = $false
     try {
-        # NOTE: @var is the splat operator (needs a bare variable); @(expr) is array-subexpression
-        # and would pass the whole array as one argument. So copy to a local, then splat.
-        foreach ($it in $Items) {
-            if ($it.Detach) { $da = @($it.DetachArgs); & $it.Detach @da }
-        }
+        # Detach every item, then move, then reattach - the ordering invariant (all detaches while
+        # old paths resolve; all reattaches after) holds regardless of batching, because batching
+        # only coalesces calls *within* a single phase, never across the move.
+        Invoke-MovePhase -Items $Items -Phase 'Detach'
         $ma = @($MoveArgs); & $Move @ma
         $moved = $true
-        foreach ($it in $Items) {
-            if ($it.Reattach) { $ra = @($it.ReattachArgs); & $it.Reattach @ra }
-        }
+        Invoke-MovePhase -Items $Items -Phase 'Reattach'
     } catch {
         $cause = $_
         $rollbackOk = $true

@@ -11,6 +11,8 @@ function New-DotnetReferenceItems {
         [Parameter(Mandatory)][string]$NewProj,
         [string]$Label = ''
     )
+    # Per-edge scriptblocks (the un-batched fallback path: Invoke-MovePlan runs these one at a
+    # time when an item carries no batch metadata).
     $slnRemove = { param($Sln, $Proj) Invoke-Dotnet sln $Sln remove $Proj }
     $slnAdd = { param($Sln, $Proj) Invoke-Dotnet sln $Sln add $Proj }
     $refRemove = { param($Consumer, $Proj) Invoke-Dotnet remove $Consumer reference $Proj }
@@ -19,21 +21,32 @@ function New-DotnetReferenceItems {
     $ownAdd = { param($Proj, $Target) Invoke-Dotnet add $Proj reference $Target }
     $sfx = if ($Label) { " ($Label)" } else { '' }
 
+    # Batch metadata lets Invoke-MovePlan collapse every edge that shares one dotnet target file
+    # into a single spawn (the dotnet CLI takes multiple projects per invocation). Each phase entry
+    # is { Key; Prefix; Item }: Key groups co-spawned edges, Prefix is the fixed leading args, and
+    # Item is the one variable project token appended (one per edge) to the shared command line.
+    # Key embeds the verb so a remove and an add to the same file never merge.
     $items = @()
     foreach ($sln in $Solutions) {
         $items += New-MoveItem -Description "solution membership: $($sln.Name)$sfx" `
             -Detach $slnRemove -DetachArgs @($sln.FullName, $OldProj) `
-            -Reattach $slnAdd -ReattachArgs @($sln.FullName, $NewProj)
+            -Reattach $slnAdd -ReattachArgs @($sln.FullName, $NewProj) `
+            -DetachBatch @{ Key = "sln|remove|$($sln.FullName)"; Prefix = @('sln', $sln.FullName, 'remove'); Item = $OldProj } `
+            -ReattachBatch @{ Key = "sln|add|$($sln.FullName)"; Prefix = @('sln', $sln.FullName, 'add'); Item = $NewProj }
     }
     foreach ($c in $Consumers) {
         $items += New-MoveItem -Description "consumer reference: $(Split-Path -Leaf $c)$sfx" `
             -Detach $refRemove -DetachArgs @($c, $OldProj) `
-            -Reattach $refAdd -ReattachArgs @($c, $NewProj)
+            -Reattach $refAdd -ReattachArgs @($c, $NewProj) `
+            -DetachBatch @{ Key = "ref|remove|$c"; Prefix = @('remove', $c, 'reference'); Item = $OldProj } `
+            -ReattachBatch @{ Key = "ref|add|$c"; Prefix = @('add', $c, 'reference'); Item = $NewProj }
     }
     foreach ($r in $OwnRefs) {
         $items += New-MoveItem -Description "own reference: $(Split-Path -Leaf $r.FullPath)$sfx" `
             -Detach $ownRemove -DetachArgs @($OldProj, $r.FullPath) `
-            -Reattach $ownAdd -ReattachArgs @($NewProj, $r.FullPath)
+            -Reattach $ownAdd -ReattachArgs @($NewProj, $r.FullPath) `
+            -DetachBatch @{ Key = "own|remove|$OldProj"; Prefix = @('remove', $OldProj, 'reference'); Item = $r.FullPath } `
+            -ReattachBatch @{ Key = "own|add|$NewProj"; Prefix = @('add', $NewProj, 'reference'); Item = $r.FullPath }
     }
     return $items
 }
