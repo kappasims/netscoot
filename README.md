@@ -21,9 +21,6 @@ Invoke-Netscoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarrago
 git netscoot src/Tarragon/Tarragon.csproj libs/Tarragon --whatif
 ```
 
-Each format is reconciled by the tool that owns it (the dotnet CLI, git mv, Update-ModuleManifest),
-or by a targeted in-place rewrite where no such tool exists.
-
 For AI agents, the repository ships Claude Code skills that run these commands, triggering on phrases
 like "move this project" (see [Usage](#usage)).
 
