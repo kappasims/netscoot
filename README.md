@@ -193,7 +193,10 @@ netscoot can be used purely to inspect a repository. These commands are read-onl
 | `Get-NetscootCapability` | whether git and dotnet are present, plus the platform |
 | `Test-NetscootUpdate` | whether a newer netscoot release is available on GitHub |
 
-Each returns objects, so results are filterable and scriptable, and print as a table by default:
+Each returns objects, so results are filterable and scriptable, and print as a table by default.
+
+<details>
+<summary>Sample output</summary>
 
 ```text
 PS> Test-SolutionConsistency
@@ -220,6 +223,8 @@ Kind        Path
 MissingMeta Assets/Art/logo.png
 OrphanMeta  Assets/Old/gone.cs.meta
 ```
+
+</details>
 
 ### Undoing
 
@@ -268,8 +273,11 @@ Set-NetscootJournal -Enabled $false -Global    # every repository on the machine
 Clear-NetscootJournal                          # also discard the existing undo history
 ```
 
-The journal is **on by default**. For where it lives, the on-disk format, crash recovery, pruning,
-and the full opt-out precedence, see [How the journal works](#how-the-journal-works).
+The journal is **on by default**, and this opt-out works the same no matter how you installed
+(PowerShell Gallery included) - it is a git/env setting, not an install option. (`install.ps1
+-NoJournal` is just a shortcut that writes the global git setting for you during a GitHub-release
+install.) For where it lives, the on-disk format, crash recovery, pruning, and the full opt-out
+precedence, see [How the journal works](#how-the-journal-works).
 
 ### Updating
 
@@ -356,12 +364,17 @@ the .NET SDK, and sends no telemetry.
 
 netscoot reads no environment variables by default; each one below is an opt-in control.
 
+<details>
+<summary>Environment variables</summary>
+
 | Variable | Values | Effect |
 | :--- | :--- | :--- |
 | `NETSCOOT_JOURNAL` | `off`/`0`/`false` | Turns the undo journal off. Trumps `git config netscoot.journal`, so an admin can force it on/off fleet-wide. |
 | `NETSCOOT_JOURNAL_HOME` | a directory | Relocates the journal store away from the per-user data dir above (point it at a roaming or managed path). |
 | `NETSCOOT_AUTOUPDATE` | `true` / `false` | Backs the update policy (see [Updating](#updating)): truthy = Enabled, falsy = Disabled, unset = Manual. Prefer `Set-NetscootUpdatePolicy`; set this directly for Group Policy / Intune. |
 | `NETSCOOT_JOURNAL_SUPPRESS` | internal | Set by `Undo-Netscoot` around its own reverse move so the undo is not itself journaled. Not meant to be set by hand. |
+
+</details>
 
 The full journaling precedence and how to turn it off live under
 [How the journal works](#how-the-journal-works).

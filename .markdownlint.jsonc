@@ -7,5 +7,9 @@
   "MD013": { "line_length": 120, "tables": false, "code_blocks": false },
   // MD024 (no-duplicate-headings): every command's detail repeats the "Syntax"/"Parameters"/
   // "Output"/"Examples" sub-headings; allow duplicates that are not siblings of each other.
-  "MD024": { "siblings_only": true }
+  "MD024": { "siblings_only": true },
+  // MD033 (no-inline-html): inline HTML stays banned EXCEPT <details>/<summary> - a deliberate,
+  // GitHub-supported, accessible way to collapse long reference sections. No other tags allowed
+  // (this is not a blanket squelch; everything else still fails the rule).
+  "MD033": { "allowed_elements": ["details", "summary"] }
 }
