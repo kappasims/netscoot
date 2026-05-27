@@ -12,8 +12,8 @@ function Move-UnityAsset {
 
         This cmdlet moves the asset (git mv when tracked) together with its own .meta; for a
         folder, the descendant .meta files travel inside it and the folder's sibling .meta is
-        moved too. asmdef references are by name/GUID (not path), so they do not need editing
-        - when moving an .asmdef this reports who references it, for your awareness only.
+        moved too. asmdef references are by name/GUID (not path), so they do not need editing;
+        when moving an .asmdef this reports who references it, for your awareness only.
 
         Cross-platform and target-agnostic: asmdef includePlatforms/excludePlatforms (iOS,
         Android, etc.) are plain fields untouched by a move, so mobile layouts are preserved.
