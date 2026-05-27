@@ -126,19 +126,19 @@
       <ViewSelectedBy><TypeName>Netscoot.SolutionItem</TypeName></ViewSelectedBy>
       <TableControl>
         <TableHeaders>
-          <TableColumnHeader><Label>Solution</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Name</Label></TableColumnHeader>
           <TableColumnHeader><Label>Kind</Label><Width>20</Width></TableColumnHeader>
           <TableColumnHeader><Label>Type</Label><Width>8</Width></TableColumnHeader>
-          <TableColumnHeader><Label>Name</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Solution</Label></TableColumnHeader>
           <TableColumnHeader><Label>Path</Label></TableColumnHeader>
         </TableHeaders>
         <TableRowEntries>
           <TableRowEntry>
             <TableColumnItems>
-              <TableColumnItem><PropertyName>Solution</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
               <TableColumnItem><PropertyName>Kind</PropertyName></TableColumnItem>
               <TableColumnItem><PropertyName>Type</PropertyName></TableColumnItem>
-              <TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Solution</PropertyName></TableColumnItem>
               <TableColumnItem><PropertyName>Path</PropertyName></TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

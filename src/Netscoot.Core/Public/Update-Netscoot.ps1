@@ -16,7 +16,7 @@ function Update-Netscoot {
         Policy kill-switch: when the update policy is Disabled (see Set-NetscootUpdatePolicy), this
         refuses to update so machine state stays managed. -Force overrides a Disabled you set for
         yourself (process or user scope), but NOT one an administrator pushed machine-wide (Group
-        Policy / Intune), so -Force cannot defeat a managed fleet's kill-switch.
+        Policy / Intune).
 
     .PARAMETER Force
         Reinstall the latest release even if already current, and override a Disabled update policy

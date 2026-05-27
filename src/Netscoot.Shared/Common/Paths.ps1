@@ -72,7 +72,7 @@ function Get-RelativePathSafe {
     $fromUri = [Uri]($fromFull + [System.IO.Path]::DirectorySeparatorChar)
     $toUri = [Uri]$toFull
     $rel = [Uri]::UnescapeDataString($fromUri.MakeRelativeUri($toUri).ToString())
-    return ($rel -replace '/', '\')
+    return ($rel.Replace('/', '\'))
 }
 
 function Test-PathUnderAny {
@@ -90,8 +90,8 @@ function Get-PathSuffixScore {
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$A,
           [Parameter(Mandatory)][string]$B)
-    $sa = ($A -replace '/', '\').TrimEnd('\').Split('\')
-    $sb = ($B -replace '/', '\').TrimEnd('\').Split('\')
+    $sa = ($A.Replace('/', '\')).TrimEnd('\').Split('\')
+    $sb = ($B.Replace('/', '\')).TrimEnd('\').Split('\')
     $i = $sa.Length - 1
     $j = $sb.Length - 1
     $n = 0
@@ -136,8 +136,8 @@ function Test-PathUnder {
     $d = (Resolve-FullPath $Dir).TrimEnd('\', '/')
     if (Test-PathEqual $p $d) { return $false }
     # Normalize separators so the prefix test is separator-agnostic.
-    $pn = ($p -replace '/', '\') + '\'
-    $dn = ($d -replace '/', '\') + '\'
+    $pn = ($p.Replace('/', '\')) + '\'
+    $dn = ($d.Replace('/', '\')) + '\'
     return $pn.StartsWith($dn, $script:PathComparison)
 }
 

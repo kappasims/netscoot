@@ -115,7 +115,7 @@ The policy is stored in the `NETSCOOT_AUTOUPDATE` environment variable, so an ad
 the same states fleet-wide through Group Policy / Intune (truthy = Enabled, falsy = Disabled). A
 manual `Update-Netscoot` you run yourself works unless the policy is Disabled; the automatic `-Auto`
 check stays silent unless the policy is Enabled. `-Force` overrides a Disabled you set for yourself,
-but never one an administrator pushed machine-wide, so it cannot defeat a managed fleet's kill-switch.
+but never one an administrator pushed machine-wide.
 
 ## Usage
 
@@ -243,11 +243,11 @@ Project            PresentIn         AbsentFrom
 src/Lib/Lib.csproj App.sln, Api.sln  Tools.sln
 
 PS> Get-SolutionInventory
-Solution Kind                Type   Name          Path
--------- ----                ----   ----          ----
-App.sln  Project             csproj Lib.csproj    src/Lib/Lib.csproj
-App.sln  SolutionFolder             build
-(none)   UnreferencedProject csproj Legacy.csproj tools/Legacy/Legacy.csproj
+Name          Kind                Type   Solution Path
+----          ----                ----   -------- ----
+Lib.csproj    Project             csproj App.sln  src/Lib/Lib.csproj
+build         SolutionFolder             App.sln
+Legacy.csproj UnreferencedProject csproj (none)   tools/Legacy/Legacy.csproj
 
 PS> Find-PathReference -Path ./src/Lib/Lib.csproj
 File                     Line Confidence Text
@@ -316,7 +316,7 @@ The full journaling precedence and how to turn it off live under
 [How the journal works](#how-the-journal-works).
 
 > [!NOTE]
-> **For sysadmins / managed fleets.** The update policy is Manual by default, so nothing checks or
+> **For sysadmins.** The update policy is Manual by default, so nothing checks or
 > updates on its own; set `NETSCOOT_AUTOUPDATE` (Group Policy / Intune) to `false` to force Disabled
 > fleet-wide or `true` for Enabled. A machine-scope Disabled blocks `Update-Netscoot` and `-Force`
 > cannot override it. See [Updating](#updating). Journaling
@@ -723,13 +723,14 @@ Netscoot.Capability
   PSEdition           string
   DotnetSupportsSlnx  bool
   Git                 Netscoot.ToolInfo
-                      Present  bool    # found on PATH
-                      Version  string
-                      Path     string
+                        Present  bool    # found on PATH
+                        Version  string
+                        Path     string
+
   Dotnet              Netscoot.ToolInfo
-                      Present  bool    # found on PATH
-                      Version  string
-                      Path     string
+                        Present  bool    # found on PATH
+                        Version  string
+                        Path     string
 ```
 
 ##### Examples
@@ -2121,7 +2122,7 @@ Checks GitHub for a newer release (via Test-NetscootUpdate) and, if the installe
 simpler path; this command updates installer/clone installs in place from the GitHub release. Policy kill-switch: when
 the update policy is Disabled (see Set-NetscootUpdatePolicy), this refuses to update so machine state stays managed.
 `-Force` overrides a Disabled you set for yourself (process or user scope), but NOT one an administrator pushed
-machine-wide (Group Policy / Intune), so `-Force` cannot defeat a managed fleet's kill-switch.
+machine-wide (Group Policy / Intune).
 
 ##### Parameters
 
@@ -2380,13 +2381,14 @@ Netscoot.Capability
   PSEdition           string
   DotnetSupportsSlnx  bool
   Git                 Netscoot.ToolInfo
-                      Present  bool    # found on PATH
-                      Version  string
-                      Path     string
+                        Present  bool    # found on PATH
+                        Version  string
+                        Path     string
+
   Dotnet              Netscoot.ToolInfo
-                      Present  bool    # found on PATH
-                      Version  string
-                      Path     string
+                        Present  bool    # found on PATH
+                        Version  string
+                        Path     string
 ```
 
 [Back to Output types](#output-types)
