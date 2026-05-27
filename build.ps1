@@ -223,7 +223,10 @@ function Invoke-DocsTask {
     # soft break renders as a space, so the output reads identically to the unwrapped text.
     function Format-Wrap {
         param([string]$Text, [int]$Width = 120)
-        $tokenRe = [regex]'\[[^\]]*\]\([^)]*\)|`[^`]*`|\S+'
+        # A "word" is a maximal run of non-space characters, except whitespace inside a markdown
+        # link ([text](url)) or a code span (`code`) does not split it - so punctuation that abuts a
+        # span (`-Force`).) stays attached and no spurious space is introduced when words rejoin.
+        $tokenRe = [regex]'(?:\[[^\]]*\]\([^)]*\)|`[^`]*`|\S)+'
         $out = [System.Collections.Generic.List[string]]::new()
         foreach ($line in ($Text -split "`n", -1)) {
             if ($line.Length -le $Width) { $out.Add($line); continue }

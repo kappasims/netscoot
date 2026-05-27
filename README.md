@@ -658,7 +658,7 @@ tool reconciles. report-only.
 Find-PathReference [-Path] <string> [-RepositoryRoot <string>] [-AdditionalGlob <string[]>] [<CommonParameters>]
 ```
 
-Moving a project/folder breaks any path hardcoded in `build.ps1` , CI YAML, git hooks, tools scripts,
+Moving a project/folder breaks any path hardcoded in `build.ps1`, CI YAML, git hooks, tools scripts,
 Makefile/Dockerfile, etc. - and unlike `.sln/.csproj/.psd1` there is no tool that understands their schema, so they
 cannot be safely auto-rewritten (a blind regex could corrupt logic). This detects the class of such files (by location +
 name, not a hardcoded filename list) and reports lines that reference the given path, so you (or an agent) can fix them
@@ -718,7 +718,7 @@ Get-NetscootCapability [<CommonParameters>]
 
 PowerShell has no manifest mechanism to declare external-CLI prerequisites, so this is a runtime probe via Get-Command;
 dotnet is required for .NET project moves (the delegation target), and git is optional (without it, moves fall back to a
-plain move (PowerShell `Move-Item` ) with no history preserved).
+plain move (PowerShell `Move-Item`) with no history preserved).
 
 ##### Output
 
@@ -762,7 +762,7 @@ Get-NetscootUpdatePolicy [<CommonParameters>]
 ```
 
 netscoot's update behavior is governed by one policy with three states: Enabled automatic checks run
-(Test-NetscootUpdate `-Auto` ), and Update-Netscoot is allowed. Manual (default) no automatic check runs, but a
+(Test-NetscootUpdate `-Auto`), and Update-Netscoot is allowed. Manual (default) no automatic check runs, but a
 Update-Netscoot you invoke yourself works. Disabled automatic checks do nothing, and Update-Netscoot refuses (`-Force`
 overrides). The policy is stored in the `NETSCOOT_AUTOUPDATE` environment variable, so it can be set with
 Set-NetscootUpdatePolicy or pushed by an administrator (Group Policy / Intune / a profile). This resolves the value in
@@ -803,7 +803,7 @@ Get-SolutionInventory [[-RepositoryRoot] <string>] [<CommonParameters>]
 ```
 
 Where Test-SolutionConsistency compares membership and Repair-SolutionReferences finds dangling entries, this gives the
-complete picture without reading the files by hand. It parses each `.sln/.slnx` directly (not via `dotnet sln list` ,
+complete picture without reading the files by hand. It parses each `.sln/.slnx` directly (not via `dotnet sln list`,
 which only returns CLI-buildable projects), so it also surfaces non-CLI project types (e.g. .pssproj), solution folders,
 and loose solution items. It then compares against the projects on disk and flags any that are in no solution at all.
 Read-only: One record per item, so you can group, filter, or format it however you like.
@@ -862,8 +862,8 @@ Invoke-Netscoot [-Path] <string> -Destination <string> [-RepositoryRoot <string>
 Classifies the target with Resolve-MoveEngine, then dispatches to the namespace front door that performs the appropriate
 file/folder move (see Output for the routing). The Unity and native C++ front doors load Netscoot.Unity /
 Netscoot.Native on demand. "dotnet" here is the .NET-platform umbrella (CLR/CoreCLR), not just the dotnet CLI - the verb
-spans every engine. Each engine's behavior lives in its own cmdlet; this only routes. `-WhatIf` /`-Confirm`/`-Verbose`
-propagate; `-Force` /`-RepositoryRoot`/`-NoBuild` are forwarded where the target's engine accepts them.
+spans every engine. Each engine's behavior lives in its own cmdlet; this only routes. `-WhatIf`/`-Confirm`/`-Verbose`
+propagate; `-Force`/`-RepositoryRoot`/`-NoBuild` are forwarded where the target's engine accepts them.
 
 ##### Parameters
 
@@ -892,7 +892,7 @@ Unity asset  .meta         ->  Netscoot.UnityMoveResult
 ```
 
 These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields; they are
-plain pscustomobjects with no shared base type. See [Output types](#output-types) .
+plain pscustomobjects with no shared base type. See [Output types](#output-types).
 
 ##### Examples
 
@@ -930,8 +930,8 @@ Move-DotnetFile [-Path] <string> -Destination <string> [-RepositoryRoot <string>
 
 Dispatches a managed .NET file to the right specialist by extension (see Output for the routing). Native (`.vcxproj`),
 PowerShell (`.ps1/.psd1`) and Unity assets are deliberately not handled here - use Move-NativeProject /
-Move-PowerShellScript / Move-PowerShellModule / Move-UnityAsset. `-WhatIf` /`-Confirm`/`-Verbose` propagate to the
-specialist; `-Force` and `-RepositoryRoot` /`-NoBuild` are forwarded where the specialist accepts them.
+Move-PowerShellScript / Move-PowerShellModule / Move-UnityAsset. `-WhatIf`/`-Confirm`/`-Verbose` propagate to the
+specialist; `-Force` and `-RepositoryRoot`/`-NoBuild` are forwarded where the specialist accepts them.
 
 ##### Parameters
 
@@ -955,7 +955,7 @@ specialist; `-Force` and `-RepositoryRoot` /`-NoBuild` are forwarded where the s
 ```
 
 These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields; they are
-plain pscustomobjects with no shared base type. See [Output types](#output-types) .
+plain pscustomobjects with no shared base type. See [Output types](#output-types).
 
 ##### Examples
 
@@ -987,8 +987,8 @@ Move-DotnetFolder [-Path] <string> -Destination <string> [-RepositoryRoot <strin
 
 A folder move always goes through Move-DotnetProjectTree: It treats every managed project under the folder as one
 co-moving set and reconciles only the references that cross the folder boundary (internal references ride along
-unchanged). If the folder contains no managed projects, that specialist reports it. `-WhatIf` /`-Confirm`/`-Verbose`
-propagate; `-Force` /`-RepositoryRoot`/`-NoBuild` are forwarded.
+unchanged). If the folder contains no managed projects, that specialist reports it. `-WhatIf`/`-Confirm`/`-Verbose`
+propagate; `-Force`/`-RepositoryRoot`/`-NoBuild` are forwarded.
 
 ##### Parameters
 
@@ -1048,9 +1048,9 @@ Move-DotnetProject [-Project] <string> -Destination <string> [-RepositoryRoot <s
 Enumerates the solutions that include the project, the projects that reference it, and the project's own references.
 Removes those links while the old paths still resolve, moves the directory (git mv when tracked), then re-adds every
 link so the dotnet CLI recomputes fresh relative paths and preserves GUIDs. The solution and project XML (`.sln/.slnx`,
-`.csproj` ) is never hand-edited. Diagnostics follow invocation: `-Verbose` narrates the plan, `-Debug` emits the full
+`.csproj`) is never hand-edited. Diagnostics follow invocation: `-Verbose` narrates the plan, `-Debug` emits the full
 solution-membership matrix, and divergence (the project living in some but not all of the repository's solutions) is
-surfaced as a Warning (or, with `-Strict` , a non- terminating error honoring `-ErrorAction` ).
+surfaced as a Warning (or, with `-Strict`, a non- terminating error honoring `-ErrorAction`).
 
 ##### Parameters
 
@@ -1127,7 +1127,7 @@ external consumers (projects outside the folder that reference one inside), and 
 projects outside the folder. References between two co-moved projects are left untouched - their relative path is
 unchanged because both move by the same delta. Everything is delegated to the dotnet CLI; nothing is hand-edited. Like
 Move-DotnetProject: dotnet is required; git is used when available (else a confirmed plain-move fallback via `-Force` /
-ShouldContinue); supports `-WhatIf` .
+ShouldContinue); supports `-WhatIf`.
 
 ##### Parameters
 
@@ -1181,7 +1181,7 @@ Move-DotnetProjectTree -Path ./src/Group -Destination ./libs/Group -NoBuild
 #### Move-MSBuildImport
 
 Move a shared MSBuild `.props/.targets` file and fix every project (or other props/targets) that imports it via
-`<Import Project="...">` .
+`<Import Project="...">`.
 
 ##### Syntax
 
@@ -1189,16 +1189,16 @@ Move a shared MSBuild `.props/.targets` file and fix every project (or other pro
 Move-MSBuildImport [-Path] <string> -Destination <string> [-RepositoryRoot <string>] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-There is no dotnet CLI for `<Import>` , so this reconciles the relative Import paths directly with precise, formatting-
+There is no dotnet CLI for `<Import>`, so this reconciles the relative Import paths directly with precise, formatting-
 and BOM-preserving text edits (it replaces the exact `Project="<value>"` token captured from the XML, not a blind
 regex). It also fixes the moved file's own outgoing `<Import>` paths, which break when its location changes. The
 `$(MSBuildThisFileDirectory)` token is resolved/preserved; other `$(...)` tokens are reported as unresolved rather than
-guessed. Note: `Directory.Build.props/.targets` (and `Directory.Packages.props` , etc.) are imported by location, not an
+guessed. Note: `Directory.Build.props/.targets` (and `Directory.Packages.props`, etc.) are imported by location, not an
 explicit `<Import>` - moving one changes inheritance scope, which cannot be "fixed" by editing imports. For those this
 warns (like the inheritance check) and only fixes the file's own outgoing imports. Importers may include native
-`.vcxproj` files; their `<Import>` path is fixed on any OS (a best-effort, path-only update), but a `.vcxproj` 's native
+`.vcxproj` files; their `<Import>` path is fixed on any OS (a best-effort, path-only update), but a `.vcxproj`'s native
 link settings are never reconciled off Windows; that remains Move-NativeProject's Windows-only job. dotnet is not
-required here; git is used when available (else confirmed plain-move fallback via `-Force` ). Supports `-WhatIf` .
+required here; git is used when available (else confirmed plain-move fallback via `-Force`). Supports `-WhatIf`.
 
 ##### Parameters
 
@@ -1257,7 +1257,7 @@ Move-PowerShell [-Path] <string> -Destination <string> [-RepositoryRoot <string>
 ```
 
 Dispatches a PowerShell item to the right specialist by type (see Output for the routing): the script specialist fixes
-dot-source/call references (AST-based), the module specialist reconciles the manifest. `-WhatIf` /`-Confirm`/`-Verbose`
+dot-source/call references (AST-based), the module specialist reconciles the manifest. `-WhatIf`/`-Confirm`/`-Verbose`
 propagate to the specialist; `-Force` is forwarded, and `-RepositoryRoot` is forwarded to the script specialist (the
 module specialist has no RepositoryRoot).
 
@@ -1281,7 +1281,7 @@ module specialist has no RepositoryRoot).
 ```
 
 These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields; they are
-plain pscustomobjects with no shared base type. See [Output types](#output-types) .
+plain pscustomobjects with no shared base type. See [Output types](#output-types).
 
 ##### Examples
 
@@ -1303,7 +1303,7 @@ Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared
 #### Move-PowerShellModule
 
 Move a PowerShell module folder and reconcile its manifest, delegating manifest edits to Update-ModuleManifest rather
-than hand-editing the `.psd1` .
+than hand-editing the `.psd1`.
 
 ##### Syntax
 
@@ -1370,13 +1370,13 @@ Move-PowerShellScript [-Path] <string> -Destination <string> [-RepositoryRoot <s
 ```
 
 Finds references via the PowerShell AST: dot-source (`. path`) and call (`& path`) invocations whose path is a literal
-string or a `$PSScriptRoot` -based string resolving to the moved script. It rewrites those relative paths with precise,
+string or a `$PSScriptRoot`-based string resolving to the moved script. It rewrites those relative paths with precise,
 BOM-preserving edits, preserving the original style (`$PSScriptRoot`-prefixed or .\-relative). HEURISTIC LIMIT: only
-literal and `$PSScriptRoot` -based string paths are resolved and rewritten. A path that is a string containing other
+literal and `$PSScriptRoot`-based string paths are resolved and rewritten. A path that is a string containing other
 variables (e.g. "`$dir`\`x.ps1`") whose leaf matches the moved script is reported as a possible dynamic reference to
 verify by hand. A path built entirely from an expression (e.g. Join-Path ...) is not a string node and cannot be
 detected at all - grep to be sure. Treat the result as "fixed what could be proven," not "guaranteed complete." git is
-used when available (else confirmed plain-move fallback via `-Force` ). `-WhatIf` supported; dotnet not required.
+used when available (else confirmed plain-move fallback via `-Force`). `-WhatIf` supported; dotnet not required.
 
 ##### Parameters
 
@@ -1438,8 +1438,8 @@ A solution stores each project as a path relative to the solution file. Moving t
 so every entry must be recomputed. The dotnet CLI has no "rebase" command, so this rewrites the stored paths with
 precise, formatting- and BOM-preserving edits. It replaces the exact path token captured from the file (the `.slnx`
 `<Project Path="...">` or the `.sln` project line), not a blind regex, and keeps each format's separator convention (/
-for `.slnx` , \ for `.sln` ). Project-to-project references are unaffected by a solution move and are left alone. git is
-used when available (else confirmed plain-move fallback via `-Force` ). `-WhatIf` supported. dotnet is not required.
+for `.slnx`, \ for `.sln`). Project-to-project references are unaffected by a solution move and are left alone. git is
+used when available (else confirmed plain-move fallback via `-Force`). `-WhatIf` supported. dotnet is not required.
 
 ##### Parameters
 
@@ -1552,10 +1552,10 @@ Repair-NetscootJournal -Rollback [-RepositoryRoot <string>] [-Id <string>] [-For
 Repair-NetscootJournal -Discard [-RepositoryRoot <string>] [-Id <string>] [-Force] [-ClearOrphanSnapshots] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-Each move is written ahead: a `pending` record before it runs, a `committed` /`rolledback` record after. A move with a
+Each move is written ahead: a `pending` record before it runs, a `committed`/`rolledback` record after. A move with a
 `pending` record and no outcome was interrupted (the process died mid-move), so the working tree may be partway between
 the old and new layout. Read-only by default: It lists the interrupted moves and changes nothing. Then choose an action
-(both confine every path to the repository, and prompt unless `-Force` ): `-Rollback` return the move to its pre-move
+(both confine every path to the repository, and prompt unless `-Force`): `-Rollback` return the move to its pre-move
 state - restore the edited files from the recovery snapshot, move the destination back to the source, and drop the
 entry. `-Discard` accept the working tree as-is and just forget the interrupted entry (no file changes), removing its
 snapshot. `-Id` limits the action to one entry (by its journal id). `-ClearOrphanSnapshots` deletes leftover
@@ -1621,7 +1621,7 @@ entry at the project's new location.
 Repair-SolutionReferences [[-RepositoryRoot] <string>] [-Fix] [-Prune] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-Finds solution entries and `<ProjectReference>` s that point at a project file which no longer exists at the recorded
+Finds solution entries and `<ProjectReference>`s that point at a project file which no longer exists at the recorded
 path (usually because a project was moved or renamed without reconciling). Read-only by default: It returns one object
 per problem, each tagged with a Resolution of Relocatable, Missing, or Ambiguous. With `-Fix` it repairs every
 Relocatable entry: It searches the repository for a project file of the same name and re-points the entry at it through
@@ -1845,9 +1845,9 @@ Sync-Solution [[-RepositoryRoot] <string>] [-WhatIf] [-Confirm] [<CommonParamete
 
 The companion to Test-SolutionConsistency, which only reports divergence. This makes membership uniform: For every
 project present in at least one solution but absent from others, it adds the project to the solutions missing it,
-delegating to `dotnet sln add` (never hand-editing the `.sln/.slnx` ). It only adds; it never removes, so a project in
-no solution is left alone (use Get-SolutionInventory to find those). Uniform membership is the assumption. If a solution
-is intentionally a subset, do not run this against the whole repository; preview with `-WhatIf` first and add specific
+delegating to `dotnet sln add` (never hand-editing the `.sln/.slnx`). It only adds; it never removes, so a project in no
+solution is left alone (use Get-SolutionInventory to find those). Uniform membership is the assumption. If a solution is
+intentionally a subset, do not run this against the whole repository; preview with `-WhatIf` first and add specific
 projects by hand.
 
 ##### Parameters
@@ -1953,10 +1953,10 @@ absent from others).
 Test-SolutionConsistency [[-RepositoryRoot] <string>] [-Strict] [<CommonParameters>]
 ```
 
-When a repository carries more than one solution (e.g. a classic `.sln` alongside a `.slnx` ), they can drift out of
-sync so the same project is listed in one but not the other. This emits one object per divergent project and surfaces it
+When a repository carries more than one solution (e.g. a classic `.sln` alongside a `.slnx`), they can drift out of sync
+so the same project is listed in one but not the other. This emits one object per divergent project and surfaces it
 through the standard streams so behavior follows invocation: By default it writes a Warning per divergent project;
-`-Strict` escalates each to a non-terminating error (honoring `-ErrorAction` ); `-Debug` adds the full membership matrix
+`-Strict` escalates each to a non-terminating error (honoring `-ErrorAction`); `-Debug` adds the full membership matrix
 of every solution and its projects.
 
 ##### Parameters
@@ -1968,7 +1968,7 @@ of every solution and its projects.
 
 ##### Output
 
-Returns zero or more [Netscoot.ConsistencyResult](#netscootconsistencyresult) , collected as an array (`$null` when
+Returns zero or more [Netscoot.ConsistencyResult](#netscootconsistencyresult), collected as an array (`$null` when
 none).
 One per divergent project.
 
@@ -2021,11 +2021,11 @@ Every move is journaled with its inverse: the same mover, source and destination
 inverse, reconciling from the current state rather than restoring a stale snapshot. The reversing move is not itself
 journaled, so repeated calls walk back through history instead of toggling the last move. Pick what to reverse (mutually
 exclusive): `-Last` (default) the most recent move; call again to walk further back. `-Id` one specific move, by its
-journal id (see `-List` ). `-After` every move after a given time, newest first. `-All` every recorded move, newest
+journal id (see `-List`). `-After` every move after a given time, newest first. `-All` every recorded move, newest
 first. `-List` prints the journal and changes nothing. Because each reversal reconciles from the current state, undoing
-an older move (with `-Id` ) while later moves still depend on its old location can leave references dangling. When that
+an older move (with `-Id`) while later moves still depend on its old location can leave references dangling. When that
 is possible, a read-only sweep runs afterward and reports anything broken, with the command to fix it. `-All` and
-`-After` reverse many moves at once, so they prompt for a confirmation that `-Confirm` :`$false` does not silence;
+`-After` reverse many moves at once, so they prompt for a confirmation that `-Confirm`:`$false` does not silence;
 `-Force` bypasses it, and `-WhatIf` lists the reversals without running them. Journaling must have been on when the
 moves ran (it is by default; opt out with `$env:NETSCOOT_JOURNAL` or git config netscoot.journal false).
 
@@ -2045,7 +2045,7 @@ moves ran (it is by default; opt out with `$env:NETSCOOT_JOURNAL` or git config 
 
 ##### Output
 
-The move-result object(s) from the reversing move(s); their type matches the original mover. With `-List` , the journal
+The move-result object(s) from the reversing move(s); their type matches the original mover. With `-List`, the journal
 entries. Nothing when there is nothing to undo.
 
 ##### Examples
@@ -2123,8 +2123,8 @@ Update-Netscoot [[-Repository] <string>] [-Force] [-WhatIf] [-Confirm] [<CommonP
 
 Checks GitHub for a newer release (via Test-NetscootUpdate) and, if the installed version is behind, runs the release's
 `install.ps1` to overwrite the modules on your module path. No git, no clone. Does nothing when already current unless
-`-Force` . Honors `-WhatIf` /`-Confirm`. After it runs, reload the module in the current session with
-`Import-Module Netscoot -Force` . Needs network access to GitHub. For Gallery installs, `Update-Module Netscoot` is the
+`-Force`. Honors `-WhatIf`/`-Confirm`. After it runs, reload the module in the current session with
+`Import-Module Netscoot -Force`. Needs network access to GitHub. For Gallery installs, `Update-Module Netscoot` is the
 simpler path; this command updates installer/clone installs in place from the GitHub release. Policy kill-switch: when
 the update policy is Disabled (see Set-NetscootUpdatePolicy, or an administrator's Group Policy / Intune push), this
 refuses to update so machine state stays managed. `-Force` overrides the policy (and also reinstalls when current).
@@ -2182,12 +2182,12 @@ Move-NativeProject [-Project] <string> -Destination <string> [-RepositoryRoot <s
 ```
 
 Native projects link through MSBuild settings the dotnet CLI does not touch: AdditionalIncludeDirectories /
-AdditionalLibraryDirectories / AdditionalDependencies, `<Import>` of shared `.props/.targets` , `$(SolutionDir)`
--relative OutDir, and the paired `.vcxproj` .filters. C++/CLI is Windows-only, so this cmdlet refuses to run elsewhere.
-It will: Update `.sln/.slnx` membership via 'dotnet sln' (which understands `.vcxproj` ), move the folder (git mv when
-tracked), move the paired `.vcxproj` .filters alongside, and then emit a report of every relative/SolutionDir-relative
-native setting that a human (or a future native engine) must verify. It deliberately does not rewrite those MSBuild
-paths yet - surfacing them beats silently mis-editing them.
+AdditionalLibraryDirectories / AdditionalDependencies, `<Import>` of shared `.props/.targets`, `$(SolutionDir)`-relative
+OutDir, and the paired `.vcxproj`.filters. C++/CLI is Windows-only, so this cmdlet refuses to run elsewhere. It will:
+Update `.sln/.slnx` membership via 'dotnet sln' (which understands `.vcxproj`), move the folder (git mv when tracked),
+move the paired `.vcxproj`.filters alongside, and then emit a report of every relative/SolutionDir-relative native
+setting that a human (or a future native engine) must verify. It deliberately does not rewrite those MSBuild paths yet -
+surfacing them beats silently mis-editing them.
 
 ##### Parameters
 
@@ -2247,8 +2247,8 @@ Move-UnityAsset [-AssetPath] <string> -Destination <string> [-RepositoryRoot <st
 
 In Unity every asset and folder has a sibling `<name>.meta` carrying a stable GUID. References (in scenes, prefabs, and
 asmdef "references" entries of the form "GUID:...") resolve by that GUID, not by path. If you move files on disk without
-their `.meta` , Unity regenerates fresh GUIDs and every reference to them breaks. This cmdlet moves the asset (git mv
-when tracked) together with its own `.meta` ; for a folder, the descendant `.meta` files travel inside it and the
+their `.meta`, Unity regenerates fresh GUIDs and every reference to them breaks. This cmdlet moves the asset (git mv
+when tracked) together with its own `.meta`; for a folder, the descendant `.meta` files travel inside it and the
 folder's sibling `.meta` is moved too. asmdef references are by name/GUID (not path), so they do not need editing; when
 moving an .asmdef this reports who references it, for your awareness only. Cross-platform and target-agnostic: asmdef
 includePlatforms/excludePlatforms (iOS, Android, etc.) are plain fields untouched by a move, so mobile layouts are
@@ -2301,7 +2301,7 @@ Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib
 
 #### Test-UnityMetaIntegrity
 
-Report Unity `.meta` integrity problems under a root: Assets missing a `.meta` , and orphan `.meta` files whose asset is
+Report Unity `.meta` integrity problems under a root: Assets missing a `.meta`, and orphan `.meta` files whose asset is
 gone. These are the Unity analog of dangling references - both lead to broken/regenerated GUIDs.
 
 ##### Syntax
@@ -2310,9 +2310,9 @@ gone. These are the Unity analog of dangling references - both lead to broken/re
 Test-UnityMetaIntegrity [[-Root] <string>] [-Strict] [<CommonParameters>]
 ```
 
-Walks the tree and pairs every asset (file or folder) with its `<name>.meta` . Emits one object per problem and surfaces
+Walks the tree and pairs every asset (file or folder) with its `<name>.meta`. Emits one object per problem and surfaces
 it through the standard streams so behavior follows invocation: By default it writes a Warning per problem; `-Strict`
-escalates each to a non-terminating error (honoring `-ErrorAction` ). Objects are always emitted so results are
+escalates each to a non-terminating error (honoring `-ErrorAction`). Objects are always emitted so results are
 capturable/filterable. Ignores Unity-hidden entries (names starting with '.', folders ending with '~') and the
 Library/Temp/obj caches.
 
@@ -2348,7 +2348,7 @@ Reports MissingMeta and OrphanMeta under Assets, one non-terminating error each.
 
 Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several (and some
 types are also used as a field on another); whether a given command returns one or a collection is stated in that
-command's Output. In a field, `type[]` is array-valued, `type?` may be `$null` , and a `Netscoot.*` field is itself one
+command's Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `Netscoot.*` field is itself one
 of these types.
 
 | Type | Represents |
