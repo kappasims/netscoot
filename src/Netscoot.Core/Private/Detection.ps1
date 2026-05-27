@@ -1,3 +1,11 @@
+# Hoisted once: Test-PathBearingFile runs these per file across a whole-repository recursive scan,
+# so the patterns are built here rather than re-resolved on every call.
+$script:PbExcludeRegex = [regex]'(^|/)(\.git|bin|obj|\.vs|node_modules|test-subjects)/'
+$script:PbCiWorkflowRegex = [regex]'^\.github/workflows/.*\.ya?ml$'
+$script:PbCircleCiRegex = [regex]'^\.circleci/'
+$script:PbGitHooksRegex = [regex]'^\.githooks/'
+$script:PbAutomationDirRegex = [regex]'^(build|scripts|tools|eng|ci|\.build|automation)/'
+
 function Test-PathBearingFile {
     # True if $File is a non-canonical, path-hardcoding file (build/CI/hook/container) that no
     # first-party tool reconciles. Classified by location + name, not a hardcoded filename list.
@@ -6,25 +14,25 @@ function Test-PathBearingFile {
         [Parameter(Mandatory)][System.IO.FileInfo]$File,
         [Parameter(Mandatory)][int]$RootLen
     )
-    $rel = ($File.FullName.Substring($RootLen).TrimStart('\', '/')) -replace '\\', '/'
+    $rel = $File.FullName.Substring($RootLen).TrimStart('\', '/').Replace('\', '/')
     $name = $File.Name
     # Skip caches / vendored / the tool's own test clones - matched on the path relative to the
     # repository root (so a repository that itself lives under e.g. test-subjects/ is not wholly excluded).
-    if ($rel -match '(^|/)(\.git|bin|obj|\.vs|node_modules|test-subjects)/') { return $false }
+    if ($script:PbExcludeRegex.IsMatch($rel)) { return $false }
     # CI definitions
-    if ($rel -match '^\.github/workflows/.*\.ya?ml$') { return $true }
-    if ($rel -match '^\.circleci/') { return $true }
+    if ($script:PbCiWorkflowRegex.IsMatch($rel)) { return $true }
+    if ($script:PbCircleCiRegex.IsMatch($rel)) { return $true }
     if ($name -in 'azure-pipelines.yml', 'azure-pipelines.yaml', '.gitlab-ci.yml', 'appveyor.yml', '.appveyor.yml', 'bitbucket-pipelines.yml') { return $true }
     # git hooks (project-tracked) - skip the .sample templates
-    if ($rel -match '^\.githooks/' -and $name -notlike '*.sample') { return $true }
+    if ($script:PbGitHooksRegex.IsMatch($rel) -and $name -notlike '*.sample') { return $true }
     # build / container files (by name, anywhere)
     if ($name -in 'Makefile', 'makefile', 'GNUmakefile', 'Dockerfile') { return $true }
     if ($name -like 'docker-compose*.yml' -or $name -like 'docker-compose*.yaml') { return $true }
     # build/automation scripts: only at repository root or in known automation dirs (don't scan every
     # source script - that would flag the project's own code and be noisy).
     if ($File.Extension.ToLowerInvariant() -in '.ps1', '.sh', '.bat', '.cmd', '.py') {
-        if ($rel -notmatch '/') { return $true }
-        if ($rel -match '^(build|scripts|tools|eng|ci|\.build|automation)/') { return $true }
+        if (-not $rel.Contains('/')) { return $true }
+        if ($script:PbAutomationDirRegex.IsMatch($rel)) { return $true }
     }
     return $false
 }

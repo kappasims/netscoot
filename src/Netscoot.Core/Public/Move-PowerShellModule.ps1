@@ -95,12 +95,11 @@ function Move-PowerShellModule {
         $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
         $repoRoot = Get-RepositoryRoot -StartPath $moduleDir
         $planResult = Invoke-MovePlan -Caption "Move module $manifestName" -Items $items -Move $move `
-            -MoveArgs @($ctx.UseGit, $moduleDir, $newDir, $repoRoot)
+            -MoveArgs @($ctx.UseGit, $moduleDir, $newDir, $repoRoot) `
+            -RepositoryRoot $repoRoot -Command 'Move-PowerShellModule' -Engine 'powershell' -Source $moduleDir -Destination $newDir `
+            -UndoParams @{ ModulePath = $newDir; Destination = $moduleDir; Force = [bool]$Force } -NoJournal:$NoJournal
         $performed = $true
         $skippedCount = $planResult.Skipped
-        Register-MoveUndo -RepositoryRoot $repoRoot -Command 'Move-PowerShellModule' -Engine 'powershell' `
-            -Source $moduleDir -Destination $newDir `
-            -UndoParams @{ ModulePath = $newDir; Destination = $moduleDir; Force = [bool]$Force } -NoJournal:$NoJournal
 
         Write-Warning "Reminder: dot-sourced relative paths inside .psm1/.ps1 are not auto-fixed. Grep the module for '. \$PSScriptRoot' style references if depth changed."
     }

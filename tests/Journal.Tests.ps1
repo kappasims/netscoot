@@ -152,6 +152,107 @@ Describe 'Move journal + Undo-Netscoot' {
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
+    It 'a real move records committed (pending + committed) and is undoable' {
+        $root = New-JournalFixture
+        try {
+            $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
+            Move-DotnetProject -Project $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepositoryRoot $root -NoBuild -Confirm:$false | Out-Null
+            # The committed move is the one undoable entry; both pending+committed lines exist on disk.
+            @(Get-MoveJournalEntries -RepositoryRoot $root).Count | Should -Be 1
+            (Get-MoveJournalEntries -RepositoryRoot $root)[0].status | Should -Be 'committed'
+            @(Get-Content -LiteralPath (Get-MoveJournalPath -RepositoryRoot $root)).Count | Should -Be 2
+            @(Get-InterruptedMove -RepositoryRoot $root).Count | Should -Be 0
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'an interrupted (pending) move is excluded from undo history and surfaced by Get-InterruptedMove' {
+        $root = New-JournalFixture
+        try {
+            $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
+            Move-DotnetProject -Project $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepositoryRoot $root -NoBuild -Confirm:$false | Out-Null
+            # Simulate a crash: a pending record with no committed/rolledback outcome.
+            $jp = Get-MoveJournalPath -RepositoryRoot $root
+            $pending = @{ id = 'deadbeef'; timestamp = (Get-Date).ToUniversalTime().ToString('o'); status = 'pending'; command = 'Move-DotnetProject'; engine = 'dotnet'; source = 'a'; destination = 'b'; undo = @{ command = 'Move-DotnetProject'; params = @{} }; snapshot = '' }
+            Add-Content -LiteralPath $jp -Value (ConvertTo-Json $pending -Depth 6 -Compress) -Encoding utf8
+
+            @(Get-MoveJournalEntries -RepositoryRoot $root).Count | Should -Be 1     # only the committed move
+            $i = @(Get-InterruptedMove -RepositoryRoot $root)
+            $i.Count | Should -Be 1
+            $i[0].id | Should -Be 'deadbeef'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'a torn journal line is skipped, not fatal' {
+        $root = New-JournalFixture
+        try {
+            $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
+            Move-DotnetProject -Project $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepositoryRoot $root -NoBuild -Confirm:$false | Out-Null
+            Add-Content -LiteralPath (Get-MoveJournalPath -RepositoryRoot $root) -Value '{"id":"torn","stat' -Encoding utf8   # truncated line
+            { Get-MoveJournalEntries -RepositoryRoot $root } | Should -Not -Throw
+            @(Get-MoveJournalEntries -RepositoryRoot $root).Count | Should -Be 1     # the good entry still reads
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'an entry from a newer schema version is ignored, not misread' {
+        $root = New-JournalFixture
+        try {
+            $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
+            Move-DotnetProject -Project $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepositoryRoot $root -NoBuild -Confirm:$false | Out-Null
+            $future = @{ v = 99; id = 'future01'; timestamp = (Get-Date).ToUniversalTime().ToString('o'); status = 'committed'; command = 'Move-DotnetProject'; engine = 'dotnet'; source = 'a'; destination = 'b'; undo = @{ command = 'Move-DotnetProject'; params = @{} }; snapshot = '' }
+            Add-Content -LiteralPath (Get-MoveJournalPath -RepositoryRoot $root) -Value (ConvertTo-Json $future -Depth 6 -Compress) -Encoding utf8
+            @(Get-MoveJournalEntries -RepositoryRoot $root -WarningAction SilentlyContinue).Count | Should -Be 1   # v99 entry ignored, not duplicated
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'Compress-MoveJournalLines folds to the latest line per id and drops rolled-back moves' {
+        InModuleScope Netscoot.Shared {
+            $mk = { param($id, $status) (@{ v = 2; id = $id; timestamp = '2026-01-01T00:00:00Z'; status = $status; command = 'Move-DotnetProject'; engine = 'dotnet'; source = 's'; destination = 'd'; undo = @{}; snapshot = ''; backup = @() } | ConvertTo-Json -Compress) }
+            $lines = @((& $mk 'A' 'pending'), (& $mk 'A' 'committed'), (& $mk 'B' 'pending'), (& $mk 'C' 'pending'), (& $mk 'C' 'rolledback'))
+            $out = @(Compress-MoveJournalLines -Lines $lines)
+            $out.Count | Should -Be 2                                              # A (committed) + B (pending); C dropped
+            ($out | ForEach-Object { ($_ | ConvertFrom-Json).id }) | Should -Be @('A', 'B')
+            ($out[0] | ConvertFrom-Json).status | Should -Be 'committed'           # A folded to its latest line
+        }
+    }
+
+    It 'Repair-NetscootJournal reports interrupted moves and -Discard forgets them' {
+        $root = New-JournalFixture
+        try {
+            $jp = Get-MoveJournalPath -RepositoryRoot $root
+            New-Item -ItemType Directory -Path (Split-Path -Parent $jp) -Force | Out-Null
+            $pending = @{ v = 2; id = 'int00001'; timestamp = (Get-Date).ToUniversalTime().ToString('o'); status = 'pending'; command = 'Move-DotnetProject'; engine = 'dotnet'; source = (Join-Path $root 'gone'); destination = (Join-Path $root 'also-gone'); undo = @{ command = 'Move-DotnetProject'; params = @{} }; snapshot = ''; backup = @() }
+            Set-Content -LiteralPath $jp -Value (ConvertTo-Json $pending -Depth 6 -Compress) -Encoding utf8
+
+            @(Repair-NetscootJournal -RepositoryRoot $root -WarningAction SilentlyContinue).Count | Should -Be 1   # report mode lists it
+            Repair-NetscootJournal -RepositoryRoot $root -Discard -Id 'int00001' -Force | Out-Null
+            @(Get-InterruptedMove -RepositoryRoot $root).Count | Should -Be 0                                       # forgotten
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'Repair-NetscootJournal -Rollback restores edited files from the snapshot and clears the entry' {
+        $root = New-JournalFixture
+        $snapDir = Join-Path ([System.IO.Path]::GetTempPath()) ('netscoot_snap_' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        try {
+            $edited = Join-Path $root 'edited.props'
+            Set-Content -LiteralPath $edited -Value 'CHANGED'                       # current (partially-edited) content
+            New-Item -ItemType Directory -Path $snapDir | Out-Null
+            Set-Content -LiteralPath (Join-Path $snapDir 'f0') -Value 'ORIGINAL'    # the snapshot of the original
+
+            $jp = Get-MoveJournalPath -RepositoryRoot $root
+            New-Item -ItemType Directory -Path (Split-Path -Parent $jp) -Force | Out-Null
+            $pending = @{ v = 2; id = 'int00002'; timestamp = (Get-Date).ToUniversalTime().ToString('o'); status = 'pending'; command = 'Move-DotnetProject'; engine = 'dotnet'; source = (Join-Path $root 'gone'); destination = (Join-Path $root 'also-gone'); undo = @{ command = 'Move-DotnetProject'; params = @{} }; snapshot = $snapDir; backup = @($edited) }
+            Set-Content -LiteralPath $jp -Value (ConvertTo-Json $pending -Depth 6 -Compress) -Encoding utf8
+
+            Repair-NetscootJournal -RepositoryRoot $root -Rollback -Id 'int00002' -Force | Out-Null
+            (Get-Content -LiteralPath $edited -Raw).Trim() | Should -Be 'ORIGINAL'  # restored from snapshot
+            @(Get-InterruptedMove -RepositoryRoot $root).Count | Should -Be 0       # entry cleared
+            (Test-Path -LiteralPath $snapDir) | Should -BeFalse                     # snapshot removed
+        } finally {
+            Remove-Item -LiteralPath $snapDir -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
     It 'Undo-Netscoot -After reverses moves after a past time, and reports none after a future time' {
         $root = New-JournalFixture
         try {
@@ -226,7 +327,7 @@ Describe 'Move journal + Undo-Netscoot' {
             $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
             Move-DotnetProject -Project $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepositoryRoot $root -NoBuild -Confirm:$false | Out-Null
             $jp = Get-MoveJournalPath -RepositoryRoot $root
-            $e = (Get-Content -Raw -LiteralPath $jp).Trim() | ConvertFrom-Json
+            $e = (Get-MoveJournalEntries -RepositoryRoot $root)[0]                   # the committed entry
             $e.undo.command = 'Remove-Item'                                          # tamper: arbitrary command
             Set-Content -LiteralPath $jp -Value ($e | ConvertTo-Json -Depth 8 -Compress) -Encoding utf8
             { Undo-Netscoot -RepositoryRoot $root -Confirm:$false } | Should -Throw -ExpectedMessage '*not a recognized*'
@@ -239,7 +340,7 @@ Describe 'Move journal + Undo-Netscoot' {
             $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
             Move-DotnetProject -Project $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepositoryRoot $root -NoBuild -Confirm:$false | Out-Null
             $jp = Get-MoveJournalPath -RepositoryRoot $root
-            $e = (Get-Content -Raw -LiteralPath $jp).Trim() | ConvertFrom-Json
+            $e = (Get-MoveJournalEntries -RepositoryRoot $root)[0]                   # the committed entry
             $e.undo.params.Destination = (Join-Path ([System.IO.Path]::GetTempPath()) 'netscoot-evil-target')   # tamper: out-of-repo path
             Set-Content -LiteralPath $jp -Value ($e | ConvertTo-Json -Depth 8 -Compress) -Encoding utf8
             { Undo-Netscoot -RepositoryRoot $root -Confirm:$false } | Should -Throw -ExpectedMessage '*outside the repository*'

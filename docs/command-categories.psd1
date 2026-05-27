@@ -25,7 +25,7 @@
             Blurb = 'Reconcile a repository, undo moves, and control the journal.'
             Subcategories = @(
                 @{ Name = 'Reconcile';      Commands = @('Repair-SolutionReferences', 'Sync-Solution') }
-                @{ Name = 'Undo & journal'; Commands = @('Undo-Netscoot', 'Set-NetscootJournal', 'Clear-NetscootJournal') }
+                @{ Name = 'Undo & journal'; Commands = @('Undo-Netscoot', 'Repair-NetscootJournal', 'Set-NetscootJournal', 'Clear-NetscootJournal') }
             )
         },
         @{

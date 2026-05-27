@@ -184,12 +184,12 @@ function Move-DotnetProject {
             $backup = @($solutions | ForEach-Object { $_.FullName }) + @($consumers) + @($projFull)
             $planResult = Invoke-MovePlan -Caption "Move $projFile" -Items $items -Move $move `
                 -MoveArgs @($ctx.UseGit, $oldDir, $newDir, $repoFull) `
-                -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $oldDir, $repoFull)
-            $performed = $true
-            $skippedCount = $planResult.Skipped
-            Register-MoveUndo -RepositoryRoot $repoFull -Command 'Move-DotnetProject' -Engine 'dotnet' `
+                -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $oldDir, $repoFull) `
+                -RepositoryRoot $repoFull -Command 'Move-DotnetProject' -Engine 'dotnet' `
                 -Source $projFull -Destination $newProj `
                 -UndoParams @{ Project = $newProj; Destination = $oldDir; Force = [bool]$Force } -NoJournal:$NoJournal
+            $performed = $true
+            $skippedCount = $planResult.Skipped
 
             if (-not $NoBuild) {
                 & dotnet build $newProj

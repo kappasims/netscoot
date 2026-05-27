@@ -11,12 +11,12 @@
     # whenever any Netscoot type is emitted.
     FormatsToProcess     = @('Netscoot.Format.ps1xml')
     FunctionsToExport    = @(
-        'Add-MoveJournalEntry',
         'Assert-DotnetAvailable',
         'Find-ProjectFiles',
         'Find-Solutions',
         'Get-ConsumingProjects',
         'Get-ExternalTool',
+        'Get-InterruptedMove',
         'Get-MoveJournalEntries',
         'Get-MoveJournalPath',
         'Get-NestedWorktreePath',
@@ -37,7 +37,6 @@
         'New-MoveItem',
         'New-MoveResult',
         'Read-ProjectXml',
-        'Register-MoveUndo',
         'Remove-MoveJournalEntry',
         'Test-MoveJournalEnabled',
         'Resolve-FullPath',

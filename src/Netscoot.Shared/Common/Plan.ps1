@@ -93,23 +93,49 @@ function Invoke-MovePlan {
         [object[]]$MoveArgs = @(),
         [string[]]$BackupPath = @(),
         [scriptblock]$Rollback,
-        [object[]]$RollbackArgs = @()
+        [object[]]$RollbackArgs = @(),
+        # Write-ahead journaling. When -Command is supplied and journaling is enabled, a 'pending'
+        # record is written BEFORE the transaction and a 'committed'/'rolledback' record after, so an
+        # interrupted move is detectable. $UndoParams is the splat that reverses the move (same mover,
+        # source/destination swapped). Omit these (or pass -NoJournal) to skip journaling.
+        [string]$RepositoryRoot,
+        [string]$Command,
+        [string]$Engine,
+        [string]$Source,
+        [string]$Destination,
+        [hashtable]$UndoParams,
+        [switch]$NoJournal
     )
     Write-Verbose "Reconciling $(@($Items).Count) reference(s) around: $Caption"
 
-    # Snapshot the files the reconciliation will edit, keyed by their original path.
+    # The edited files we will snapshot, deduped and limited to ones that exist now, in a stable
+    # order so the persisted index (f0, f1, ...) matches on recovery.
+    $kept = @(@($BackupPath) | Select-Object -Unique | Where-Object { $_ -and (Test-Path -LiteralPath $_ -PathType Leaf) })
     $snapDir = $null
-    $snap = [ordered]@{}
-    if (@($BackupPath).Count) {
+    if ($kept.Count) {
         $snapDir = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_snap_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
         New-Item -ItemType Directory -Path $snapDir | Out-Null
-        $n = 0
-        foreach ($p in (@($BackupPath) | Select-Object -Unique)) {
-            if ($p -and (Test-Path -LiteralPath $p -PathType Leaf)) {
-                $copy = Join-Path $snapDir ("f{0}" -f $n); $n++
-                Copy-Item -LiteralPath $p -Destination $copy -Force
-                $snap[$p] = $copy
-            }
+    }
+
+    # Write-ahead: record intent before anything reversible happens, so a crash leaves a detectable
+    # 'pending' entry (carrying source/destination, the snapshot dir, and the file->index mapping for
+    # content recovery).
+    $journaling = $Command -and (-not $NoJournal) -and (Test-MoveJournalEnabled -RepositoryRoot $RepositoryRoot)
+    $hint = if ($Command -and $UndoParams) { Format-UndoHint -Command $Command -UndoParams $UndoParams } else { $null }
+    $entry = $null
+    if ($journaling) {
+        $entry = Start-MoveJournalEntry -RepositoryRoot $RepositoryRoot -Command $Command -Engine $Engine `
+            -Source $Source -Destination $Destination -Undo @{ Command = $Command; Params = $UndoParams } `
+            -Snapshot $(if ($snapDir) { $snapDir } else { '' }) -Backup $kept
+    }
+
+    # Snapshot the edited files as f0, f1, ... (index = position in $kept), keyed by original path.
+    $snap = [ordered]@{}
+    if ($snapDir) {
+        for ($i = 0; $i -lt $kept.Count; $i++) {
+            $copy = Join-Path $snapDir ("f{0}" -f $i)
+            Copy-Item -LiteralPath $kept[$i] -Destination $copy -Force
+            $snap[$kept[$i]] = $copy
         }
     }
 
@@ -138,13 +164,23 @@ function Invoke-MovePlan {
             try { Copy-Item -LiteralPath $snap[$orig] -Destination $orig -Force }
             catch { $rollbackOk = $false; Write-Warning "Rollback restore failed for ${orig}: $($_.Exception.Message)" }
         }
-        if ($snapDir) { Remove-Item -LiteralPath $snapDir -Recurse -Force -ErrorAction SilentlyContinue }
         if ($rollbackOk) {
+            # Cleanly reversed: mark the entry rolled back and drop the (now-moot) snapshot.
+            if ($snapDir) { Remove-Item -LiteralPath $snapDir -Recurse -Force -ErrorAction SilentlyContinue }
+            if ($journaling) { Complete-MoveJournalEntry -RepositoryRoot $RepositoryRoot -Entry $entry -Status 'rolledback' }
             throw "Move failed and was rolled back to the original state. Cause: $($cause.Exception.Message)"
         }
-        throw "Move failed AND rollback was incomplete - the repository may be in a partial state, check git status. Cause: $($cause.Exception.Message)"
+        # Partial state: leave the 'pending' entry and its snapshot in place so the move is detectable
+        # (Get-InterruptedMove) and recoverable (Repair-NetscootJournal).
+        throw "Move failed AND rollback was incomplete - the repository may be in a partial state. Check git status, or run Repair-NetscootJournal to recover. Cause: $($cause.Exception.Message)"
     }
     if ($snapDir) { Remove-Item -LiteralPath $snapDir -Recurse -Force -ErrorAction SilentlyContinue }
+    if ($journaling) {
+        Complete-MoveJournalEntry -RepositoryRoot $RepositoryRoot -Entry $entry -Status 'committed'
+        Write-Host "Undo with: Undo-Netscoot   (replays: $hint)" -ForegroundColor DarkGray
+    } elseif ($hint) {
+        Write-Host "Undo (journaling off): $hint" -ForegroundColor DarkGray
+    }
 
     [pscustomobject]@{ Applied = @($Items).Count; Skipped = 0 }
 }

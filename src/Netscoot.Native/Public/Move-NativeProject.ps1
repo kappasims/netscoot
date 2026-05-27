@@ -134,12 +134,11 @@ function Move-NativeProject {
             $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 
             $planResult = Invoke-MovePlan -Caption "Move native $projFile" -Items $items -Move $move `
-                -MoveArgs @($ctx.UseGit, $oldDir, $newDir, $repoFull)
+                -MoveArgs @($ctx.UseGit, $oldDir, $newDir, $repoFull) `
+                -RepositoryRoot $repoFull -Command 'Move-NativeProject' -Engine 'native' -Source $projFull -Destination $newProj `
+                -UndoParams @{ Project = $newProj; Destination = $oldDir; Force = [bool]$Force } -NoJournal:$NoJournal
             $performed = $true
             $skippedCount = $planResult.Skipped
-            Register-MoveUndo -RepositoryRoot $repoFull -Command 'Move-NativeProject' -Engine 'native' `
-                -Source $projFull -Destination $newProj `
-                -UndoParams @{ Project = $newProj; Destination = $oldDir; Force = [bool]$Force } -NoJournal:$NoJournal
         }
 
         if ($nativeSettings.Count -gt 0) {

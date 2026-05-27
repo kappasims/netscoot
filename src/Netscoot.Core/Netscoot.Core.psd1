@@ -25,6 +25,7 @@
         'Move-PowerShellScript',
         'Move-Solution',
         'Register-NetscootGitAlias',
+        'Repair-NetscootJournal',
         'Repair-SolutionReferences',
         'Resolve-MoveEngine',
         'Set-NetscootJournal',

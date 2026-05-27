@@ -239,8 +239,14 @@ trumps git config so an admin can force the choice fleet-wide; the git setting i
 per-repository default. Installing with `-NoJournal` writes the global git setting (see:
 [Install](#install)), and updates never flip it back on.
 
-The journal prunes itself on every write: It drops entries older than 180 days and, oldest first,
-anything beyond a 1 MB cap, always keeping the newest move.
+Each move is written ahead of time: a `pending` record before it runs, then a `committed` record
+after, so a move interrupted by a crash is detectable (and recoverable with `Repair-NetscootJournal`).
+Writes are append-only; the journal prunes lazily, only once it outgrows its caps, dropping entries
+older than 180 days and, oldest first, anything beyond a 1 MB cap, always keeping the newest move.
+
+The journal is local, per-user, and disposable: it is safe to delete (`Clear-NetscootJournal`) at any
+time. Each entry is schema-versioned, so a newer netscoot reads an older journal, and an older
+netscoot ignores (does not misread) entries written by a newer one.
 
 ## Inspecting
 
@@ -560,6 +566,7 @@ Reconcile a repository, undo moves, and control the journal.
 | <small>Command</small> | <small>What it does</small> |
 |:---|:---|
 | <small>[Undo-Netscoot](#undo-netscoot)</small> | <small>Reverse previous netscoot moves from the per-user journal.</small> |
+| <small>[Repair-NetscootJournal](#repair-netscootjournal)</small> | <small>Report and recover moves the journal recorded as started but never finished (interrupted by a crash), and clear orphaned recovery snapshots.</small> |
 | <small>[Set-NetscootJournal](#set-netscootjournal)</small> | <small>Turn the move journal on or off, per repository (default) or for every repository (`-Global`).</small> |
 | <small>[Clear-NetscootJournal](#clear-netscootjournal)</small> | <small>Delete a repository's move journal, discarding its undo history.</small> |
 
@@ -1566,6 +1573,83 @@ Register-NetscootGitAlias -Scope Global
 
 ---
 
+### Repair-NetscootJournal
+
+Report and recover moves the journal recorded as started but never finished (interrupted by a
+crash), and clear orphaned recovery snapshots.
+
+**Syntax**
+
+```powershell
+Repair-NetscootJournal [-RepositoryRoot <string>] [-ClearOrphanSnapshots] [-WhatIf] [-Confirm] [<CommonParameters>]
+
+Repair-NetscootJournal -Rollback [-RepositoryRoot <string>] [-Id <string>] [-Force] [-ClearOrphanSnapshots] [-WhatIf] [-Confirm] [<CommonParameters>]
+
+Repair-NetscootJournal -Discard [-RepositoryRoot <string>] [-Id <string>] [-Force] [-ClearOrphanSnapshots] [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+Each move is written ahead: a `pending` record before it runs, a `committed`/`rolledback`
+record after. A move with a `pending` record and no outcome was interrupted (the process died
+mid-move), so the working tree may be partway between the old and new layout.
+
+Read-only by default: It lists the interrupted moves and changes nothing. Then choose an action
+(both confine every path to the repository, and prompt unless `-Force`):
+  `-Rollback`  return the move to its pre-move state - restore the edited files from the
+             recovery snapshot, move the destination back to the source, and drop the entry.
+  `-Discard`   accept the working tree as-is and just forget the interrupted entry (no file
+             changes), removing its snapshot.
+`-Id` limits the action to one entry (by its journal id). `-ClearOrphanSnapshots` deletes leftover
+`netscoot_snap_*` recovery directories in the temp folder that no pending entry references.
+
+**Parameters**
+
+| <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
+|:---|:---|:---|:---|:---|
+| <small>`‑RepositoryRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repository whose journal to inspect, and the boundary every recovery is confined to. Defaults to the enclosing git repository root of the current directory.</small> |
+| <small>`‑Rollback`</small> | <small>SwitchParameter</small> | <small>true</small> | <small>false</small> | <small>Roll each interrupted move back to its pre-move state (high-impact: prompts unless `-Force`).</small> |
+| <small>`‑Discard`</small> | <small>SwitchParameter</small> | <small>true</small> | <small>false</small> | <small>Forget each interrupted move without touching the working tree (removes its snapshot).</small> |
+| <small>`‑Id`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Act on only the interrupted move with this journal id.</small> |
+| <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip the confirmation prompt (for automation).</small> |
+| <small>`‑ClearOrphanSnapshots`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Delete temp recovery snapshots (`netscoot_snap_*`) that no pending entry references.</small> |
+| <small>`‑WhatIf`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Preview the operation and report what would change, without modifying anything.</small> |
+| <small>`‑Confirm`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Prompt for confirmation before each change.</small> |
+
+**Output**
+
+Returns zero or more [Netscoot.JournalEntry](#netscootjournalentry), collected as an array.
+The interrupted entries (report mode), or those acted on.
+
+```text
+Netscoot.JournalEntry
+  id           string  # 8-character move id
+  timestamp    string  # UTC ISO-8601, when the move ran
+  status       string  # committed | pending | rolledback
+  command      string  # the mover that ran
+  engine       string  # dotnet | native | unity | powershell
+  source       string
+  destination  string
+```
+
+**Examples**
+
+```powershell
+# See what was interrupted (read-only)
+Repair-NetscootJournal
+
+# Roll everything interrupted back to its pre-move state
+Repair-NetscootJournal -Rollback
+
+# Forget one interrupted move, keeping the working tree as-is
+Repair-NetscootJournal -Discard -Id a1b2c3d4
+
+# Clean up leftover recovery snapshots
+Repair-NetscootJournal -ClearOrphanSnapshots
+```
+
+<small>[Back to Command reference](#command-reference)</small>
+
+---
+
 ### Repair-SolutionReferences
 
 Scan a repository for broken solution membership and dangling ProjectReferences and repair them
@@ -2356,6 +2440,7 @@ Each type below is one `pscustomobject` with the fields shown. A command may ret
 | <small>[Netscoot.ConsistencyResult](#netscootconsistencyresult)</small> | <small>One project whose solution membership diverges across the repository.</small> |
 | <small>[Netscoot.GitAlias](#netscootgitalias)</small> | <small>The git netscoot alias registration (or what would be registered).</small> |
 | <small>[Netscoot.ImportMoveResult](#netscootimportmoveresult)</small> | <small>Result of moving a shared MSBuild `.props/.targets` file and fixing its importers.</small> |
+| <small>[Netscoot.JournalEntry](#netscootjournalentry)</small> | <small>One move in the undo journal: a completed (committed) move, or a pending one interrupted by a crash.</small> |
 | <small>[Netscoot.MetaIntegrity](#netscootmetaintegrity)</small> | <small>One Unity `.meta` integrity problem: An asset missing a `.meta`, or an orphan `.meta`.</small> |
 | <small>[Netscoot.MoveResult](#netscootmoveresult)</small> | <small>Result of moving a .NET project folder and reconciling solutions and project references.</small> |
 | <small>[Netscoot.NativeMoveResult](#netscootnativemoveresult)</small> | <small>Result of moving a native / C++/CLI project (`.vcxproj`).</small> |
@@ -2442,6 +2527,25 @@ Netscoot.ImportMoveResult
   ImportersFixed   int     # files whose <Import> was rewritten
   OwnImportsFixed  int     # the moved file's own imports rewritten
   AutoImported     bool    # true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
+```
+
+<small>[Back to Output types](#output-types)</small>
+
+### Netscoot.JournalEntry
+
+<small>[ [Repair-NetscootJournal](#repair-netscootjournal) ]</small>
+
+One move in the undo journal: a completed (committed) move, or a pending one interrupted by a crash.
+
+```text
+Netscoot.JournalEntry
+  id           string  # 8-character move id
+  timestamp    string  # UTC ISO-8601, when the move ran
+  status       string  # committed | pending | rolledback
+  command      string  # the mover that ran
+  engine       string  # dotnet | native | unity | powershell
+  source       string
+  destination  string
 ```
 
 <small>[Back to Output types](#output-types)</small>

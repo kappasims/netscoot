@@ -241,6 +241,21 @@
         )
     }
 
+    'Netscoot.JournalEntry' = @{
+        Summary = 'One move in the undo journal: a completed (committed) move, or a pending one interrupted by a crash.'
+        Array   = $true
+        EmptyIsNull = $false
+        Fields  = @(
+            @{ Name = 'id';          Type = 'string'; Note = '8-character move id' }
+            @{ Name = 'timestamp';   Type = 'string'; Note = 'UTC ISO-8601, when the move ran' }
+            @{ Name = 'status';      Type = 'string'; Note = 'committed | pending | rolledback' }
+            @{ Name = 'command';     Type = 'string'; Note = 'the mover that ran' }
+            @{ Name = 'engine';      Type = 'string'; Note = 'dotnet | native | unity | powershell' }
+            @{ Name = 'source';      Type = 'string'; Note = '' }
+            @{ Name = 'destination'; Type = 'string'; Note = '' }
+        )
+    }
+
     'Netscoot.UpdatePolicy' = @{
         Summary = 'The effective auto-update policy and where it was resolved from.'
         Array   = $false

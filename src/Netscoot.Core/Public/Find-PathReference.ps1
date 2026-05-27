@@ -58,9 +58,14 @@ function Find-PathReference {
         $root = (Resolve-FullPath $RepositoryRoot).TrimEnd('\', '/')
 
         $rel = ($target.Substring($root.Length).TrimStart('\', '/'))
-        $relFwd = $rel -replace '\\', '/'
-        $relBack = $rel -replace '/', '\'
+        $relFwd = $rel.Replace('\', '/')
+        $relBack = $rel.Replace('/', '\')
         $leaf = Split-Path -Leaf $target
+        # The High check is a case-insensitive substring test (IndexOf, no regex). The Low check needs
+        # word-boundary lookarounds, so build that regex once here (case-insensitive, as -match was)
+        # rather than per line.
+        $ci = [System.StringComparison]::OrdinalIgnoreCase
+        $leafRegex = [regex]::new('(?<![\w.])' + [regex]::Escape($leaf) + '(?![\w])', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
         $hits = 0
         foreach ($file in (Get-PathBearingFile -RepositoryRoot $root -AdditionalGlob $AdditionalGlob)) {
@@ -68,9 +73,9 @@ function Find-PathReference {
             foreach ($line in (Get-Content -LiteralPath $file.FullName -ErrorAction SilentlyContinue)) {
                 $n++
                 $confidence = $null
-                if ($line -match [regex]::Escape($relFwd) -or ($relBack -ne $relFwd -and $line -match [regex]::Escape($relBack))) {
+                if ($line.IndexOf($relFwd, $ci) -ge 0 -or ($relBack -ne $relFwd -and $line.IndexOf($relBack, $ci) -ge 0)) {
                     $confidence = 'High'
-                } elseif ($line -match "(?<![\w.])$([regex]::Escape($leaf))(?![\w])") {
+                } elseif ($leafRegex.IsMatch($line)) {
                     $confidence = 'Low'
                 }
                 if ($confidence) {

@@ -174,12 +174,11 @@ function Move-DotnetProjectTree {
             $backup += @($moved)
             $planResult = Invoke-MovePlan -Caption "Move tree $(Split-Path -Leaf $srcDir)" -Items $items -Move $move `
                 -MoveArgs @($ctx.UseGit, $srcDir, $newDir, $repoFull) `
-                -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $srcDir, $repoFull)
+                -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $srcDir, $repoFull) `
+                -RepositoryRoot $repoFull -Command 'Move-DotnetProjectTree' -Engine 'dotnet' -Source $srcDir -Destination $newDir `
+                -UndoParams @{ Path = $newDir; Destination = $srcDir; Force = [bool]$Force } -NoJournal:$NoJournal
             $performed = $true
             $skippedCount = $planResult.Skipped
-            Register-MoveUndo -RepositoryRoot $repoFull -Command 'Move-DotnetProjectTree' -Engine 'dotnet' `
-                -Source $srcDir -Destination $newDir `
-                -UndoParams @{ Path = $newDir; Destination = $srcDir; Force = [bool]$Force } -NoJournal:$NoJournal
 
             if (-not $NoBuild) {
                 foreach ($item in $plan) { & dotnet build $item.New | Out-Null }

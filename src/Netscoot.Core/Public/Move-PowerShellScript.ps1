@@ -141,12 +141,11 @@ function Move-PowerShellScript {
             $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 
             $planResult = Invoke-MovePlan -Caption "Move script $name" -Items $items -Move $move `
-                -MoveArgs @($ctx.UseGit, $src, $newPath, $repoFull)
+                -MoveArgs @($ctx.UseGit, $src, $newPath, $repoFull) `
+                -RepositoryRoot $repoFull -Command 'Move-PowerShellScript' -Engine 'powershell' -Source $src -Destination $newPath `
+                -UndoParams @{ Path = $newPath; Destination = $src; Force = [bool]$Force } -NoJournal:$NoJournal
             $performed = $true
             $skippedCount = $planResult.Skipped
-            Register-MoveUndo -RepositoryRoot $repoFull -Command 'Move-PowerShellScript' -Engine 'powershell' `
-                -Source $src -Destination $newPath `
-                -UndoParams @{ Path = $newPath; Destination = $src; Force = [bool]$Force } -NoJournal:$NoJournal
         }
 
         New-MoveResult -TypeName 'Netscoot.ScriptMoveResult' -Engine 'powershell' -Source $src -Destination $newPath `

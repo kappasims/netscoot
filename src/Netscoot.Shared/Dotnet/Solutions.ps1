@@ -1,3 +1,9 @@
+# Hoisted once: these run per line of every .sln (and per project entry) during inventory,
+# consistency, and membership scans, so they are built here rather than per call.
+$script:SlnProjectEntryRegex = [regex]'^\s*Project\("\{[^}]+\}"\)\s*=\s*"[^"]*",\s*"([^"]+)",\s*"\{[^}]+\}"'
+$script:SlnProjectFullRegex = [regex]'^\s*Project\("\{([^}]+)\}"\)\s*=\s*"([^"]*)",\s*"([^"]+)",\s*"\{[^}]+\}"'
+$script:ProjectFileExtRegex = [regex]'\.(cs|fs|vb|vcx)proj$'
+
 function Find-Solutions {
     # All .sln and .slnx files beneath a root.
     # Filter by extension via Where-Object, not Get-ChildItem -Include: on Windows
@@ -25,7 +31,7 @@ function Get-SolutionsReferencing {
         if ($LASTEXITCODE -ne 0) { continue }
         foreach ($line in $listed) {
             $line = $line.Trim()
-            if ([string]::IsNullOrWhiteSpace($line) -or $line -notmatch '\.(cs|fs|vb|vcx)proj$') { continue }
+            if ([string]::IsNullOrWhiteSpace($line) -or -not $script:ProjectFileExtRegex.IsMatch($line)) { continue }
             $abs = [System.IO.Path]::GetFullPath((Join-Path $slnDir $line))
             if (Test-PathEqual $abs $target) { $hits += $sln; break }
         }
@@ -46,15 +52,16 @@ function Get-SolutionProjectEntries {
         $xml = Read-ProjectXml -Path $full
         foreach ($n in $xml.SelectNodes('//*[local-name()="Project"]')) {
             $p = $n.GetAttribute('Path')
-            if ([string]::IsNullOrWhiteSpace($p) -or $p -notmatch '\.(cs|fs|vb|vcx)proj$') { continue }
-            $abs = [System.IO.Path]::GetFullPath((Join-Path $dir ($p -replace '/', '\')))
+            if ([string]::IsNullOrWhiteSpace($p) -or -not $script:ProjectFileExtRegex.IsMatch($p)) { continue }
+            $abs = [System.IO.Path]::GetFullPath((Join-Path $dir ($p.Replace('/', '\'))))
             $entries += [pscustomobject]@{ Stored = $p; Abs = $abs }
         }
     } else {
         foreach ($line in (Get-Content -LiteralPath $full)) {
-            if ($line -match '^\s*Project\("\{[^}]+\}"\)\s*=\s*"[^"]*",\s*"([^"]+)",\s*"\{[^}]+\}"') {
-                $p = $Matches[1]
-                if ($p -notmatch '\.(cs|fs|vb|vcx)proj$') { continue }
+            $m = $script:SlnProjectEntryRegex.Match($line)
+            if ($m.Success) {
+                $p = $m.Groups[1].Value
+                if (-not $script:ProjectFileExtRegex.IsMatch($p)) { continue }
                 $abs = [System.IO.Path]::GetFullPath((Join-Path $dir $p))
                 $entries += [pscustomobject]@{ Stored = $p; Abs = $abs }
             }
@@ -77,7 +84,7 @@ function Get-SolutionContent {
         foreach ($n in $xml.SelectNodes('//*[local-name()="Project"]')) {
             $p = $n.GetAttribute('Path')
             if ([string]::IsNullOrWhiteSpace($p)) { continue }
-            $abs = [System.IO.Path]::GetFullPath((Join-Path $dir ($p -replace '/', '\')))
+            $abs = [System.IO.Path]::GetFullPath((Join-Path $dir ($p.Replace('/', '\'))))
             $projects += [pscustomobject]@{ Stored = $p; Abs = $abs; Ext = [System.IO.Path]::GetExtension($p) }
         }
         foreach ($n in $xml.SelectNodes('//*[local-name()="Folder"]')) {
@@ -90,8 +97,9 @@ function Get-SolutionContent {
         $folderTypeGuid = '2150E333-8FDC-42A3-9474-1A3956D46DE8'   # solution-folder project type
         $inItems = $false
         foreach ($line in (Get-Content -LiteralPath $full)) {
-            if ($line -match '^\s*Project\("\{([^}]+)\}"\)\s*=\s*"([^"]*)",\s*"([^"]+)",\s*"\{[^}]+\}"') {
-                $typeGuid = $Matches[1]; $name = $Matches[2]; $p = $Matches[3]
+            $m = $script:SlnProjectFullRegex.Match($line)
+            if ($m.Success) {
+                $typeGuid = $m.Groups[1].Value; $name = $m.Groups[2].Value; $p = $m.Groups[3].Value
                 if ($typeGuid -ieq $folderTypeGuid) { $folders += $name; continue }
                 $abs = [System.IO.Path]::GetFullPath((Join-Path $dir $p))
                 $projects += [pscustomobject]@{ Stored = $p; Abs = $abs; Ext = [System.IO.Path]::GetExtension($p) }
@@ -119,7 +127,7 @@ function Get-SolutionMembership {
         if ($LASTEXITCODE -eq 0) {
             foreach ($line in $listed) {
                 $line = $line.Trim()
-                if ([string]::IsNullOrWhiteSpace($line) -or $line -notmatch '\.(cs|fs|vb|vcx)proj$') { continue }
+                if ([string]::IsNullOrWhiteSpace($line) -or -not $script:ProjectFileExtRegex.IsMatch($line)) { continue }
                 $projects += [System.IO.Path]::GetFullPath((Join-Path $slnDir $line))
             }
         }

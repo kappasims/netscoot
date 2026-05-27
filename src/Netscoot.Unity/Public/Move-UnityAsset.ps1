@@ -117,11 +117,10 @@ function Move-UnityAsset {
                 if ($HasMeta) { Move-PathTracked -UseGit $UseGit -Source $SrcMeta -Destination $DstMeta -RepositoryRoot $RepoFull }
             }
             Invoke-MovePlan -Caption "Move Unity asset $(Split-Path -Leaf $src)" -Items @() -Move $move `
-                -MoveArgs @($ctx.UseGit, $src, $dst, $srcMeta, $dstMeta, $hasMeta, $repoFull) | Out-Null
+                -MoveArgs @($ctx.UseGit, $src, $dst, $srcMeta, $dstMeta, $hasMeta, $repoFull) `
+                -RepositoryRoot $repoFull -Command 'Move-UnityAsset' -Engine 'unity' -Source $src -Destination $dst `
+                -UndoParams @{ AssetPath = $dst; Destination = $src; Force = [bool]$Force } -NoJournal:$NoJournal | Out-Null
             $performed = $true
-            Register-MoveUndo -RepositoryRoot $repoFull -Command 'Move-UnityAsset' -Engine 'unity' `
-                -Source $src -Destination $dst `
-                -UndoParams @{ AssetPath = $dst; Destination = $src; Force = [bool]$Force } -NoJournal:$NoJournal
             Write-Verbose "Moved asset$(if ($hasMeta) { ' + .meta' })."
         }
 

@@ -87,6 +87,13 @@ function Undo-Netscoot {
     $repoFull = Resolve-FullPath $RepositoryRoot
     $entries = @(Get-MoveJournalEntries -RepositoryRoot $repoFull)
 
+    # Surface moves a crash left incomplete: they are not in the undoable history above and may have
+    # left the working tree partway between layouts.
+    $interrupted = @(Get-InterruptedMove -RepositoryRoot $repoFull)
+    if ($interrupted.Count) {
+        Write-Warning "$($interrupted.Count) move(s) were interrupted and are not in the undo history. Inspect/recover with: Repair-NetscootJournal"
+    }
+
     if ($List) { return $entries }
 
     if (-not $entries.Count) {

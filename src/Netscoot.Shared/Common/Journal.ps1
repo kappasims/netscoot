@@ -19,11 +19,61 @@
 #   3. git config netscoot.journal    (local config wins over global - the persistent "git thing")
 #   4. default: ON
 #
-# Pruning keeps the journal small: on each write it drops entries older than the age cap and, oldest
-# first, anything beyond the size cap - in a single pass (read once, filter, write once).
+# Write-ahead log. Invoke-MovePlan appends a 'pending' record for a move BEFORE it runs, then a
+# 'committed' (or 'rolledback') record after - same id, a full self-contained line each time. On
+# read the latest line per id wins, so a crash that interrupts a move leaves a 'pending' with no
+# later record: that move is detectably incomplete (Get-InterruptedMove), and its line carries the
+# source/destination and the snapshot path needed to recover it. Writes are append-only (O(1));
+# pruning is lazy - only when the file outgrows the size cap do we read once, drop entries past the
+# age/size caps (newest kept), and rewrite once. Because each line is complete and the newest per id
+# wins, pruning a suffix never corrupts state.
 
 $script:JournalMaxAgeDays = 180
 $script:JournalMaxBytes = 1MB
+# Schema version stamped on every entry ('v'). Bump only on a non-additive change. Read tolerates
+# older/equal: a line with no 'v' is legacy v1 (the pre-WAL single-line format); v2 added the
+# pending/committed WAL records. A line with a HIGHER v than this (written by a newer netscoot, e.g.
+# after a downgrade) is skipped with a warning rather than misread.
+$script:JournalSchemaVersion = 2
+$script:JournalNewerWarned = $false
+# Hoisted once (not rebuilt per call): a fast path to pull the timestamp out of a compact JSON line
+# without paying ConvertFrom-Json for every line during pruning.
+$script:JournalTimestampRegex = [regex]'"timestamp"\s*:\s*"([^"]+)"'
+
+function ConvertFrom-JournalLine {
+    # Parse one journal line, tolerating a torn/partial line (returns $null) so a single bad line
+    # never breaks a read of the whole journal.
+    param([string]$Line)
+    if ([string]::IsNullOrWhiteSpace($Line)) { return $null }
+    try { $Line | ConvertFrom-Json } catch { $null }
+}
+
+function Read-MoveJournalState {
+    # Read all lines and fold them by id (latest line per id wins), preserving first-seen order
+    # (chronological). Returns the reconciled entry objects, oldest first, each tagged for display.
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$RepositoryRoot)
+    $path = Get-MoveJournalPath -RepositoryRoot $RepositoryRoot
+    if (-not (Test-Path -LiteralPath $path)) { return @() }
+    $byId = [ordered]@{}
+    foreach ($line in (Get-Content -LiteralPath $path)) {
+        $o = ConvertFrom-JournalLine $line
+        if (-not $o -or -not $o.id) { continue }
+        # Forward-safety: skip a line written by a newer schema than we understand (e.g. after a
+        # downgrade) rather than misread it. A missing 'v' is legacy v1.
+        $v = if ($o.PSObject.Properties['v']) { [int]$o.v } else { 1 }
+        if ($v -gt $script:JournalSchemaVersion) {
+            if (-not $script:JournalNewerWarned) {
+                Write-Warning "The journal has entries from a newer netscoot (schema v$v > v$script:JournalSchemaVersion); they are ignored. Update netscoot, or clear the journal with Clear-NetscootJournal."
+                $script:JournalNewerWarned = $true
+            }
+            continue
+        }
+        $byId[$o.id] = $o   # update keeps the original insertion position (chronological)
+    }
+    foreach ($o in $byId.Values) { $o.PSObject.TypeNames.Insert(0, 'Netscoot.JournalEntry') }
+    @($byId.Values)
+}
 
 function ConvertTo-JournalBool {
     # Parse a git-config / env truthy string to $true/$false, or $null when empty/unrecognized.
@@ -93,87 +143,144 @@ function Select-RecentJournalLine {
     # always kept (so a move is never silently dropped).
     [CmdletBinding()]
     param([string[]]$Lines)
-    $cutoff = (Get-Date).ToUniversalTime().AddDays(-$script:JournalMaxAgeDays)
-    $keep = [System.Collections.Generic.List[string]]::new()
+    $cutoff = [datetime]::UtcNow.AddDays(-$script:JournalMaxAgeDays)
+    $keep = [System.Collections.Generic.List[string]]::new($Lines.Count)
     $bytes = 0
+    $utf8 = [System.Text.Encoding]::UTF8
+
     for ($i = $Lines.Count - 1; $i -ge 0; $i--) {
         $line = $Lines[$i]
         $ts = $null
-        # ConvertFrom-Json may return the timestamp as a string OR an already-parsed [datetime];
-        # normalize either to a UTC instant (stored values are UTC) for the age comparison.
-        try {
-            $t = ($line | ConvertFrom-Json).timestamp
-            if ($t -is [datetime]) { $ts = if ($t.Kind -eq 'Local') { $t.ToUniversalTime() } else { [datetime]::SpecifyKind($t, [System.DateTimeKind]::Utc) } }
-            elseif ($t -is [datetimeoffset]) { $ts = $t.UtcDateTime }
-            elseif ($t) { $ts = ([datetimeoffset]::Parse([string]$t)).UtcDateTime }
-        } catch { $ts = $null }
+
+        # Fast path: pull the timestamp straight out of the compact JSON with a hoisted regex.
+        $m = $script:JournalTimestampRegex.Match($line)
+        if ($m.Success) {
+            $dto = [datetimeoffset]::MinValue
+            if ([datetimeoffset]::TryParse($m.Groups[1].Value, [ref]$dto)) { $ts = $dto.UtcDateTime }
+        }
+
+        # Fallback: a reordered or odd line - parse it. ConvertFrom-Json may hand the timestamp back
+        # as a string OR an already-parsed [datetime]; normalize either to a UTC instant.
+        if ($null -eq $ts) {
+            try {
+                $t = ($line | ConvertFrom-Json).timestamp
+                if ($t -is [datetime]) { $ts = if ($t.Kind -eq 'Local') { $t.ToUniversalTime() } else { [datetime]::SpecifyKind($t, [System.DateTimeKind]::Utc) } }
+                elseif ($t -is [datetimeoffset]) { $ts = $t.UtcDateTime }
+                elseif ($t) { $dto = [datetimeoffset]::MinValue; if ([datetimeoffset]::TryParse([string]$t, [ref]$dto)) { $ts = $dto.UtcDateTime } }
+            } catch { $ts = $null }
+        }
+
         if ($ts -and $ts -lt $cutoff) { break }   # older than the age cap: this and all earlier drop
-        $sz = [System.Text.Encoding]::UTF8.GetByteCount($line) + 1
+        $sz = $utf8.GetByteCount($line) + 1
         if ($keep.Count -gt 0 -and ($bytes + $sz) -gt $script:JournalMaxBytes) { break }
         $bytes += $sz
-        $keep.Insert(0, $line)
+        $keep.Add($line)   # O(1); we reverse once at the end instead of Insert(0) per line
     }
-    , $keep.ToArray()
+
+    $keep.Reverse()   # restore oldest-first
+    $keep
 }
 
-function Add-MoveJournalEntry {
-    # Append one completed move (then prune). $Undo is @{ Command = '<mover>'; Params = @{ <splat> } }.
+function Compress-MoveJournalLines {
+    # Fold to one line per id (the latest, by append order), preserving chronological order, and drop
+    # ids whose latest outcome is 'rolledback' (reversed - no history to keep). This collapses a
+    # completed move's pending+committed pair back to a single small committed line, so the journal
+    # does not keep growing at two fat lines per move. Run during pruning. Torn lines are dropped.
+    [CmdletBinding()]
+    param([string[]]$Lines)
+    $byId = [ordered]@{}
+    foreach ($line in $Lines) {
+        $o = ConvertFrom-JournalLine $line
+        if (-not $o -or -not $o.id) { continue }
+        $byId[$o.id] = [pscustomobject]@{ Line = $line; Status = "$($o.status)" }   # latest line per id
+    }
+    $out = [System.Collections.Generic.List[string]]::new($byId.Count)
+    foreach ($v in $byId.Values) {
+        if ($v.Status -eq 'rolledback') { continue }
+        $out.Add($v.Line)
+    }
+    $out
+}
+
+function New-MoveJournalEntry {
+    # Build a fresh 'pending' entry (with a new id). The caller appends it before the move, then
+    # flips .status to 'committed'/'rolledback' and appends again. Each line is a complete,
+    # self-contained record. $Undo is @{ Command = '<mover>'; Params = @{ <splat> } }. $Snapshot is
+    # the temp dir holding the originals of the files the move edits (for crash recovery), or ''.
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][string]$RepositoryRoot,
         [Parameter(Mandatory)][string]$Command,
         [Parameter(Mandatory)][string]$Engine,
         [Parameter(Mandatory)][string]$Source,
         [Parameter(Mandatory)][string]$Destination,
-        [Parameter(Mandatory)][hashtable]$Undo
+        [Parameter(Mandatory)][hashtable]$Undo,
+        [string]$Snapshot = '',
+        [string[]]$Backup = @()
     )
-    $path = Get-MoveJournalPath -RepositoryRoot $RepositoryRoot
-    $dir = Split-Path -Parent $path
-    if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-    $entry = [ordered]@{
+    [ordered]@{
+        v           = $script:JournalSchemaVersion
         id          = [guid]::NewGuid().ToString('N').Substring(0, 8)
-        timestamp   = (Get-Date).ToUniversalTime().ToString('o')
+        timestamp   = [datetime]::UtcNow.ToString('o')
+        status      = 'pending'
         command     = $Command
         engine      = $Engine
         source      = $Source
         destination = $Destination
         undo        = $Undo
+        snapshot    = $Snapshot
+        # Original paths of the edited files, in the order they were copied into the snapshot dir as
+        # f0, f1, ... (index = file name). Recovery restores snapshot/f<i> -> backup[i].
+        backup      = @($Backup)
     }
-    $existing = if (Test-Path -LiteralPath $path) { @(Get-Content -LiteralPath $path | Where-Object { $_.Trim() }) } else { @() }
-    $kept = Select-RecentJournalLine -Lines (@($existing) + (ConvertTo-Json $entry -Depth 6 -Compress))
-    Set-Content -LiteralPath $path -Value $kept -Encoding utf8
 }
 
-function Get-MoveJournalEntries {
-    # All journal entries, oldest first.
+function Write-MoveJournalEntry {
+    # Append one entry object (at its current status) as a compact JSON line.
     [CmdletBinding()]
-    param([Parameter(Mandatory)][string]$RepositoryRoot)
-    $path = Get-MoveJournalPath -RepositoryRoot $RepositoryRoot
-    if (-not (Test-Path -LiteralPath $path)) { return @() }
-    @(Get-Content -LiteralPath $path | Where-Object { $_.Trim() } | ForEach-Object {
-            $entry = $_ | ConvertFrom-Json
-            # Tag for the default table view (Netscoot.Format.ps1xml) so Undo-Netscoot -List prints a
-            # clean table; the properties are unchanged, so callers reading .id/.undo still work.
-            $entry.PSObject.TypeNames.Insert(0, 'Netscoot.JournalEntry')
-            $entry
-        })
+    param(
+        [Parameter(Mandatory)][string]$RepositoryRoot,
+        [Parameter(Mandatory)][System.Collections.IDictionary]$Entry
+    )
+    Write-MoveJournalLines -RepositoryRoot $RepositoryRoot -Lines (ConvertTo-Json $Entry -Depth 6 -Compress)
 }
 
-function Remove-MoveJournalEntry {
-    # Drop one entry by id (called after a successful undo).
+function Format-UndoHint {
+    # The one-line "replays: ..." invocation shown after a move.
     [CmdletBinding()]
-    param([Parameter(Mandatory)][string]$RepositoryRoot, [Parameter(Mandatory)][string]$Id)
-    $path = Get-MoveJournalPath -RepositoryRoot $RepositoryRoot
-    if (-not (Test-Path -LiteralPath $path)) { return }
-    $kept = @(Get-Content -LiteralPath $path | Where-Object { $_.Trim() } | Where-Object { ($_ | ConvertFrom-Json).id -ne $Id })
-    if ($kept.Count) { Set-Content -LiteralPath $path -Value $kept -Encoding utf8 }
-    else { Remove-Item -LiteralPath $path -Force }
+    param([Parameter(Mandatory)][string]$Command, [Parameter(Mandatory)][hashtable]$UndoParams)
+    "$Command " + (($UndoParams.GetEnumerator() | Sort-Object Name | ForEach-Object {
+                if ($_.Value -is [bool]) { if ($_.Value) { "-$($_.Key)" } }
+                else { "-$($_.Key) '$($_.Value)'" }
+            }) -join ' ')
 }
 
-function Register-MoveUndo {
-    # Called by each mover after a successful move: emits a one-line undo hint and, when journaling is
-    # enabled, records the reversing invocation. $UndoParams is the splat that reverses the move (the
-    # same mover with source/destination swapped).
+function Write-MoveJournalLines {
+    # Append one or more compact JSON lines to a repository's journal. The append is O(1); pruning is
+    # lazy - only when the file has grown past the size cap do we read it once, prune, and rewrite.
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$RepositoryRoot,
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]]$Lines
+    )
+    if (-not $Lines.Count) { return }
+    $path = Get-MoveJournalPath -RepositoryRoot $RepositoryRoot
+    $dir = Split-Path -Parent $path
+    if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+    Add-Content -LiteralPath $path -Value $Lines -Encoding utf8
+    # Lazy prune: skip the full read/rewrite unless the file actually outgrew the cap. First compact
+    # (fold each id to its latest line, dropping superseded pending and rolled-back entries), then
+    # apply the age/size caps to what remains.
+    $info = Get-Item -LiteralPath $path -ErrorAction SilentlyContinue
+    if ($info -and $info.Length -gt $script:JournalMaxBytes) {
+        $all = @(Get-Content -LiteralPath $path | Where-Object { $_.Trim() })
+        $kept = Select-RecentJournalLine -Lines @(Compress-MoveJournalLines -Lines $all)
+        Set-Content -LiteralPath $path -Value $kept -Encoding utf8
+    }
+}
+
+function Start-MoveJournalEntry {
+    # Append the 'pending' record before a move runs, and return the entry object so the caller can
+    # flip its status and append again once the move succeeds or rolls back.
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$RepositoryRoot,
@@ -181,20 +288,59 @@ function Register-MoveUndo {
         [Parameter(Mandatory)][string]$Engine,
         [Parameter(Mandatory)][string]$Source,
         [Parameter(Mandatory)][string]$Destination,
-        [Parameter(Mandatory)][hashtable]$UndoParams,
-        # Per-call opt-out: skip journaling this one move (the caller's -NoJournal). Still prints the
-        # one-line undo hint so the inverse invocation is visible, just without recording it.
-        [switch]$NoJournal
+        [Parameter(Mandatory)][hashtable]$Undo,
+        [string]$Snapshot = '',
+        [string[]]$Backup = @()
     )
-    $inv = "$Command " + (($UndoParams.GetEnumerator() | Sort-Object Name | ForEach-Object {
-                if ($_.Value -is [bool]) { if ($_.Value) { "-$($_.Key)" } }
-                else { "-$($_.Key) '$($_.Value)'" }
-            }) -join ' ')
-    if (-not $NoJournal -and (Test-MoveJournalEnabled -RepositoryRoot $RepositoryRoot)) {
-        Add-MoveJournalEntry -RepositoryRoot $RepositoryRoot -Command $Command -Engine $Engine -Source $Source `
-            -Destination $Destination -Undo @{ Command = $Command; Params = $UndoParams }
-        Write-Host "Undo with: Undo-Netscoot   (replays: $inv)" -ForegroundColor DarkGray
-    } else {
-        Write-Host "Undo (journaling off): $inv" -ForegroundColor DarkGray
-    }
+    $entry = New-MoveJournalEntry -Command $Command -Engine $Engine -Source $Source `
+        -Destination $Destination -Undo $Undo -Snapshot $Snapshot -Backup $Backup
+    Write-MoveJournalEntry -RepositoryRoot $RepositoryRoot -Entry $entry
+    $entry
+}
+
+function Complete-MoveJournalEntry {
+    # Append the outcome record for a started entry: 'committed' (the move finished) or 'rolledback'
+    # (it failed and was reversed). On commit the snapshot reference is cleared (recovery moot).
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$RepositoryRoot,
+        [Parameter(Mandatory)][System.Collections.IDictionary]$Entry,
+        [Parameter(Mandatory)][ValidateSet('committed', 'rolledback')][string]$Status
+    )
+    $Entry.status = $Status
+    if ($Status -eq 'committed') { $Entry.snapshot = ''; $Entry.backup = @() }   # recovery moot once done
+    Write-MoveJournalEntry -RepositoryRoot $RepositoryRoot -Entry $Entry
+}
+
+function Get-MoveJournalEntries {
+    # Completed (committed) moves, oldest first - the undoable history. A line with no status field
+    # is a legacy pre-WAL entry and is treated as committed. Pending (interrupted) and rolled-back
+    # moves are excluded.
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$RepositoryRoot)
+    @(Read-MoveJournalState -RepositoryRoot $RepositoryRoot |
+        Where-Object { -not $_.PSObject.Properties['status'] -or $_.status -eq 'committed' })
+}
+
+function Get-InterruptedMove {
+    # Moves with a 'pending' record and no later outcome: interrupted by a crash, so the working tree
+    # may be mid-move. Each carries source/destination and the snapshot path needed to recover.
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$RepositoryRoot)
+    @(Read-MoveJournalState -RepositoryRoot $RepositoryRoot | Where-Object { $_.status -eq 'pending' })
+}
+
+function Remove-MoveJournalEntry {
+    # Drop every line for an id (pending + outcome) - called after a successful undo, or to clear a
+    # recovered interrupted move. Torn lines are dropped too (defensive read).
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$RepositoryRoot, [Parameter(Mandatory)][string]$Id)
+    $path = Get-MoveJournalPath -RepositoryRoot $RepositoryRoot
+    if (-not (Test-Path -LiteralPath $path)) { return }
+    $kept = @(Get-Content -LiteralPath $path | Where-Object {
+            $o = ConvertFrom-JournalLine $_
+            $o -and $o.id -ne $Id
+        })
+    if ($kept.Count) { Set-Content -LiteralPath $path -Value $kept -Encoding utf8 }
+    else { Remove-Item -LiteralPath $path -Force }
 }
