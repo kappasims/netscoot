@@ -33,20 +33,16 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      # Cache the CurrentUser module dir so Pester is not re-pulled from PSGallery every run.
-      # PowerShell 7 on Windows installs CurrentUser modules under Documents\PowerShell\Modules.
-      - name: Cache Pester
-        id: cache-pester
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.USERPROFILE }}\Documents\PowerShell\Modules\Pester\5.7.1
-          key: pester-5.7.1-windows-pwsh
-
-      # build.ps1 no longer auto-installs Pester; CI provisions it explicitly (cache miss only).
+      # build.ps1 no longer auto-installs Pester; CI provisions it (pinned), retrying so a transient
+      # PSGallery/NuGet hiccup does not fail the gate.
       - name: Install Pester
-        if: steps.cache-pester.outputs.cache-hit != 'true'
         shell: pwsh
-        run: Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck
+        run: |
+          $ErrorActionPreference = 'Stop'
+          for ($i = 1; $i -le 3; $i++) {
+            try { Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck; break }
+            catch { if ($i -eq 3) { throw }; Write-Host "Install-Module Pester failed (attempt $i); retrying in 10s..."; Start-Sleep 10 }
+          }
 
       - name: Run tests
         shell: pwsh
@@ -74,21 +70,18 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      # Windows PowerShell 5.1 installs CurrentUser modules under Documents\WindowsPowerShell\Modules
-      # (a different path than PowerShell 7), so it gets its own cache entry.
-      - name: Cache Pester (Windows PowerShell 5.1)
-        id: cache-pester
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.USERPROFILE }}\Documents\WindowsPowerShell\Modules\Pester\5.7.1
-          key: pester-5.7.1-windows-powershell51
       - name: Install Pester (Windows PowerShell 5.1)
-        if: steps.cache-pester.outputs.cache-hit != 'true'
         shell: powershell
         run: |
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-          Install-PackageProvider -Name NuGet -Force | Out-Null
-          Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck
+          $ErrorActionPreference = 'Stop'
+          for ($i = 1; $i -le 3; $i++) {
+            try {
+              Install-PackageProvider -Name NuGet -Force | Out-Null
+              Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck
+              break
+            } catch { if ($i -eq 3) { throw }; Write-Host "Pester install failed (attempt $i); retrying in 10s..."; Start-Sleep 10 }
+          }
       - name: Run tests on Windows PowerShell 5.1
         shell: powershell
         run: ./build.ps1 -Task Test -ShardIndex ${{ matrix.shard }} -ShardCount 3
