@@ -1,6 +1,6 @@
 # Summary
 
-[![PowerShell Gallery](https://img.shields.io/powershellgallery/v/Netscoot?logo=powershell&label=PowerShell%20Gallery)](https://www.powershellgallery.com/packages/Netscoot) [![Downloads](https://img.shields.io/powershellgallery/dt/Netscoot?label=downloads)](https://www.powershellgallery.com/packages/Netscoot)
+[![PowerShell Gallery](https://img.shields.io/powershellgallery/v/Netscoot?logo=powershell&label=PowerShell%20Gallery)](https://www.powershellgallery.com/packages/Netscoot) [![Downloads](https://img.shields.io/powershellgallery/dt/Netscoot?label=downloads)](https://www.powershellgallery.com/packages/Netscoot) [![CI](https://github.com/kappasims/netscoot/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/kappasims/netscoot/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/kappasims/netscoot)](https://github.com/kappasims/netscoot/blob/master/LICENSE)
 
 netscoot moves a project, module, or asset (.NET, PowerShell, Unity, or native C++) without breaking
 what depends on it, and rolls back if anything fails. It reconciles what the move would otherwise break: a .NET project's solution
@@ -523,13 +523,13 @@ Relocate a project, folder, file, module, or asset and reconcile what the move w
 | <small>[Move-DotnetProjectTree](#move-dotnetprojecttree)</small> | <small>Move a folder that contains one or more managed .NET projects, reconciling solution membership and every external project reference in one operation.</small> |
 | <small>[Move-DotnetFile](#move-dotnetfile)</small> | <small>Move a single managed .NET file and reconcile references, routing by extension to the right specialist.</small> |
 | <small>[Move-DotnetFolder](#move-dotnetfolder)</small> | <small>Move a folder of managed .NET projects, reconciling references.</small> |
-| <small>[Move-MSBuildImport](#move-msbuildimport)</small> | <small>Move a shared MSBuild .props/.targets file and fix every project (or other props/targets) that imports it via `<Import Project="...">`.</small> |
-| <small>[Move-Solution](#move-solution)</small> | <small>Move a solution file (.sln/.slnx) and rebase the relative project paths it stores, so every project it references still resolves from the solution's new location.</small> |
+| <small>[Move-MSBuildImport](#move-msbuildimport)</small> | <small>Move a shared MSBuild `.props/.targets` file and fix every project (or other props/targets) that imports it via `<Import Project="...">`.</small> |
+| <small>[Move-Solution](#move-solution)</small> | <small>Move a solution file (`.sln/.slnx`) and rebase the relative project paths it stores, so every project it references still resolves from the solution's new location.</small> |
 | <small>[Move-PowerShell](#move-powershell)</small> | <small>Move a PowerShell item and reconcile references, routing by type to the right specialist.</small> |
-| <small>[Move-PowerShellScript](#move-powershellscript)</small> | <small>Move a standalone .ps1 script and fix the relative paths in scripts that dot-source or call it (and the moved script's own dot-source/call paths).</small> |
-| <small>[Move-PowerShellModule](#move-powershellmodule)</small> | <small>Move a PowerShell module folder and reconcile its manifest, delegating manifest edits to Update-ModuleManifest rather than hand-editing the .psd1.</small> |
-| <small>[Move-NativeProject](#move-nativeproject)</small> | <small>Move a native / C++/CLI project (.vcxproj).</small> |
-| <small>[Move-UnityAsset](#move-unityasset)</small> | <small>Move a Unity asset or folder while keeping its paired .meta file(s), so the GUIDs that scene/prefab/asmdef references depend on survive the move.</small> |
+| <small>[Move-PowerShellScript](#move-powershellscript)</small> | <small>Move a standalone `.ps1` script and fix the relative paths in scripts that dot-source or call it (and the moved script's own dot-source/call paths).</small> |
+| <small>[Move-PowerShellModule](#move-powershellmodule)</small> | <small>Move a PowerShell module folder and reconcile its manifest, delegating manifest edits to Update-ModuleManifest rather than hand-editing the `.psd1`.</small> |
+| <small>[Move-NativeProject](#move-nativeproject)</small> | <small>Move a native / C++/CLI project (`.vcxproj`).</small> |
+| <small>[Move-UnityAsset](#move-unityasset)</small> | <small>Move a Unity asset or folder while keeping its paired `.meta` file(s), so the GUIDs that scene/prefab/asmdef references depend on survive the move.</small> |
 
 **Inspect**
 
@@ -542,7 +542,7 @@ Read-only audits. These change nothing.
 | <small>[Test-SolutionConsistency](#test-solutionconsistency)</small> | <small>Report projects whose membership diverges across the solution files in a repository (present in some solutions but absent from others).</small> |
 | <small>[Get-SolutionInventory](#get-solutioninventory)</small> | <small>List the full contents of every solution in a repository (projects of any type, solution folders, and solution items), plus on-disk projects that no solution references.</small> |
 | <small>[Find-PathReference](#find-pathreference)</small> | <small>Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party tool reconciles.</small> |
-| <small>[Test-UnityMetaIntegrity](#test-unitymetaintegrity)</small> | <small>Report Unity .meta integrity problems under a root: Assets missing a .meta, and orphan .meta files whose asset is gone.</small> |
+| <small>[Test-UnityMetaIntegrity](#test-unitymetaintegrity)</small> | <small>Report Unity `.meta` integrity problems under a root: Assets missing a `.meta`, and orphan `.meta` files whose asset is gone.</small> |
 
 **Manage**
 
@@ -643,16 +643,16 @@ container scripts) that no first-party tool reconciles. report-only.
 Find-PathReference [-Path] <string> [-RepositoryRoot <string>] [-AdditionalGlob <string[]>] [<CommonParameters>]
 ```
 
-Moving a project/folder breaks any path hardcoded in build.ps1, CI YAML, git hooks,
-tools scripts, Makefile/Dockerfile, etc. - and unlike .sln/.csproj/.psd1 there is no
+Moving a project/folder breaks any path hardcoded in `build.ps1`, CI YAML, git hooks,
+tools scripts, Makefile/Dockerfile, etc. - and unlike `.sln/.csproj/.psd1` there is no
 tool that understands their schema, so they cannot be safely auto-rewritten (a blind
 regex could corrupt logic). This detects the class of such files (by location + name,
 not a hardcoded filename list) and reports lines that reference the given path, so you
 (or an agent) can fix them deliberately. It never edits anything.
 
 Two confidence tiers: High when the item's repository-relative path appears (e.g.
-'lib/Tarragon.csproj' or 'lib\Tarragon.csproj'), Low when only the bare leaf name appears (e.g.
-'Tarragon.csproj'), which is likely but not certain.
+'`lib/Tarragon.csproj`' or 'lib\`Tarragon.csproj`'), Low when only the bare leaf name appears (e.g.
+'`Tarragon.csproj`'), which is likely but not certain.
 
 Run it before a move (to see what will break) or after (searching the old path).
 
@@ -796,7 +796,7 @@ Get-SolutionInventory [[-RepositoryRoot] <string>] [<CommonParameters>]
 
 Where Test-SolutionConsistency compares membership and Repair-SolutionReferences finds
 dangling entries, this gives the complete picture without reading the files by hand. It
-parses each .sln/.slnx directly (not via `dotnet sln list`, which only returns
+parses each `.sln/.slnx` directly (not via `dotnet sln list`, which only returns
 CLI-buildable projects), so it also surfaces non-CLI project types (e.g. .pssproj),
 solution folders, and loose solution items. It then compares against the projects on disk
 and flags any that are in no solution at all.
@@ -927,7 +927,7 @@ Move-DotnetFile [-Path] <string> -Destination <string> [-RepositoryRoot <string>
 ```
 
 Dispatches a managed .NET file to the right specialist by extension (see Output for the
-routing). Native (.vcxproj), PowerShell (.ps1/.psd1) and Unity assets are deliberately not
+routing). Native (`.vcxproj`), PowerShell (`.ps1/.psd1`) and Unity assets are deliberately not
 handled here - use Move-NativeProject / Move-PowerShellScript / Move-PowerShellModule /
 Move-UnityAsset. `-WhatIf`/`-Confirm`/`-Verbose` propagate to the specialist; `-Force` and
 `-RepositoryRoot`/`-NoBuild` are forwarded where the specialist accepts them.
@@ -1049,7 +1049,7 @@ Enumerates the solutions that include the project, the projects that reference i
 and the project's own references. Removes those links while the old paths still
 resolve, moves the directory (git mv when tracked), then re-adds every link so the
 dotnet CLI recomputes fresh relative paths and preserves GUIDs. The solution and
-project XML (.sln/.slnx, .csproj) is never hand-edited.
+project XML (`.sln/.slnx`, `.csproj`) is never hand-edited.
 
 Diagnostics follow invocation: `-Verbose` narrates the plan, `-Debug` emits the full
 solution-membership matrix, and divergence (the project living in some but not all
@@ -1060,7 +1060,7 @@ terminating error honoring `-ErrorAction`).
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑Project`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Path to the project file (.csproj/.fsproj/.vbproj). Accepts pipeline input - pipe a path string or any object with a FullName/Path property (e.g. Get-Item output).</small> |
+| <small>`‑Project`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Path to the project file (`.csproj/.fsproj/.vbproj`). Accepts pipeline input - pipe a path string or any object with a FullName/Path property (e.g. Get-Item output).</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>Where to move the project folder, following `git mv` rules: if Destination is an existing directory the folder moves into it (keeping its name, e.g. './libs' -&gt; './libs/Tarragon'); otherwise Destination is the project's new folder path (a rename, './libs/Tarragon'). The project file and its sibling contents move as one. Errors if the resulting folder exists.</small> |
 | <small>`‑RepositoryRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for solutions/consumers. Defaults to the enclosing git repository root.</small> |
 | <small>`‑Strict`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Escalate solution-divergence warnings to non-terminating errors.</small> |
@@ -1125,7 +1125,7 @@ membership and every external project reference in one operation. This is the bu
 Move-DotnetProjectTree [-Path] <string> -Destination <string> [-RepositoryRoot <string>] [-NoBuild] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-Enumerates the managed projects (.csproj/.fsproj/.vbproj) under the folder and treats
+Enumerates the managed projects (`.csproj/.fsproj/.vbproj`) under the folder and treats
 them as a single co-moving set. It reconciles only what crosses the folder boundary:
 solution membership for each moved project (dotnet sln remove/add), external consumers
 (projects outside the folder that reference one inside), and the moved projects' own
@@ -1188,7 +1188,7 @@ Move-DotnetProjectTree -Path ./src/Group -Destination ./libs/Group -NoBuild
 
 ### Move-MSBuildImport
 
-Move a shared MSBuild .props/.targets file and fix every project (or other
+Move a shared MSBuild `.props/.targets` file and fix every project (or other
 props/targets) that imports it via `<Import Project="...">`.
 
 **Syntax**
@@ -1204,13 +1204,13 @@ fixes the moved file's own outgoing `<Import>` paths, which break when its locat
 changes. The `$(MSBuildThisFileDirectory)` token is resolved/preserved; other `$(...)`
 tokens are reported as unresolved rather than guessed.
 
-Note: Directory.Build.props/.targets (and Directory.Packages.props, etc.) are imported
+Note: `Directory.Build.props/.targets` (and `Directory.Packages.props`, etc.) are imported
 by location, not an explicit `<Import>` - moving one changes inheritance scope, which
 cannot be "fixed" by editing imports. For those this warns (like the inheritance check)
 and only fixes the file's own outgoing imports.
 
-Importers may include native .vcxproj files; their `<Import>` path is fixed on any OS (a
-best-effort, path-only update), but a .vcxproj's native link settings are never
+Importers may include native `.vcxproj` files; their `<Import>` path is fixed on any OS (a
+best-effort, path-only update), but a `.vcxproj`'s native link settings are never
 reconciled off Windows; that remains Move-NativeProject's Windows-only job.
 
 dotnet is not required here; git is used when available (else confirmed plain-move
@@ -1220,7 +1220,7 @@ fallback via `-Force`). Supports `-WhatIf`.
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑Path`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>The .props/.targets file to move. Accepts pipeline input.</small> |
+| <small>`‑Path`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>The `.props/.targets` file to move. Accepts pipeline input.</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>New file path (or a folder, in which case the file keeps its name).</small> |
 | <small>`‑RepositoryRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for importers. Defaults to the enclosing git repository root.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
@@ -1282,7 +1282,7 @@ no RepositoryRoot).
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑Path`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>The PowerShell item to move: a .ps1 script, a .psd1 manifest, or a module folder. Accepts pipeline input.</small> |
+| <small>`‑Path`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>The PowerShell item to move: a `.ps1` script, a `.psd1` manifest, or a module folder. Accepts pipeline input.</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>New path - passed through to the specialist.</small> |
 | <small>`‑RepositoryRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Repository root scanned for referencing scripts. Defaults to the enclosing git repository root. Forwarded to the script specialist only (the module specialist has no RepositoryRoot).</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
@@ -1319,7 +1319,7 @@ Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared
 ### Move-PowerShellModule
 
 Move a PowerShell module folder and reconcile its manifest, delegating manifest
-edits to Update-ModuleManifest rather than hand-editing the .psd1.
+edits to Update-ModuleManifest rather than hand-editing the `.psd1`.
 
 **Syntax**
 
@@ -1328,17 +1328,17 @@ Move-PowerShellModule [-ModulePath] <string> -Destination <string> [-Force] [-No
 ```
 
 Moves a module directory (git mv when tracked), then rewrites RootModule,
-NestedModules and FileList in the .psd1 via Update-ModuleManifest so relative
+NestedModules and FileList in the `.psd1` via Update-ModuleManifest so relative
 references stay valid. Validates the result with Test-ModuleManifest.
 
-Limits (warned, not fixed): Dot-sourced relative paths inside .psm1/.ps1 files,
+Limits (warned, not fixed): Dot-sourced relative paths inside `.psm1/.ps1` files,
 and any path computed at runtime, cannot be reconciled automatically.
 
 **Parameters**
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑ModulePath`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Path to the module folder, or directly to its .psd1 manifest.</small> |
+| <small>`‑ModulePath`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Path to the module folder, or directly to its `.psd1` manifest.</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>Where to move the module folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the module's new folder path. Errors if it exists.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
 | <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-Netscoot will not see this move).</small> |
@@ -1378,7 +1378,7 @@ Move-PowerShellModule -ModulePath ./tools/Mayo/Mayo.psd1 -Destination ./modules/
 
 ### Move-PowerShellScript
 
-Move a standalone .ps1 script and fix the relative paths in scripts that dot-source or
+Move a standalone `.ps1` script and fix the relative paths in scripts that dot-source or
 call it (and the moved script's own dot-source/call paths).
 
 **Syntax**
@@ -1393,7 +1393,7 @@ the moved script. It rewrites those relative paths with precise, BOM-preserving 
 preserving the original style (`$PSScriptRoot`-prefixed or .\-relative).
 
 HEURISTIC LIMIT: only literal and `$PSScriptRoot`-based string paths are resolved and
-rewritten. A path that is a string containing other variables (e.g. "`$dir`\x.ps1") whose
+rewritten. A path that is a string containing other variables (e.g. "`$dir`\`x.ps1`") whose
 leaf matches the moved script is reported as a possible dynamic reference to verify by
 hand. A path built entirely from an expression (e.g. Join-Path ...) is not a string node
 and cannot be detected at all - grep to be sure. Treat the result as "fixed what could
@@ -1406,7 +1406,7 @@ supported; dotnet not required.
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑Path`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>The .ps1 to move. Accepts pipeline input.</small> |
+| <small>`‑Path`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>The `.ps1` to move. Accepts pipeline input.</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>New file path (or a folder, in which case the script keeps its name).</small> |
 | <small>`‑RepositoryRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for referencing scripts. Defaults to the enclosing git repository root.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
@@ -1449,7 +1449,7 @@ Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 
 
 ### Move-Solution
 
-Move a solution file (.sln/.slnx) and rebase the relative project paths it stores, so
+Move a solution file (`.sln/.slnx`) and rebase the relative project paths it stores, so
 every project it references still resolves from the solution's new location.
 
 **Syntax**
@@ -1462,8 +1462,8 @@ A solution stores each project as a path relative to the solution file. Moving t
 solution changes that base directory, so every entry must be recomputed. The dotnet
 CLI has no "rebase" command, so this rewrites the stored paths with precise,
 formatting- and BOM-preserving edits. It replaces the exact path token captured from the
-file (the .slnx `<Project Path="...">` or the .sln project line), not a blind regex, and
-keeps each format's separator convention (/ for .slnx, \ for .sln). Project-to-project
+file (the `.slnx` `<Project Path="...">` or the `.sln` project line), not a blind regex, and
+keeps each format's separator convention (/ for `.slnx`, \ for `.sln`). Project-to-project
 references are unaffected by a solution move and are left alone.
 
 git is used when available (else confirmed plain-move fallback via `-Force`). `-WhatIf`
@@ -1473,7 +1473,7 @@ supported. dotnet is not required.
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑Path`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>The .sln/.slnx file to move. Accepts pipeline input.</small> |
+| <small>`‑Path`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>The `.sln/.slnx` file to move. Accepts pipeline input.</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>New file path (or a folder, in which case the solution keeps its name).</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
 | <small>`‑NoJournal`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Skip recording this move in the undo journal for this call, even when journaling is enabled (Undo-Netscoot will not see this move).</small> |
@@ -1525,8 +1525,8 @@ Register-NetscootGitAlias [[-Scope] <string>] [-WhatIf] [-Confirm] [<CommonParam
 Adds `alias.netscoot = !pwsh -NoProfile -File <forwarder>` to git config so
 `git netscoot <src> <dst>` works. "dotnet" is the .NET-platform umbrella: The verb
 branches by target type to the right engine - the .NET project model
-(csproj/sln/props), Unity (.meta/.asmdef), PowerShell (.ps1/.psd1), or native C++
-(.vcxproj). Scope is your choice (repository-local or global). Undo with
+(csproj/sln/props), Unity (`.meta`/.asmdef), PowerShell (`.ps1/.psd1`), or native C++
+(`.vcxproj`). Scope is your choice (repository-local or global). Undo with
 Unregister-NetscootGitAlias. Use `-WhatIf` to see the exact `git config` command.
 
 **Parameters**
@@ -1647,7 +1647,7 @@ available for introspection.
 Resolve-MoveEngine [-Path] <string> [<CommonParameters>]
 ```
 
-Classification is by target type (extension + location + .meta pairing), not by content
+Classification is by target type (extension + location + `.meta` pairing), not by content
 beyond a folder's project/manifest scan. The path need not exist (extension-based cases
 classify regardless); folder cases require the directory.
 
@@ -1814,7 +1814,7 @@ Sync-Solution [[-RepositoryRoot] <string>] [-WhatIf] [-Confirm] [<CommonParamete
 The companion to Test-SolutionConsistency, which only reports divergence. This makes
 membership uniform: For every project present in at least one solution but absent from
 others, it adds the project to the solutions missing it, delegating to `dotnet sln add`
-(never hand-editing the .sln/.slnx). It only adds; it never removes, so a project in no
+(never hand-editing the `.sln/.slnx`). It only adds; it never removes, so a project in no
 solution is left alone (use Get-SolutionInventory to find those).
 
 Uniform membership is the assumption. If a solution is intentionally a subset, do not run
@@ -1928,7 +1928,7 @@ Report projects whose membership diverges across the solution files in a reposit
 Test-SolutionConsistency [[-RepositoryRoot] <string>] [-Strict] [<CommonParameters>]
 ```
 
-When a repository carries more than one solution (e.g. a classic .sln alongside a .slnx),
+When a repository carries more than one solution (e.g. a classic `.sln` alongside a `.slnx`),
 they can drift out of sync so the same project is listed in one but not the other.
 This emits one object per divergent project and surfaces it through the standard streams
 so behavior follows invocation: By default it writes a Warning per divergent project;
@@ -2109,7 +2109,7 @@ Update-Netscoot [[-Repository] <string>] [-Force] [-WhatIf] [-Confirm] [<CommonP
 ```
 
 Checks GitHub for a newer release (via Test-NetscootUpdate) and, if the installed version
-is behind, runs the release's install.ps1 to overwrite the modules on your module path. No
+is behind, runs the release's `install.ps1` to overwrite the modules on your module path. No
 git, no clone. Does nothing when already current unless `-Force`. Honors `-WhatIf`/`-Confirm`.
 
 After it runs, reload the module in the current session with `Import-Module Netscoot -Force`.
@@ -2162,7 +2162,7 @@ Update-Netscoot -Force
 
 ### Move-NativeProject
 
-Move a native / C++/CLI project (.vcxproj). Windows-only. Does the parts the
+Move a native / C++/CLI project (`.vcxproj`). Windows-only. Does the parts the
 dotnet CLI can delegate (solution membership, the move itself) and reports the
 native path-bearing settings it cannot reconcile so they are never silently broken.
 
@@ -2174,11 +2174,11 @@ Move-NativeProject [-Project] <string> -Destination <string> [-RepositoryRoot <s
 
 Native projects link through MSBuild settings the dotnet CLI does not touch:
 AdditionalIncludeDirectories / AdditionalLibraryDirectories / AdditionalDependencies,
-`<Import>` of shared .props/.targets, `$(SolutionDir)`-relative OutDir, and the paired
-.vcxproj.filters. C++/CLI is Windows-only, so this cmdlet refuses to run elsewhere.
+`<Import>` of shared `.props/.targets`, `$(SolutionDir)`-relative OutDir, and the paired
+`.vcxproj`.filters. C++/CLI is Windows-only, so this cmdlet refuses to run elsewhere.
 
-It will: Update .sln/.slnx membership via 'dotnet sln' (which understands .vcxproj),
-move the folder (git mv when tracked), move the paired .vcxproj.filters alongside,
+It will: Update `.sln/.slnx` membership via 'dotnet sln' (which understands `.vcxproj`),
+move the folder (git mv when tracked), move the paired `.vcxproj`.filters alongside,
 and then emit a report of every relative/SolutionDir-relative native setting that a
 human (or a future native engine) must verify. It deliberately does not rewrite those
 MSBuild paths yet - surfacing them beats silently mis-editing them.
@@ -2187,7 +2187,7 @@ MSBuild paths yet - surfacing them beats silently mis-editing them.
 
 | <small>Name</small> | <small>Type</small> | <small>Required</small> | <small>Pipeline</small> | <small>Description</small> |
 |:---|:---|:---|:---|:---|
-| <small>`‑Project`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Path to the .vcxproj. Accepts pipeline input.</small> |
+| <small>`‑Project`</small> | <small>String</small> | <small>true</small> | <small>true (ByValue, ByPropertyName)</small> | <small>Path to the `.vcxproj`. Accepts pipeline input.</small> |
 | <small>`‑Destination`</small> | <small>String</small> | <small>true</small> | <small>false</small> | <small>Where to move the project folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the new folder path. Errors if it exists.</small> |
 | <small>`‑RepositoryRoot`</small> | <small>String</small> | <small>false</small> | <small>false</small> | <small>Root to scan for solutions. Defaults to the enclosing git repository root.</small> |
 | <small>`‑Force`</small> | <small>SwitchParameter</small> | <small>false</small> | <small>false</small> | <small>Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.</small> |
@@ -2230,7 +2230,7 @@ Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native
 
 ### Move-UnityAsset
 
-Move a Unity asset or folder while keeping its paired .meta file(s), so the GUIDs
+Move a Unity asset or folder while keeping its paired `.meta` file(s), so the GUIDs
 that scene/prefab/asmdef references depend on survive the move.
 
 **Syntax**
@@ -2242,10 +2242,10 @@ Move-UnityAsset [-AssetPath] <string> -Destination <string> [-RepositoryRoot <st
 In Unity every asset and folder has a sibling `<name>.meta` carrying a stable GUID.
 References (in scenes, prefabs, and asmdef "references" entries of the form
 "GUID:...") resolve by that GUID, not by path. If you move files on disk without
-their .meta, Unity regenerates fresh GUIDs and every reference to them breaks.
+their `.meta`, Unity regenerates fresh GUIDs and every reference to them breaks.
 
-This cmdlet moves the asset (git mv when tracked) together with its own .meta; for a
-folder, the descendant .meta files travel inside it and the folder's sibling .meta is
+This cmdlet moves the asset (git mv when tracked) together with its own `.meta`; for a
+folder, the descendant `.meta` files travel inside it and the folder's sibling `.meta` is
 moved too. asmdef references are by name/GUID (not path), so they do not need editing
 - when moving an .asmdef this reports who references it, for your awareness only.
 
@@ -2299,8 +2299,8 @@ Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib
 
 ### Test-UnityMetaIntegrity
 
-Report Unity .meta integrity problems under a root: Assets missing a .meta, and
-orphan .meta files whose asset is gone. These are the Unity analog of dangling
+Report Unity `.meta` integrity problems under a root: Assets missing a `.meta`, and
+orphan `.meta` files whose asset is gone. These are the Unity analog of dangling
 references - both lead to broken/regenerated GUIDs.
 
 **Syntax**
@@ -2355,20 +2355,20 @@ Each type below is one `pscustomobject` with the fields shown. A command may ret
 | <small>[Netscoot.Capability](#netscootcapability)</small> | <small>Netscoot's resolved external-tool capabilities and platform - the 'what can I do here' probe.</small> |
 | <small>[Netscoot.ConsistencyResult](#netscootconsistencyresult)</small> | <small>One project whose solution membership diverges across the repository.</small> |
 | <small>[Netscoot.GitAlias](#netscootgitalias)</small> | <small>The git netscoot alias registration (or what would be registered).</small> |
-| <small>[Netscoot.ImportMoveResult](#netscootimportmoveresult)</small> | <small>Result of moving a shared MSBuild .props/.targets file and fixing its importers.</small> |
-| <small>[Netscoot.MetaIntegrity](#netscootmetaintegrity)</small> | <small>One Unity .meta integrity problem: An asset missing a .meta, or an orphan .meta.</small> |
+| <small>[Netscoot.ImportMoveResult](#netscootimportmoveresult)</small> | <small>Result of moving a shared MSBuild `.props/.targets` file and fixing its importers.</small> |
+| <small>[Netscoot.MetaIntegrity](#netscootmetaintegrity)</small> | <small>One Unity `.meta` integrity problem: An asset missing a `.meta`, or an orphan `.meta`.</small> |
 | <small>[Netscoot.MoveResult](#netscootmoveresult)</small> | <small>Result of moving a .NET project folder and reconciling solutions and project references.</small> |
-| <small>[Netscoot.NativeMoveResult](#netscootnativemoveresult)</small> | <small>Result of moving a native / C++/CLI project (.vcxproj).</small> |
+| <small>[Netscoot.NativeMoveResult](#netscootnativemoveresult)</small> | <small>Result of moving a native / C++/CLI project (`.vcxproj`).</small> |
 | <small>[Netscoot.PathReference](#netscootpathreference)</small> | <small>One build/CI/hook/container line that hardcodes a moved path and that no first-party tool reconciles.</small> |
 | <small>[Netscoot.PSModuleMoveResult](#netscootpsmodulemoveresult)</small> | <small>Result of moving a PowerShell module folder and reconciling its manifest.</small> |
 | <small>[Netscoot.RepairResult](#netscootrepairresult)</small> | <small>One dangling solution-membership or ProjectReference entry that was (or would be) repaired.</small> |
-| <small>[Netscoot.ScriptMoveResult](#netscootscriptmoveresult)</small> | <small>Result of moving a standalone .ps1 and fixing dot-source/call paths.</small> |
+| <small>[Netscoot.ScriptMoveResult](#netscootscriptmoveresult)</small> | <small>Result of moving a standalone `.ps1` and fixing dot-source/call paths.</small> |
 | <small>[Netscoot.SolutionItem](#netscootsolutionitem)</small> | <small>One entry in the full contents of a solution (or a project on disk that no solution references).</small> |
 | <small>[Netscoot.SolutionMoveResult](#netscootsolutionmoveresult)</small> | <small>Result of moving a solution file and rebasing the relative project paths it stores.</small> |
 | <small>[Netscoot.SyncResult](#netscootsyncresult)</small> | <small>One project added to a solution that was missing it, to resolve membership divergence.</small> |
 | <small>[Netscoot.ToolInfo](#netscoottoolinfo)</small> | <small>Presence and version of one external tool (git or dotnet).</small> |
 | <small>[Netscoot.TreeMoveResult](#netscoottreemoveresult)</small> | <small>Result of moving a folder of one or more .NET projects in one operation.</small> |
-| <small>[Netscoot.UnityMoveResult](#netscootunitymoveresult)</small> | <small>Result of moving a Unity asset/folder while keeping its paired .meta file(s).</small> |
+| <small>[Netscoot.UnityMoveResult](#netscootunitymoveresult)</small> | <small>Result of moving a Unity asset/folder while keeping its paired `.meta` file(s).</small> |
 | <small>[Netscoot.Update](#netscootupdate)</small> | <small>Whether the installed Netscoot is behind the latest GitHub release.</small> |
 | <small>[Netscoot.UpdatePolicy](#netscootupdatepolicy)</small> | <small>The effective auto-update policy and where it was resolved from.</small> |
 
@@ -2430,7 +2430,7 @@ Netscoot.GitAlias
 
 <small>[ [Invoke-Netscoot](#invoke-netscoot) | [Move-DotnetFile](#move-dotnetfile) | [Move-MSBuildImport](#move-msbuildimport) ]</small>
 
-Result of moving a shared MSBuild .props/.targets file and fixing its importers.
+Result of moving a shared MSBuild `.props/.targets` file and fixing its importers.
 
 ```text
 Netscoot.ImportMoveResult
@@ -2450,7 +2450,7 @@ Netscoot.ImportMoveResult
 
 <small>[ [Test-UnityMetaIntegrity](#test-unitymetaintegrity) ]</small>
 
-One Unity .meta integrity problem: An asset missing a .meta, or an orphan .meta.
+One Unity `.meta` integrity problem: An asset missing a `.meta`, or an orphan `.meta`.
 
 ```text
 Netscoot.MetaIntegrity
@@ -2485,7 +2485,7 @@ Netscoot.MoveResult
 
 <small>[ [Invoke-Netscoot](#invoke-netscoot) | [Move-NativeProject](#move-nativeproject) ]</small>
 
-Result of moving a native / C++/CLI project (.vcxproj).
+Result of moving a native / C++/CLI project (`.vcxproj`).
 
 ```text
 Netscoot.NativeMoveResult
@@ -2558,7 +2558,7 @@ Netscoot.RepairResult
 
 <small>[ [Invoke-Netscoot](#invoke-netscoot) | [Move-PowerShell](#move-powershell) | [Move-PowerShellScript](#move-powershellscript) ]</small>
 
-Result of moving a standalone .ps1 and fixing dot-source/call paths.
+Result of moving a standalone `.ps1` and fixing dot-source/call paths.
 
 ```text
 Netscoot.ScriptMoveResult
@@ -2662,7 +2662,7 @@ Netscoot.TreeMoveResult
 
 <small>[ [Invoke-Netscoot](#invoke-netscoot) | [Move-UnityAsset](#move-unityasset) ]</small>
 
-Result of moving a Unity asset/folder while keeping its paired .meta file(s).
+Result of moving a Unity asset/folder while keeping its paired `.meta` file(s).
 
 ```text
 Netscoot.UnityMoveResult

@@ -46,7 +46,9 @@
     AliasesToExport      = @('Scoot')
     PrivateData          = @{
         PSData = @{
-            Tags         = @('dotnet', 'powershell', 'unity', 'native', 'refactoring', 'restructure', 'cross-platform')
+            # OS tags (Windows/Linux/macOS) surface the platform badges on the Gallery; PowerShellGet
+            # adds PSEdition_Core/PSEdition_Desktop from CompatiblePSEditions. The rest aid discovery.
+            Tags         = @('dotnet', 'powershell', 'unity', 'native', 'refactoring', 'restructure', 'cross-platform', 'solution', 'msbuild', 'csproj', 'slnx', 'migration', 'Windows', 'Linux', 'macOS')
             ProjectUri   = 'https://github.com/kappasims/netscoot'
             LicenseUri   = 'https://github.com/kappasims/netscoot/blob/master/LICENSE'
             ReleaseNotes = 'See https://github.com/kappasims/netscoot/releases'

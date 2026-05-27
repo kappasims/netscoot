@@ -194,6 +194,14 @@ function Invoke-DocsTask {
             # Backtick bare parameter references (-Name). Uppercase-first skips hyphenated words
             # (non-terminating, cross-boundary); the lookbehind skips cmdlet names (Move-Item).
             $s = [regex]::Replace($s, '(?<![\w`-])(-[A-Z][A-Za-z]+)\b', '`$1`')
+            # Backtick file paths / filenames that carry a known extension (with optional path
+            # segments), then bare leading-dot extensions, so paths in prose render as code. The
+            # backtick and '/' in the lookbehinds stop a second pass from re-matching inside a span
+            # already produced (e.g. the '.targets' in a just-wrapped `.props/.targets`).
+            $bt = [char]96
+            $ext = 'csproj|fsproj|vbproj|sln|slnx|props|targets|ps1|psd1|psm1|vcxproj|meta'
+            $s = [regex]::Replace($s, '(?<![\w' + $bt + './-])\.?[\w][\w./-]*\.(' + $ext + ')\b', { param($mm) '`' + $mm.Value + '`' })
+            $s = [regex]::Replace($s, '(?<![\w' + $bt + './])\.(' + $ext + ')\b', { param($mm) '`' + $mm.Value + '`' })
             # Escape < > so they are not read as HTML tags.
             $s.Replace('<', '&lt;').Replace('>', '&gt;')
         }
