@@ -92,7 +92,7 @@ function Write-UnreconcilableReferenceWarning {
     foreach ($proj in $AllProjects) {
         $pf = Resolve-FullPath $proj.FullName
         if ((Test-PathEqual $pf $movedFull) -or (Test-PathInList $pf $LiteralConsumers)) { continue }
-        if ((Get-UnreconcilableReferences -ProjectFile $pf).Count -gt 0) {
+        if (@(Get-UnreconcilableReferences -ProjectFile $pf).Count -gt 0) {
             Write-Warning ("$(Split-Path -Leaf $pf) has non-literal/conditional ProjectReference(s); if any point at $(Split-Path -Leaf $movedFull), they were not reconciled - verify by hand.")
         }
     }
