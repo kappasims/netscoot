@@ -233,8 +233,8 @@
         Summary = 'Whether the installed Netscoot is behind the latest GitHub release.'
         Array   = $false
         Fields  = @(
-            @{ Name = 'Installed';       Type = 'version';  Note = '' }
-            @{ Name = 'Latest';          Type = 'version?'; Note = '$null if the tag could not be parsed' }
+            @{ Name = 'Installed';       Type = 'version';  Note = 'a [version], e.g. 2.1.0 (compares numerically)' }
+            @{ Name = 'Latest';          Type = 'version?'; Note = 'a [version], $null if the tag could not be parsed' }
             @{ Name = 'Tag';             Type = 'string';   Note = '' }
             @{ Name = 'UpdateAvailable'; Type = 'bool';     Note = '' }
             @{ Name = 'Url';             Type = 'string';   Note = '' }

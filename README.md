@@ -565,7 +565,7 @@ Reconcile a repository, undo moves, and control the journal.
 
 **Install & environment**
 
-Manage the installation itself and wire up the git integration. Neither is part of a move.
+Manage the installation itself and wire up the git integration.
 
 *Stay current*
 
@@ -764,7 +764,6 @@ falsy one (`0`/`false`/`off`) is Disabled, and absent or unrecognized is Manual.
 **Output**
 
 Returns a single [Netscoot.UpdatePolicy](#netscootupdatepolicy).
-Policy
 
 ```text
 Netscoot.UpdatePolicy
@@ -1707,7 +1706,7 @@ with the repository's git config - no environment variable to remember. Local co
 default here) wins over global, matching the resolution order in Test-MoveJournalEnabled.
 
 With `-Global` it writes the user's global git config, switching the default for every
-repository on the machine in one place. Requires git; with no git, set `$env`:NETSCOOT_JOURNAL
+repository on the machine in one place. Requires git; with no git, set `$env:NETSCOOT_JOURNAL`
 instead.
 
 **Parameters**
@@ -1775,7 +1774,7 @@ Group Policy / Intune; this cmdlet is the per-user equivalent.
 **Output**
 
 Returns a single [Netscoot.UpdatePolicy](#netscootupdatepolicy).
-Policy - the resulting effective policy.
+The resulting effective policy.
 
 ```text
 Netscoot.UpdatePolicy
@@ -1894,8 +1893,8 @@ None (writes a non-terminating error) when the release cannot be fetched, and no
 
 ```text
 Netscoot.Update
-  Installed        version
-  Latest           version?  # $null if the tag could not be parsed
+  Installed        version   # a [version], e.g. 2.1.0 (compares numerically)
+  Latest           version?  # a [version], $null if the tag could not be parsed
   Tag              string
   UpdateAvailable  bool
   Url              string
@@ -2015,7 +2014,7 @@ it.
 running them.
 
 Journaling must have been on when the moves ran (it is by default; opt out with
-`$env`:NETSCOOT_JOURNAL or git config netscoot.journal false).
+`$env:NETSCOOT_JOURNAL` or git config netscoot.journal false).
 
 **Parameters**
 
@@ -2137,8 +2136,8 @@ The record from Test-NetscootUpdate, so the decision is inspectable. Nothing on 
 
 ```text
 Netscoot.Update
-  Installed        version
-  Latest           version?  # $null if the tag could not be parsed
+  Installed        version   # a [version], e.g. 2.1.0 (compares numerically)
+  Latest           version?  # a [version], $null if the tag could not be parsed
   Tag              string
   UpdateAvailable  bool
   Url              string
@@ -2687,8 +2686,8 @@ Whether the installed Netscoot is behind the latest GitHub release.
 
 ```text
 Netscoot.Update
-  Installed        version
-  Latest           version?  # $null if the tag could not be parsed
+  Installed        version   # a [version], e.g. 2.1.0 (compares numerically)
+  Latest           version?  # a [version], $null if the tag could not be parsed
   Tag              string
   UpdateAvailable  bool
   Url              string

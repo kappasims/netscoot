@@ -187,9 +187,10 @@ function Invoke-DocsTask {
         # break the span and the entities would show raw).
         $prose = {
             param([string]$s)
-            # Wrap $(...) / $var tokens in backticks so no renderer treats them as math (\$ escaping
-            # is honored inconsistently).
-            $s = [regex]::Replace($s, '\$\([^)]*\)|\$\w+', { param($mm) '`' + $mm.Value + '`' })
+            # Wrap $(...) / $scope:var / $var tokens in backticks so no renderer treats them as math
+            # (\$ escaping is honored inconsistently). The $scope:var alternative comes first so a
+            # whole `$env:NETSCOOT_JOURNAL` is captured, not just the `$env` prefix.
+            $s = [regex]::Replace($s, '\$\([^)]*\)|\$\w+:\w+|\$\w+', { param($mm) '`' + $mm.Value + '`' })
             # Backtick bare parameter references (-Name). Uppercase-first skips hyphenated words
             # (non-terminating, cross-boundary); the lookbehind skips cmdlet names (Move-Item).
             $s = [regex]::Replace($s, '(?<![\w`-])(-[A-Z][A-Za-z]+)\b', '`$1`')
@@ -211,7 +212,10 @@ function Invoke-DocsTask {
     # [OutputType('Netscoot.X')]; we look the name up here to render a link + a terse code-view
     # of its structure, and to build the "Output types" section. Single source of truth for shapes.
     $typeDefs = Import-PowerShellDataFile ([System.IO.Path]::Combine($root, 'docs', 'output-types.psd1'))
-    $typeAlt = ($typeDefs.Keys | ForEach-Object { [regex]::Escape($_) }) -join '|'
+    # Longest-first so a name that is a prefix of another (Netscoot.Update vs Netscoot.UpdatePolicy)
+    # does not win the alternation and strip only its prefix. Also makes the order deterministic
+    # (hashtable key enumeration is not), so the generated docs are stable across runs.
+    $typeAlt = ($typeDefs.Keys | Sort-Object { $_.Length } -Descending | ForEach-Object { [regex]::Escape($_) }) -join '|'
 
     # Dispatch diagrams (cmdlet name -> ASCII routing map). Rendered as a monospaced block in the
     # Output section for cmdlets that route by extension/type, in place of a prose description.
