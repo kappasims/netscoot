@@ -1,5 +1,5 @@
 # Retroactive-undo journal. Records one line per completed move so it can be reversed later - an hour
-# later, or in a fresh session - with Undo-Scoot. The move family is symmetric: each entry's
+# later, or in a fresh session - with Undo-Netscoot. The move family is symmetric: each entry's
 # inverse is the same mover run with source/destination swapped, re-reconciling from the CURRENT
 # state (more robust than restoring a stale snapshot).
 #
@@ -178,7 +178,7 @@ function Register-MoveUndo {
     if (-not $NoJournal -and (Test-MoveJournalEnabled -RepoRoot $RepoRoot)) {
         Add-MoveJournalEntry -RepoRoot $RepoRoot -Command $Command -Engine $Engine -Source $Source `
             -Destination $Destination -Undo @{ Command = $Command; Params = $UndoParams }
-        Write-Host "Undo with: Undo-Scoot   (replays: $inv)" -ForegroundColor DarkGray
+        Write-Host "Undo with: Undo-Netscoot   (replays: $inv)" -ForegroundColor DarkGray
     } else {
         Write-Host "Undo (journaling off): $inv" -ForegroundColor DarkGray
     }

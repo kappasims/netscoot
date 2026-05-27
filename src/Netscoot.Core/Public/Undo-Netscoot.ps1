@@ -1,4 +1,4 @@
-function Undo-Scoot {
+function Undo-Netscoot {
     <#
     .SYNOPSIS
         Reverse a previous netscoot move, using the journal at the repository root.
@@ -7,7 +7,7 @@ function Undo-Scoot {
         Each move is recorded in the journal (a per-user data directory: LocalAppData on Windows,
         ~/Library/Application Support on macOS, ~/.local/share on Linux; one file per repository) with
         its inverse: the same mover run with source and destination
-        swapped. Undo-Scoot replays that inverse, re-reconciling the solutions, references, and
+        swapped. Undo-Netscoot replays that inverse, re-reconciling the solutions, references, and
         GUIDs from the CURRENT state (more robust than restoring a stale snapshot). By default it
         undoes the most recent move and pops it from the journal, so calling again walks further back
         (LIFO); -Id targets a specific entry and -List shows the journal.
@@ -45,15 +45,15 @@ function Undo-Scoot {
 
     .EXAMPLE
         # See what can be undone
-        Undo-Scoot -List
+        Undo-Netscoot -List
         # Preview undoing the most recent move
-        Undo-Scoot -WhatIf
+        Undo-Netscoot -WhatIf
         # Undo the most recent move
-        Undo-Scoot
+        Undo-Netscoot
         # Undo a specific entry by id
-        Undo-Scoot -Id a1b2c3d4
+        Undo-Netscoot -Id a1b2c3d4
         # Reverse every journaled move (prompts; -Force to skip the prompt)
-        Undo-Scoot -All
+        Undo-Netscoot -All
     #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '', Justification = 'Delegates to a mover cmdlet that calls ShouldProcess')]
     [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = 'Undo')]
@@ -132,7 +132,7 @@ function Invoke-MoveJournalUndo {
     $allowed = @(
         'Move-DotnetProject', 'Move-DotnetProjectTree', 'Move-DotnetFile', 'Move-DotnetFolder',
         'Move-MSBuildImport', 'Move-Solution', 'Move-PowerShell', 'Move-PowerShellScript',
-        'Move-PowerShellModule', 'Move-NativeProject', 'Move-UnityAsset', 'Invoke-Scoot'
+        'Move-PowerShellModule', 'Move-NativeProject', 'Move-UnityAsset', 'Invoke-Netscoot'
     )
     if ($cmd -notin $allowed) {
         throw "Refusing to replay journal entry '$($Entry.id)': '$cmd' is not a recognized Netscoot mover (the journal may be corrupt or tampered with)."

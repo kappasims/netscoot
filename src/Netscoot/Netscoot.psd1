@@ -13,11 +13,11 @@
     # runtime -Global imports). Keep it in sync with the engines' public exports (Shared plumbing is
     # intentionally excluded). Move-NativeProject is Windows-only at runtime but part of the package.
     FunctionsToExport    = @(
-        'Clear-ScootJournal',
+        'Clear-NetscootJournal',
         'Find-PathReference',
-        'Get-ScootCapability',
+        'Get-NetscootCapability',
         'Get-SolutionInventory',
-        'Invoke-Scoot',
+        'Invoke-Netscoot',
         'Move-DotnetFile',
         'Move-DotnetFolder',
         'Move-DotnetProject',
@@ -29,17 +29,17 @@
         'Move-PowerShellScript',
         'Move-Solution',
         'Move-UnityAsset',
-        'Register-ScootGitAlias',
+        'Register-NetscootGitAlias',
         'Repair-SolutionReferences',
         'Resolve-MoveEngine',
-        'Set-ScootJournal',
+        'Set-NetscootJournal',
         'Sync-Solution',
-        'Test-ScootUpdate',
+        'Test-NetscootUpdate',
         'Test-SolutionConsistency',
         'Test-UnityMetaIntegrity',
-        'Undo-Scoot',
-        'Unregister-ScootGitAlias',
-        'Update-Scoot'
+        'Undo-Netscoot',
+        'Unregister-NetscootGitAlias',
+        'Update-Netscoot'
     )
     CmdletsToExport      = @()
     VariablesToExport    = @()

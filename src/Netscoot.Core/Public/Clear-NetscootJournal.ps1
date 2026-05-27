@@ -1,4 +1,4 @@
-function Clear-ScootJournal {
+function Clear-NetscootJournal {
     <#
     .SYNOPSIS
         Delete a repository's move journal, discarding its undo history.
@@ -7,8 +7,8 @@ function Clear-ScootJournal {
         Removes this repository's journal file from the per-user store (LocalAppData on Windows,
         ~/Library/Application Support on macOS, ~/.local/share on Linux). The journal prunes itself on every write (entries older than the age
         cap, then oldest-first past the size cap), so this is rarely needed; use it to wipe the undo
-        history outright. After clearing, Undo-Scoot has nothing to reverse until the next move.
-        It does not change whether journaling is on - use Set-ScootJournal for that.
+        history outright. After clearing, Undo-Netscoot has nothing to reverse until the next move.
+        It does not change whether journaling is on - use Set-NetscootJournal for that.
 
     .PARAMETER RepoRoot
         Repository whose journal to delete. Defaults to the enclosing git repository root.
@@ -18,9 +18,9 @@ function Clear-ScootJournal {
 
     .EXAMPLE
         # Discard the undo history for this repository
-        Clear-ScootJournal
+        Clear-NetscootJournal
         # Preview without deleting
-        Clear-ScootJournal -WhatIf
+        Clear-NetscootJournal -WhatIf
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([void])]

@@ -1,4 +1,4 @@
-function Test-ScootUpdate {
+function Test-NetscootUpdate {
     <#
     .SYNOPSIS
         Check GitHub for a newer netscoot release and report whether the installed version is
@@ -18,7 +18,7 @@ function Test-ScootUpdate {
         when $env:NETSCOOT_AUTOUPDATE is set to a truthy value (1/true/on/yes/enabled), and is a
         silent no-op otherwise. So a hook can call it unconditionally; nothing happens until a user
         opts in, and IT can disable it fleet-wide by clearing or setting the variable to false via
-        Group Policy / Intune / a profile. A plain Test-ScootUpdate (no switch) always checks.
+        Group Policy / Intune / a profile. A plain Test-NetscootUpdate (no switch) always checks.
 
     .PARAMETER Repository
         owner/name of the GitHub repository to check. Defaults to the project repository.
@@ -33,11 +33,11 @@ function Test-ScootUpdate {
 
     .EXAMPLE
         # Compare the installed module to the latest GitHub release
-        Test-ScootUpdate
+        Test-NetscootUpdate
         # Check a fork or a different repository (owner/name)
-        Test-ScootUpdate -Repository myfork/netscoot
+        Test-NetscootUpdate -Repository myfork/netscoot
         # SessionStart hook: checks only if the user/fleet opted in via $env:NETSCOOT_AUTOUPDATE
-        Test-ScootUpdate -EnableAutoUpdate
+        Test-NetscootUpdate -EnableAutoUpdate
     #>
     [CmdletBinding()]
     [OutputType('Netscoot.Update')]

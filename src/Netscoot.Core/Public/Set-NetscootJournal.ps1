@@ -1,4 +1,4 @@
-function Set-ScootJournal {
+function Set-NetscootJournal {
     <#
     .SYNOPSIS
         Turn the move journal on or off, per repository (default) or for every repository (-Global).
@@ -28,11 +28,11 @@ function Set-ScootJournal {
 
     .EXAMPLE
         # Stop journaling in this repository only
-        Set-ScootJournal -Enabled $false
+        Set-NetscootJournal -Enabled $false
         # Turn it back on
-        Set-ScootJournal -Enabled $true
+        Set-NetscootJournal -Enabled $true
         # Turn journaling off for every repository on the machine
-        Set-ScootJournal -Enabled $false -Global
+        Set-NetscootJournal -Enabled $false -Global
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([void])]

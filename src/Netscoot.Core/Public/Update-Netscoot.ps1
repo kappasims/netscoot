@@ -1,11 +1,11 @@
-function Update-Scoot {
+function Update-Netscoot {
     <#
     .SYNOPSIS
         Update an installed netscoot to the latest GitHub release, in place. The one-command
         update for non-clone installs.
 
     .DESCRIPTION
-        Checks GitHub for a newer release (via Test-ScootUpdate) and, if the installed version
+        Checks GitHub for a newer release (via Test-NetscootUpdate) and, if the installed version
         is behind, runs the release's install.ps1 to overwrite the modules on your module path. No
         git, no clone. Does nothing when already current unless -Force. Honors -WhatIf/-Confirm.
 
@@ -25,15 +25,15 @@ function Update-Scoot {
         owner/name of the GitHub repository. Defaults to the project repository.
 
     .OUTPUTS
-        Netscoot.Update - the record from Test-ScootUpdate, so the decision is inspectable. Nothing on a failed check.
+        Netscoot.Update - the record from Test-NetscootUpdate, so the decision is inspectable. Nothing on a failed check.
 
     .EXAMPLE
         # Update to the latest release if the installed copy is behind
-        Update-Scoot
+        Update-Netscoot
         # Report what it would do without downloading or installing
-        Update-Scoot -WhatIf
+        Update-Netscoot -WhatIf
         # Reinstall the latest even if already up to date
-        Update-Scoot -Force
+        Update-Netscoot -Force
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     [OutputType('Netscoot.Update')]
@@ -51,8 +51,8 @@ function Update-Scoot {
         return
     }
 
-    $check = Test-ScootUpdate -Repository $Repository
-    if (-not $check) { return }   # connection error already surfaced by Test-ScootUpdate
+    $check = Test-NetscootUpdate -Repository $Repository
+    if (-not $check) { return }   # connection error already surfaced by Test-NetscootUpdate
 
     if (-not $check.UpdateAvailable -and -not $Force) {
         Write-Host "netscoot is already up to date (installed $($check.Installed))." -ForegroundColor Green

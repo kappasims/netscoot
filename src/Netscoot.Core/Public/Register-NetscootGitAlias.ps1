@@ -1,4 +1,4 @@
-function Register-ScootGitAlias {
+function Register-NetscootGitAlias {
     <#
     .SYNOPSIS
         Opt-in: register a `git netscoot` alias pointing at Netscoot's forwarder. Sets a single
@@ -10,7 +10,7 @@ function Register-ScootGitAlias {
         branches by target type to the right engine - the .NET project model
         (csproj/sln/props), Unity (.meta/.asmdef), PowerShell (.ps1/.psd1), or native C++
         (.vcxproj). Scope is your choice (repository-local or global). Undo with
-        Unregister-ScootGitAlias. Use -WhatIf to see the exact `git config` command.
+        Unregister-NetscootGitAlias. Use -WhatIf to see the exact `git config` command.
 
     .PARAMETER Scope
         'Local' (this repository, default) or 'Global' (~/.gitconfig).
@@ -20,11 +20,11 @@ function Register-ScootGitAlias {
 
     .EXAMPLE
         # Preview the exact git config command (changes nothing)
-        Register-ScootGitAlias -Scope Global -WhatIf
+        Register-NetscootGitAlias -Scope Global -WhatIf
         # Register for this repository only (default scope is Local)
-        Register-ScootGitAlias
+        Register-NetscootGitAlias
         # Register globally, in ~/.gitconfig
-        Register-ScootGitAlias -Scope Global
+        Register-NetscootGitAlias -Scope Global
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     [OutputType('Netscoot.GitAlias')]
@@ -64,7 +64,7 @@ function Register-ScootGitAlias {
             return
         }
         Write-Verbose "Registered: $display"
-        Write-Host "Registered 'git netscoot' ($Scope). Try: git netscoot <src> <dst> --whatif   |  undo: Unregister-ScootGitAlias -Scope $Scope" -ForegroundColor Green
+        Write-Host "Registered 'git netscoot' ($Scope). Try: git netscoot <src> <dst> --whatif   |  undo: Unregister-NetscootGitAlias -Scope $Scope" -ForegroundColor Green
     }
 
     [pscustomobject]@{

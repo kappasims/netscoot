@@ -14,14 +14,14 @@ BeforeAll {
     }
 }
 
-Describe 'Invoke-Scoot (top-level cross-namespace routing)' {
+Describe 'Invoke-Netscoot (top-level cross-namespace routing)' {
     It 'routes a .csproj to the .NET file engine' {
         $root = New-EngineFixture
         try {
             $proj = Join-Path $root 'Foo.csproj'
             Set-Content -LiteralPath $proj -Value '<Project/>'
             Mock -ModuleName Netscoot.Core Move-DotnetFile { }
-            Invoke-Scoot -Path $proj -Destination (Join-Path $root 'dst')
+            Invoke-Netscoot -Path $proj -Destination (Join-Path $root 'dst')
             Should -Invoke -ModuleName Netscoot.Core Move-DotnetFile -Times 1 -Exactly
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -33,7 +33,7 @@ Describe 'Invoke-Scoot (top-level cross-namespace routing)' {
             New-Item -ItemType Directory -Path $src | Out-Null
             Set-Content -LiteralPath (Join-Path $src 'Foo.csproj') -Value '<Project/>'
             Mock -ModuleName Netscoot.Core Move-DotnetFolder { }
-            Invoke-Scoot -Path $src -Destination (Join-Path $root 'source')
+            Invoke-Netscoot -Path $src -Destination (Join-Path $root 'source')
             Should -Invoke -ModuleName Netscoot.Core Move-DotnetFolder -Times 1 -Exactly
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -44,7 +44,7 @@ Describe 'Invoke-Scoot (top-level cross-namespace routing)' {
             $ps1 = Join-Path $root 'helper.ps1'
             Set-Content -LiteralPath $ps1 -Value '"hi"'
             Mock -ModuleName Netscoot.Core Move-PowerShell { }
-            Invoke-Scoot -Path $ps1 -Destination (Join-Path $root 'moved.ps1')
+            Invoke-Netscoot -Path $ps1 -Destination (Join-Path $root 'moved.ps1')
             Should -Invoke -ModuleName Netscoot.Core Move-PowerShell -Times 1 -Exactly
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -55,7 +55,7 @@ Describe 'Invoke-Scoot (top-level cross-namespace routing)' {
             $psd1 = Join-Path $root 'MyMod.psd1'
             Set-Content -LiteralPath $psd1 -Value '@{ ModuleVersion = "1.0" }'
             Mock -ModuleName Netscoot.Core Move-PowerShell { }
-            Invoke-Scoot -Path $psd1 -Destination (Join-Path $root 'modules')
+            Invoke-Netscoot -Path $psd1 -Destination (Join-Path $root 'modules')
             Should -Invoke -ModuleName Netscoot.Core Move-PowerShell -Times 1 -Exactly
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -69,7 +69,7 @@ Describe 'Invoke-Scoot (top-level cross-namespace routing)' {
             Set-Content -LiteralPath $asset -Value '// c#'
             Set-Content -LiteralPath "$asset.meta" -Value 'guid: 0'
             Mock -ModuleName Netscoot.Core Move-UnityAsset { }
-            Invoke-Scoot -Path $asset -Destination (Join-Path $assets 'Bar.cs')
+            Invoke-Netscoot -Path $asset -Destination (Join-Path $assets 'Bar.cs')
             Should -Invoke -ModuleName Netscoot.Core Move-UnityAsset -Times 1 -Exactly
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -81,7 +81,7 @@ Describe 'Invoke-Scoot (top-level cross-namespace routing)' {
             $vcx = Join-Path $root 'Foo.vcxproj'
             Set-Content -LiteralPath $vcx -Value '<Project/>'
             Mock -ModuleName Netscoot.Core Move-NativeProject { }
-            Invoke-Scoot -Path $vcx -Destination (Join-Path $root 'moved')
+            Invoke-Netscoot -Path $vcx -Destination (Join-Path $root 'moved')
             Should -Invoke -ModuleName Netscoot.Core Move-NativeProject -Times 1 -Exactly
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -91,7 +91,7 @@ Describe 'Invoke-Scoot (top-level cross-namespace routing)' {
         try {
             $txt = Join-Path $root 'notes.txt'
             Set-Content -LiteralPath $txt -Value 'x'
-            Invoke-Scoot -Path $txt -Destination (Join-Path $root 'x.txt') -ErrorVariable errs -ErrorAction SilentlyContinue
+            Invoke-Netscoot -Path $txt -Destination (Join-Path $root 'x.txt') -ErrorVariable errs -ErrorAction SilentlyContinue
             $errs[0].FullyQualifiedErrorId | Should -Match 'UnknownEngine'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }

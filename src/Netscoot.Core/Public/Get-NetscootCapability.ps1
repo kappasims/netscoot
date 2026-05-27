@@ -1,4 +1,4 @@
-function Get-ScootCapability {
+function Get-NetscootCapability {
     <#
     .SYNOPSIS
         Resolve Netscoot's external-tool capabilities (git, dotnet) and platform. This is the
@@ -13,7 +13,7 @@ function Get-ScootCapability {
         Netscoot.Capability
 
     .EXAMPLE
-        Get-ScootCapability
+        Get-NetscootCapability
 
         Returns an object with Platform, PSEdition, Git, Dotnet, and DotnetSupportsSlnx.
     #>

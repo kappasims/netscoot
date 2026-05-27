@@ -122,16 +122,16 @@ try {
     # 1. Capability probe
     Add-Scenario -Title 'Capability probe' `
         -Narrative 'What a user runs first to see whether their machine can do anything.' `
-        -CommandText 'Get-ScootCapability' `
-        -Command { Get-ScootCapability }
+        -CommandText 'Get-NetscootCapability' `
+        -Command { Get-NetscootCapability }
 
     # 2. Dry-run a move
     $r1 = New-AppLibRepo; $sandboxes.Add($r1)
     Add-Scenario -Title 'Preview a project move (-WhatIf)' `
         -Narrative 'The safe first step: see what a move would touch without changing anything.' `
-        -CommandText 'Invoke-Scoot -Path ./src/Lib/Lib.csproj -Destination ./libs/Lib -WhatIf' `
+        -CommandText 'Invoke-Netscoot -Path ./src/Lib/Lib.csproj -Destination ./libs/Lib -WhatIf' `
         -Command {
-            Invoke-Scoot -Path (Join-Path $r1 (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) `
+            Invoke-Netscoot -Path (Join-Path $r1 (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) `
                 -Destination (Join-Path $r1 (Join-Path 'libs' 'Lib')) -RepoRoot $r1 -WhatIf
         }
 
@@ -139,27 +139,27 @@ try {
     $r2 = New-AppLibRepo; $sandboxes.Add($r2)
     Add-Scenario -Title 'Perform the move' `
         -Narrative 'The real move: reconciles the solution and the consumer reference, then builds.' `
-        -CommandText 'Invoke-Scoot -Path ./src/Lib/Lib.csproj -Destination ./libs/Lib' `
+        -CommandText 'Invoke-Netscoot -Path ./src/Lib/Lib.csproj -Destination ./libs/Lib' `
         -Command {
-            Invoke-Scoot -Path (Join-Path $r2 (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) `
+            Invoke-Netscoot -Path (Join-Path $r2 (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) `
                 -Destination (Join-Path $r2 (Join-Path 'libs' 'Lib')) -RepoRoot $r2 -Confirm:$false
         }
 
     # 4. Error: missing project
     Add-Scenario -Title 'Error: project does not exist' `
         -Narrative 'How a bad path reads back to the user.' `
-        -CommandText 'Invoke-Scoot -Path ./nope/Ghost.csproj -Destination ./libs/Ghost' `
+        -CommandText 'Invoke-Netscoot -Path ./nope/Ghost.csproj -Destination ./libs/Ghost' `
         -Command {
-            Invoke-Scoot -Path (Join-Path (New-Sandbox) 'Ghost.csproj') -Destination 'X:/libs/Ghost' -ErrorAction Continue
+            Invoke-Netscoot -Path (Join-Path (New-Sandbox) 'Ghost.csproj') -Destination 'X:/libs/Ghost' -ErrorAction Continue
         }
 
     # 5. Error: destination overlaps source
     $r3 = New-AppLibRepo; $sandboxes.Add($r3)
     Add-Scenario -Title 'Error: destination inside the source' `
         -Narrative 'The overlap guard that refuses a move into its own subtree before changing anything.' `
-        -CommandText 'Invoke-Scoot -Path ./src/Lib/Lib.csproj -Destination ./src/Lib/nested' `
+        -CommandText 'Invoke-Netscoot -Path ./src/Lib/Lib.csproj -Destination ./src/Lib/nested' `
         -Command {
-            Invoke-Scoot -Path (Join-Path $r3 (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) `
+            Invoke-Netscoot -Path (Join-Path $r3 (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) `
                 -Destination (Join-Path $r3 (Join-Path 'src' (Join-Path 'Lib' 'nested'))) -RepoRoot $r3 -Confirm:$false -ErrorAction Continue
         }
 

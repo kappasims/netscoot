@@ -18,14 +18,14 @@ BeforeAll {
     }
 }
 
-Describe 'Register/Unregister-ScootGitAlias' {
+Describe 'Register/Unregister-NetscootGitAlias' {
     It 'sets and unsets a repo-local alias' {
         $root = New-RepoFixture
         Push-Location $root
         try {
-            Register-ScootGitAlias -Scope Local -Confirm:$false | Out-Null
+            Register-NetscootGitAlias -Scope Local -Confirm:$false | Out-Null
             (& git config --local --get alias.netscoot) | Should -Match 'git-netscoot\.ps1'
-            Unregister-ScootGitAlias -Scope Local -Confirm:$false | Out-Null
+            Unregister-NetscootGitAlias -Scope Local -Confirm:$false | Out-Null
             (& git config --local --get alias.netscoot) | Should -BeNullOrEmpty
         } finally { Pop-Location; Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -34,7 +34,7 @@ Describe 'Register/Unregister-ScootGitAlias' {
         $root = New-RepoFixture
         Push-Location $root
         try {
-            Register-ScootGitAlias -Scope Local -WhatIf | Out-Null
+            Register-NetscootGitAlias -Scope Local -WhatIf | Out-Null
             (& git config --local --get alias.netscoot) | Should -BeNullOrEmpty
         } finally { Pop-Location; Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -45,7 +45,7 @@ Describe 'git netscoot (end-to-end, universal cross-engine routing)' {
         $root = New-RepoFixture
         Push-Location $root
         try {
-            Register-ScootGitAlias -Scope Local -Confirm:$false | Out-Null
+            Register-NetscootGitAlias -Scope Local -Confirm:$false | Out-Null
             & git -C $root netscoot src/Lib/Lib.csproj libs/Lib --nobuild 2>&1 | Out-Null
             (Join-Path $root (Join-Path 'libs' (Join-Path 'Lib' ('Lib.csproj')))) | Should -Exist
             (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Should -Not -Exist
@@ -60,7 +60,7 @@ Describe 'git netscoot (end-to-end, universal cross-engine routing)' {
         Push-Location $root
         try {
             & git init -q; & git add -A; & git commit -qm fixture | Out-Null
-            Register-ScootGitAlias -Scope Local -Confirm:$false | Out-Null
+            Register-NetscootGitAlias -Scope Local -Confirm:$false | Out-Null
             & git -C $root netscoot Assets/Foo/Bar.cs Assets/Moved/Bar.cs 2>&1 | Out-Null
             (Join-Path $root (Join-Path 'Assets' (Join-Path 'Moved' ('Bar.cs')))) | Should -Exist
             (Join-Path $root (Join-Path 'Assets' (Join-Path 'Moved' ('Bar.cs.meta')))) | Should -Exist     # .meta rode along
@@ -76,7 +76,7 @@ Describe 'git netscoot (end-to-end, universal cross-engine routing)' {
         Push-Location $root
         try {
             & git init -q; & git add -A; & git commit -qm fixture | Out-Null
-            Register-ScootGitAlias -Scope Local -Confirm:$false | Out-Null
+            Register-NetscootGitAlias -Scope Local -Confirm:$false | Out-Null
             & git -C $root netscoot lib/helpers.ps1 shared/helpers.ps1 2>&1 | Out-Null
             (Join-Path $root (Join-Path 'shared' ('helpers.ps1'))) | Should -Exist
             (Get-Content (Join-Path $root (Join-Path 'app' ('main.ps1'))) -Raw) | Should -Match 'shared[\\/]helpers\.ps1'

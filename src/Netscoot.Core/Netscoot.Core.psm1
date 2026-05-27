@@ -10,6 +10,6 @@ $public = @(Get-ChildItem -Path (Join-Path $PSScriptRoot 'Public') -Filter '*.ps
 foreach ($f in $public) { . $f.FullName }
 
 # `Scoot` is the cheeky shorthand for the umbrella mover (aliases skip the approved-verb rule, so
-# this gives `scoot <src> -Destination <dst>` while Invoke-Scoot stays the convention-clean cmdlet).
-Set-Alias -Name Scoot -Value Invoke-Scoot
+# this gives `scoot <src> -Destination <dst>` while Invoke-Netscoot stays the convention-clean cmdlet).
+Set-Alias -Name Scoot -Value Invoke-Netscoot
 Export-ModuleMember -Function $public.BaseName -Alias Scoot

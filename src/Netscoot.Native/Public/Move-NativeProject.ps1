@@ -32,7 +32,7 @@ function Move-NativeProject {
 
     .PARAMETER NoJournal
         Skip recording this move in the undo journal for this call, even when journaling is enabled
-        (Undo-Scoot will not see this move).
+        (Undo-Netscoot will not see this move).
 
     .OUTPUTS
         Netscoot.NativeMoveResult

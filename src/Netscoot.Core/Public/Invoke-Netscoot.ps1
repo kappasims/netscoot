@@ -1,4 +1,4 @@
-function Invoke-Scoot {
+function Invoke-Netscoot {
     <#
     .SYNOPSIS
         Move any supported item and reconcile references, routing by detected type to the right
@@ -40,15 +40,15 @@ function Invoke-Scoot {
 
     .EXAMPLE
         # Preview any move - detects the engine, changes nothing
-        Invoke-Scoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
+        Invoke-Netscoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
         # Rename: ./libs/Tarragon does not exist yet, so src/Tarragon becomes libs/Tarragon
-        Invoke-Scoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
+        Invoke-Netscoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon
         # Move into an existing folder: ./libs exists, so it lands at ./libs/Tarragon
-        Invoke-Scoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs
+        Invoke-Netscoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs
         # Any supported type routes through the same call (here a PowerShell module folder)
-        Invoke-Scoot -Path ./tools/Mayo -Destination ./modules/Mayo
+        Invoke-Netscoot -Path ./tools/Mayo -Destination ./modules/Mayo
         # No git in the repository? -Force falls back to a plain Move-Item (history not preserved)
-        Invoke-Scoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -Force
+        Invoke-Netscoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -Force
     #>
 
     # SupportsShouldProcess so -WhatIf/-Confirm bind and propagate to the engine; this dispatcher
@@ -104,7 +104,7 @@ function Invoke-Scoot {
             if ($PSBoundParameters.ContainsKey($sw)) { $common[$sw] = $PSBoundParameters[$sw] }
         }
 
-        Write-Verbose "Invoke-Scoot: engine=$engine container=$isContainer target=$full"
+        Write-Verbose "Invoke-Netscoot: engine=$engine container=$isContainer target=$full"
         switch ($engine) {
             'dotnet' {
                 if ($NoBuild) { $common.NoBuild = $true }

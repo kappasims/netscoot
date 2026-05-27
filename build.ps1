@@ -146,7 +146,7 @@ function Invoke-InstallTask {
     if ($onPath) {
         Write-Host 'Ready. Import it by name:' -ForegroundColor Green
         Write-Host '    Import-Module Netscoot          # all engines'
-        Write-Host '    Register-ScootGitAlias -Scope Global   # optional: enable `git netscoot`'
+        Write-Host '    Register-NetscootGitAlias -Scope Global   # optional: enable `git netscoot`'
     } else {
         Write-Host "That folder is NOT on `$env:PSModulePath. Add it for this session with:" -ForegroundColor Yellow
         Write-Host "    `$env:PSModulePath = '$InstallPath' + '$sep' + `$env:PSModulePath"
@@ -307,7 +307,7 @@ function Invoke-DocsTask {
     # Per-command detail (flat; the TOC above provides the namespace grouping).
     foreach ($m in $docModules) {
         foreach ($c in (Get-Command -Module $m -CommandType Function | Sort-Object Name)) {
-            # Get-Help treats the name as a pattern, so 'Invoke-Scoot' also matches Invoke-Scoot*;
+            # Get-Help treats the name as a pattern, so 'Invoke-Netscoot' also matches Invoke-Netscoot*;
             # keep the exact match.
             $h = Get-Help $c.Name -Full | Where-Object { $_.Name -eq $c.Name } | Select-Object -First 1
             # Horizontal rule before each command so the entries read as distinct blocks.
@@ -505,14 +505,14 @@ function Assert-DocsNotStale {
         foreach ($bad in 'DotnetMove', 'dotnet-move', 'DOTNETMOVE', 'dotnetmv') {
             if ($text.Contains($bad)) { throw "Stale brand token '$bad' in $(Split-Path -Leaf $f); update it to the current brand." }
         }
-        if ($text -cmatch '\bMove-Dotnet\b') { throw "Stale 'Move-Dotnet' (the umbrella is now Invoke-Scoot) in $(Split-Path -Leaf $f)." }
+        if ($text -cmatch '\bMove-Dotnet\b') { throw "Stale 'Move-Dotnet' (the umbrella is now Invoke-Netscoot) in $(Split-Path -Leaf $f)." }
     }
 
     # (2b) Every product cmdlet the docs name must be exported (a distinctive-noun match avoids
     # flagging generic PowerShell/dotnet commands that legitimately appear in examples).
     foreach ($m in $modules) { Import-Module ([System.IO.Path]::Combine($root, 'src', $m, "$m.psd1")) -Force }
     $exported = @(Get-Command -Module $modules -CommandType Function | ForEach-Object Name)
-    $stem = 'Scoot|Dotnet|PowerShell|Native|Unity|MSBuild|MoveEngine|SolutionReferences|SolutionConsistency|SolutionInventory|PathReference'
+    $stem = 'Netscoot|Dotnet|PowerShell|Native|Unity|MSBuild|MoveEngine|SolutionReferences|SolutionConsistency|SolutionInventory|PathReference'
     foreach ($f in $docFiles) {
         $text = [System.IO.File]::ReadAllText($f)
         foreach ($mch in [regex]::Matches($text, "\b[A-Z][a-z]+-($stem)\w*\b")) {
@@ -617,7 +617,7 @@ function Invoke-PublishTask {
     # Smoke-import in a clean child pwsh to prove the single package self-loads with no separate
     # modules on the path (this is what catches missing-bundle / load-order bugs).
     Write-Host 'Smoke-importing the bundled package in a clean session...' -ForegroundColor Cyan
-    & pwsh -NoProfile -Command "Import-Module '$manifest' -Force; if (-not (Get-Command Invoke-Scoot -ErrorAction SilentlyContinue)) { throw 'Invoke-Scoot was not surfaced by the bundled package.' }; 'bundled import OK'"
+    & pwsh -NoProfile -Command "Import-Module '$manifest' -Force; if (-not (Get-Command Invoke-Netscoot -ErrorAction SilentlyContinue)) { throw 'Invoke-Netscoot was not surfaced by the bundled package.' }; 'bundled import OK'"
     if ($LASTEXITCODE -ne 0) { throw 'The bundled package failed to import in a clean session.' }
 
     Write-Host "Staged single package at: $pkg" -ForegroundColor Green

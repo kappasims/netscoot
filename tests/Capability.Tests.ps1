@@ -16,9 +16,9 @@ BeforeAll {
     }
 }
 
-Describe 'Get-ScootCapability' {
+Describe 'Get-NetscootCapability' {
     It 'reports dotnet present with .slnx support and a platform' {
-        $cap = Get-ScootCapability
+        $cap = Get-NetscootCapability
         $cap.Dotnet.Present | Should -BeTrue
         $cap.DotnetSupportsSlnx | Should -BeTrue          # .NET 9+ on this machine
         $cap.Platform | Should -BeIn @('Windows', 'macOS', 'Linux')

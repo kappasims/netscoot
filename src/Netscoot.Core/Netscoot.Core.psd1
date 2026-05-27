@@ -9,11 +9,11 @@
     # No RequiredModules: shipped as one bundled Netscoot package; the umbrella loads the bundled
     # Netscoot.Shared (-Global) before this engine. (In dev, tests/build/the forwarder do the same.)
     FunctionsToExport    = @(
-        'Clear-ScootJournal',
+        'Clear-NetscootJournal',
         'Find-PathReference',
-        'Get-ScootCapability',
+        'Get-NetscootCapability',
         'Get-SolutionInventory',
-        'Invoke-Scoot',
+        'Invoke-Netscoot',
         'Move-DotnetFile',
         'Move-DotnetFolder',
         'Move-DotnetProject',
@@ -23,16 +23,16 @@
         'Move-PowerShellModule',
         'Move-PowerShellScript',
         'Move-Solution',
-        'Register-ScootGitAlias',
+        'Register-NetscootGitAlias',
         'Repair-SolutionReferences',
         'Resolve-MoveEngine',
-        'Set-ScootJournal',
+        'Set-NetscootJournal',
         'Sync-Solution',
-        'Test-ScootUpdate',
+        'Test-NetscootUpdate',
         'Test-SolutionConsistency',
-        'Undo-Scoot',
-        'Update-Scoot',
-        'Unregister-ScootGitAlias'
+        'Undo-Netscoot',
+        'Update-Netscoot',
+        'Unregister-NetscootGitAlias'
     )
     CmdletsToExport      = @()
     VariablesToExport    = @()

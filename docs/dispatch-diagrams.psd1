@@ -7,7 +7,7 @@
     # columns aligned by hand; '->' is the routing arrow. This is content, not generated - edit it
     # here when routing changes (and keep it in step with Resolve-MoveEngine / the dispatchers).
 
-    'Invoke-Scoot' = @'
+    'Invoke-Netscoot' = @'
 .csproj  .fsproj  .vbproj  ->  Netscoot.MoveResult
 folder of .NET projects    ->  Netscoot.TreeMoveResult
 .sln  .slnx                ->  Netscoot.SolutionMoveResult

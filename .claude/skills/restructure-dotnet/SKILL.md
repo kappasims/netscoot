@@ -1,6 +1,6 @@
 ---
 name: restructure-dotnet
-description: Use when moving, relocating, or restructuring managed .NET projects: moving a .csproj/.fsproj/.vbproj folder, reorganizing solution layout, or extracting a project into its own assembly. Triggers on "move this project", "restructure", "reorganize the solution", "extract into its own folder/assembly". Do not hand-edit .sln/.slnx/.csproj. For PowerShell modules/scripts use restructure-powershell; for native C++/.vcxproj use restructure-native.
+description: Use when moving, relocating, or restructuring managed .NET projects: moving a .csproj/.fsproj/.vbproj folder, reorganizing solution layout, or extracting a project into its own assembly. Triggers on "move this project," "restructure," "reorganize the solution," "extract into its own folder/assembly." Do not hand-edit .sln/.slnx/.csproj. For PowerShell modules/scripts use restructure-powershell; for native C++/.vcxproj use restructure-native.
 ---
 
 # Restructuring managed .NET repositories (cross-platform)
@@ -35,12 +35,12 @@ To understand a repository before touching it, use these; do not parse solution/
 - `Repair-SolutionReferences` (no flags) - report dangling solution entries / `<ProjectReference>`s.
 - `Find-PathReference` - build/CI/hook scripts that hardcode a path no move reconciles.
 - `Resolve-MoveEngine` - which engine a given path classifies to.
-- `Get-ScootCapability` - whether git and dotnet are present, plus the platform.
+- `Get-NetscootCapability` - whether git and dotnet are present, plus the platform.
 
 To resolve a divergence that `Test-SolutionConsistency` reports, run `Sync-Solution` (it adds each
 project to the solutions missing it; preview with `-WhatIf`), or add it by hand with
 `dotnet sln <solution> add <project>`. These are the right tools when the task is "audit" or
-"sync the solutions", not only when moving.
+"sync the solutions," not only when moving.
 
 ## Moving a .NET project
 
@@ -95,22 +95,22 @@ Use the raw CLI, never a text editor:
 ## Undoing a move
 
 Every move is journaled to a per-user data directory (LocalAppData on Windows, ~/Library/Application Support on macOS, ~/.local/share on Linux), so you can reverse it later -
-even in a new session - with `Undo-Scoot`. It replays the inverse (the same move with source
+even in a new session - with `Undo-Netscoot`. It replays the inverse (the same move with source
 and destination swapped), re-reconciling from the current state.
 
 ```powershell
-Undo-Scoot -List     # what can be undone
-Undo-Scoot -WhatIf   # preview reversing the most recent move
-Undo-Scoot           # reverse the most recent move (call again to walk back)
+Undo-Netscoot -List     # what can be undone
+Undo-Netscoot -WhatIf   # preview reversing the most recent move
+Undo-Netscoot           # reverse the most recent move (call again to walk back)
 ```
 
 Journaling is on by default and stays out of the working tree (it lives inside `.git/`, so git never tracks it).
-Opt out per repository with `Set-ScootJournal -Enabled $false` (or `-Global` for all repositories). See the [README](https://github.com/kappasims/netscoot).
+Opt out per repository with `Set-NetscootJournal -Enabled $false` (or `-Global` for all repositories). See the [README](https://github.com/kappasims/netscoot).
 
 ## The `git netscoot` verb (optional; ask first)
 
 The same routing is also an opt-in git verb: `git netscoot <src> <dst> [--whatif]`. It needs a
-one-time alias that `Register-ScootGitAlias` writes to the user's git config. If you suggest
+one-time alias that `Register-NetscootGitAlias` writes to the user's git config. If you suggest
 it or want to use it, prompt the user first and let them register it; do not edit their git
 config for them. Never auto-install anything (git, the dotnet SDK, or these modules): if a
 prerequisite is missing, tell the user the install command and let them run it.
@@ -118,9 +118,9 @@ prerequisite is missing, tell the user the install command and let them run it.
 ## Staying current
 
 netscoot does not auto-update; cutting a release changes nothing on an installed machine until
-you update. Check with `Test-ScootUpdate` (it compares the installed module to the latest
-GitHub release). Update in place with `Update-Scoot` (no git), or re-run the installer:
+you update. Check with `Test-NetscootUpdate` (it compares the installed module to the latest
+GitHub release). Update in place with `Update-Netscoot` (no git), or re-run the installer:
 `irm https://raw.githubusercontent.com/kappasims/netscoot/master/install.ps1 | iex`. From a dev
 clone instead, `git pull` then `./build.ps1 -Task Install`. For automatic reminders, consider a
-Claude Code SessionStart hook that runs `Test-ScootUpdate -EnableAutoUpdate` (gated: it checks only when `$env:NETSCOOT_AUTOUPDATE` is truthy, and never updates); ask the user before adding it,
+Claude Code SessionStart hook that runs `Test-NetscootUpdate -EnableAutoUpdate` (gated: it checks only when `$env:NETSCOOT_AUTOUPDATE` is truthy, and never updates); ask the user before adding it,
 since it edits their settings.json.

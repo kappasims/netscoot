@@ -34,7 +34,7 @@ Before moving, inspect with the read-only surface instead of parsing `.sln`/`.vc
 `Test-SolutionConsistency` (membership divergence across solutions, `-Debug` for the full matrix),
 `Get-SolutionInventory` (full solution contents - it surfaces `.vcxproj` and other non-CLI project
 types that `dotnet sln list` omits, plus projects in no solution), `Repair-SolutionReferences` (no
-flags, to report dangling entries), `Find-PathReference`, and `Get-ScootCapability`. To resolve
+flags, to report dangling entries), `Find-PathReference`, and `Get-NetscootCapability`. To resolve
 a reported divergence, run `Sync-Solution` (or `dotnet sln <solution> add <project>` by hand). These
 cover solution membership for `.vcxproj` too; the native link settings are what `Move-NativeProject`
 reports separately.
@@ -69,23 +69,23 @@ warnings) tells you exactly what to verify or hand-fix afterward.
 ## Undoing a move
 
 Every move is journaled to a per-user data directory (LocalAppData on Windows, ~/Library/Application Support on macOS, ~/.local/share on Linux), so you can reverse it later -
-even in a new session - with `Undo-Scoot`. It replays the inverse (moves the `.vcxproj` folder
+even in a new session - with `Undo-Netscoot`. It replays the inverse (moves the `.vcxproj` folder
 and its `.vcxproj.filters` back, re-doing solution membership); re-check the native link settings
 it reports, the same as for a forward move.
 
 ```powershell
-Undo-Scoot -List     # what can be undone
-Undo-Scoot -WhatIf   # preview reversing the most recent move
-Undo-Scoot           # reverse the most recent move (call again to walk back)
+Undo-Netscoot -List     # what can be undone
+Undo-Netscoot -WhatIf   # preview reversing the most recent move
+Undo-Netscoot           # reverse the most recent move (call again to walk back)
 ```
 
 Journaling is on by default and stays out of the working tree (it lives inside `.git/`, so git never tracks it).
-Opt out per repository with `Set-ScootJournal -Enabled $false` (or `-Global` for all repositories). See the [README](https://github.com/kappasims/netscoot).
+Opt out per repository with `Set-NetscootJournal -Enabled $false` (or `-Global` for all repositories). See the [README](https://github.com/kappasims/netscoot).
 
 ## The `git netscoot` verb (optional; ask first)
 
 The same routing is also an opt-in git verb: `git netscoot <src> <dst> [--whatif]`. It needs a
-one-time alias that `Register-ScootGitAlias` writes to the user's git config. If you suggest
+one-time alias that `Register-NetscootGitAlias` writes to the user's git config. If you suggest
 it or want to use it, prompt the user first and let them register it; do not edit their git
 config for them. Never auto-install anything (git, the dotnet SDK, or these modules): if a
 prerequisite is missing, tell the user the install command and let them run it.
@@ -93,9 +93,9 @@ prerequisite is missing, tell the user the install command and let them run it.
 ## Staying current
 
 netscoot does not auto-update; cutting a release changes nothing on an installed machine until
-you update. Check with `Test-ScootUpdate` (it compares the installed module to the latest
-GitHub release). Update in place with `Update-Scoot` (no git), or re-run the installer:
+you update. Check with `Test-NetscootUpdate` (it compares the installed module to the latest
+GitHub release). Update in place with `Update-Netscoot` (no git), or re-run the installer:
 `irm https://raw.githubusercontent.com/kappasims/netscoot/master/install.ps1 | iex`. From a dev
 clone instead, `git pull` then `./build.ps1 -Task Install`. For automatic reminders, consider a
-Claude Code SessionStart hook that runs `Test-ScootUpdate -EnableAutoUpdate` (gated: it checks only when `$env:NETSCOOT_AUTOUPDATE` is truthy, and never updates); ask the user before adding it,
+Claude Code SessionStart hook that runs `Test-NetscootUpdate -EnableAutoUpdate` (gated: it checks only when `$env:NETSCOOT_AUTOUPDATE` is truthy, and never updates); ask the user before adding it,
 since it edits their settings.json.

@@ -67,13 +67,13 @@ Describe 'Move-DotnetFile (routing)' {
     }
 }
 
-Describe 'Invoke-Scoot (legacy .vcproj)' {
+Describe 'Invoke-Netscoot (legacy .vcproj)' {
     It 'rejects a legacy .vcproj with a clear, specific error' {
         $root = New-DispatchFixture
         try {
             $vcproj = Join-Path $root 'Old.vcproj'
             Set-Content -LiteralPath $vcproj -Value '<VisualStudioProject></VisualStudioProject>' -Encoding UTF8
-            Invoke-Scoot -Path $vcproj -Destination (Join-Path $root 'moved') -Confirm:$false `
+            Invoke-Netscoot -Path $vcproj -Destination (Join-Path $root 'moved') -Confirm:$false `
                 -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
             $errs[0].FullyQualifiedErrorId | Should -Match 'LegacyVcprojNotSupported'
             $vcproj | Should -Exist   # nothing moved

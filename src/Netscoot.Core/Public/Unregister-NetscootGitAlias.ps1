@@ -1,7 +1,7 @@
-function Unregister-ScootGitAlias {
+function Unregister-NetscootGitAlias {
     <#
     .SYNOPSIS
-        Remove the `git netscoot` alias registered by Register-ScootGitAlias.
+        Remove the `git netscoot` alias registered by Register-NetscootGitAlias.
 
     .PARAMETER Scope
         'Local' (this repository, default) or 'Global'.
@@ -11,9 +11,9 @@ function Unregister-ScootGitAlias {
 
     .EXAMPLE
         # Remove the alias for this repository (default scope is Local)
-        Unregister-ScootGitAlias
+        Unregister-NetscootGitAlias
         # Remove the global alias from ~/.gitconfig
-        Unregister-ScootGitAlias -Scope Global
+        Unregister-NetscootGitAlias -Scope Global
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     param(
