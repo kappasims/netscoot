@@ -210,6 +210,18 @@ function Invoke-DocsTask {
             # Backtick bare parameter references (-Name). Uppercase-first skips hyphenated words
             # (non-terminating, cross-boundary); the lookbehind skips cmdlet names (Move-Item).
             $s = [regex]::Replace($s, '(?<![\w`-])(-[A-Z][A-Za-z]+)\b', '`$1`')
+            # Linkify documented cmdlet names to their section anchor. Only names known to the
+            # generator (see $blurbs, populated below) are linkified, so an unrelated Verb-Noun in
+            # prose is left alone. The lookbehind skips a leading '[' (already a link), '`' (code
+            # span), and word/hyphen chars (so 'Move-DotnetProject' doesn't match inside a longer
+            # composite). Self-references on the cmdlet's own page stay plain to avoid noise.
+            $s = [regex]::Replace($s, '(?<![\w`\[/-])([A-Z][a-zA-Z]+-[A-Z][a-zA-Z]+)\b', {
+                    param($mm)
+                    $n = $mm.Value
+                    if ($blurbs.ContainsKey($n) -and $n -ne $script:CurrentCmdlet) {
+                        '[' + $n + '](#' + $n.ToLower() + ')'
+                    } else { $n }
+                })
             # Backtick file paths / filenames that carry a known extension (with optional path
             # segments), then bare leading-dot extensions, so paths in prose render as code. The
             # backtick and '/' in the lookbehinds stop a second pass from re-matching inside a span
@@ -419,6 +431,8 @@ function Invoke-DocsTask {
             [void]$sb.AppendLine()
             [void]$sb.AppendLine("#### $($c.Name)")
             [void]$sb.AppendLine()
+            # Track the current cmdlet so ConvertTo-MdText skips self-references when linkifying.
+            $script:CurrentCmdlet = $c.Name
             $syn = "$($h.Synopsis)".Trim()
             if ($syn) { [void]$sb.AppendLine((Format-Wrap (ConvertTo-MdText $syn))); [void]$sb.AppendLine() }
 
