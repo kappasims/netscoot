@@ -1,8 +1,19 @@
 name: CI
 
+# A pull request from a branch in this repo already fires `pull_request`, so scoping `push` to the
+# long-lived branches avoids running the whole matrix twice for the same commit (the duplicate run
+# also leaves redundant, slower-settling status checks). Pushes to develop/master still run CI - the
+# release flow (prepare on develop, fast-forward master) depends on it.
 on:
   push:
+    branches: [develop, master]
   pull_request:
+
+# One in-flight run per PR (or per pushed ref); a newer commit cancels the superseded run instead of
+# letting both race to completion.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 # CI only reads the repository (checkout) and reads packages (action/tooling pulls); it never writes
 # back, so grant the minimum and drop the default write scopes.
