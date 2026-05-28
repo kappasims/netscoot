@@ -5,6 +5,38 @@
 # job via $PSCmdlet.ShouldProcess (canonical -WhatIf/-Confirm); this engine just runs the
 # transaction once the operation is approved.
 
+function Write-MovePlan {
+    # Emit a structured plan summary via Write-Verbose, so `-WhatIf -Verbose` reveals what a mover
+    # would touch (solutions edited, consumer references repointed, own references rebased, etc.).
+    # $Items is an ordered dictionary: scalars print inline, arrays print as a count line plus one
+    # "- value" per element. Movers call this once they have computed their plan and before
+    # Invoke-MovePlan, so a dry-run user can preview the reconciliation without trusting it silently.
+    #
+    # Why -Cmdlet: PowerShell does NOT auto-propagate $VerbosePreference across module boundaries -
+    # a Netscoot.Core mover with -Verbose has $VerbosePreference='Continue', but a plain Write-Verbose
+    # called from inside this Netscoot.Shared function runs against Shared's own (default) preference.
+    # Threading the caller's $PSCmdlet through and using $Cmdlet.WriteVerbose routes the records into
+    # the CALLER's stream, so -Verbose at the mover level lights up these lines as the user expects.
+    param(
+        [Parameter(Mandatory)][System.Management.Automation.PSCmdlet]$Cmdlet,
+        [Parameter(Mandatory)][string]$Caption,
+        [Parameter(Mandatory)][System.Collections.IDictionary]$Items
+    )
+    $Cmdlet.WriteVerbose("Plan: $Caption")
+    foreach ($k in $Items.Keys) {
+        $v = $Items[$k]
+        if ($null -eq $v) { $Cmdlet.WriteVerbose(("  {0}: (none)" -f $k)); continue }
+        if ($v -is [string] -or $v.GetType().IsValueType) {
+            $Cmdlet.WriteVerbose(("  {0}: {1}" -f $k, $v))
+            continue
+        }
+        $arr = @($v)
+        if ($arr.Count -eq 0) { $Cmdlet.WriteVerbose(("  {0}: (none)" -f $k)); continue }
+        $Cmdlet.WriteVerbose(("  {0} ({1}):" -f $k, $arr.Count))
+        foreach ($i in $arr) { $Cmdlet.WriteVerbose(("    - $i")) }
+    }
+}
+
 function New-MoveResult {
     # Build a move cmdlet's result object with a uniform base shape (Engine, Source,
     # Destination, Performed, SkippedCount) plus engine-specific extras, and stamp the

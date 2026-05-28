@@ -64,6 +64,7 @@
         'Test-PathUnder',
         'Test-PathUnderAny',
         'Write-CapabilityGuidance',
+        'Write-MovePlan',
         'Write-UnreconcilableReferenceWarning'
     )
     CmdletsToExport      = @()

@@ -45,6 +45,16 @@ Describe 'Umbrella manifest declares exactly what the public engines export' {
         $extra.Count   | Should -Be 0 -Because "the umbrella manifest lists aliases no engine exports: $($extra -join ', ')"
     }
 
+    It 'every manifest declares CmdletsToExport = @() (function-only module; no compiled cmdlets)' {
+        # The toolkit ships PowerShell functions, not compiled .NET cmdlets. CmdletsToExport must be
+        # the explicit empty array on every manifest, so any future shift to a compiled component is
+        # an intentional, visible change and not a silent "$null = export everything" surprise.
+        foreach ($m in 'Netscoot', 'Netscoot.Core', 'Netscoot.Unity', 'Netscoot.Native', 'Netscoot.Shared') {
+            $declared = @(Read-ManifestField -Module $m -Field 'CmdletsToExport')
+            $declared.Count | Should -Be 0 -Because "$m manifest must declare CmdletsToExport = @() (got: $($declared -join ', '))"
+        }
+    }
+
     It 'Netscoot.Shared functions are NOT in the umbrella surface (internal plumbing only)' {
         # Captures the "Shared is internal" rule explicitly so a future maintainer who adds a Shared
         # name to Netscoot.psd1 trips the gate. Engines see Shared because we Import-Module -Global,

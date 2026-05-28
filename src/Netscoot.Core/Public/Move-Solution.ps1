@@ -84,7 +84,9 @@ function Move-Solution {
         $newDir = Split-Path -Parent $newPath
 
         $entries = @(Get-SolutionProjectEntries -SolutionFile $src)
-        Write-Verbose "Plan: move solution $name  $src -> $newPath  ($($entries.Count) project path(s) to rebase)"
+        Write-MovePlan -Cmdlet $PSCmdlet -Caption "Move-Solution $name  $src -> $newPath" -Items ([ordered]@{
+                'project paths to rebase' = @($entries | ForEach-Object { $_.Stored })
+            })
 
         $performed = $false
         $rebased = 0

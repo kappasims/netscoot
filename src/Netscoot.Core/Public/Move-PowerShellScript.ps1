@@ -109,9 +109,12 @@ function Move-PowerShellScript {
         # The moved script's own dot-source/call paths (break when its location changes).
         $ownRefs = @(Get-PowerShellScriptReferences -File $src | Where-Object { -not $_.Unresolved })
 
-        Write-Verbose "Plan: move script $name  $src -> $newPath"
-        Write-Verbose "  referencing scripts to fix : $($referencers.Count)"
-        Write-Verbose "  own references to fix       : $($ownRefs.Count)"
+        $refRels = @($referencers | ForEach-Object { $_.File })
+        $ownRels = @($ownRefs | ForEach-Object { $_.Raw })
+        Write-MovePlan -Cmdlet $PSCmdlet -Caption "Move-PowerShellScript $name  $src -> $newPath" -Items ([ordered]@{
+                'referencing scripts to fix' = $refRels
+                'own references to fix'      = $ownRels
+            })
         foreach ($u in $unresolvedRefs) {
             Write-Warning "Possible dynamic reference to $name in $($u.File): `"$($u.Raw)`" - could not resolve statically; verify by hand."
         }

@@ -116,9 +116,13 @@ function Move-MSBuildImport {
         $ownImports = @(Get-ImportPaths -ProjectFile $src | Where-Object { -not $_.Unresolved -and $_.FullPath })
         $ownUnresolved = @(Get-ImportPaths -ProjectFile $src | Where-Object { $_.Unresolved })
 
-        Write-Verbose "Plan: move import $srcName  $src -> $newPath"
-        Write-Verbose "  importers to fix  : $($importers.Count)"
-        Write-Verbose "  own imports to fix: $($ownImports.Count)"
+        $importerRels = @($importers | ForEach-Object { $_.File })
+        $ownImportRaw = @($ownImports | ForEach-Object { $_.Raw })
+        Write-MovePlan -Cmdlet $PSCmdlet -Caption "Move-MSBuildImport $srcName  $src -> $newPath" -Items ([ordered]@{
+                'importers to fix'        = $importerRels
+                'own imports to fix'      = $ownImportRaw
+                'auto-imported by location' = $autoImported
+            })
         if ($autoImported) {
             Write-Warning "$srcName is imported by location (auto-import). Moving it changes which projects inherit it; that inheritance cannot be fixed by editing <Import> - verify the new location applies to the intended projects."
         }

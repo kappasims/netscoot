@@ -6,6 +6,20 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- `Test-SolutionConsistency` now reports a `.pssproj` (PowerShell project file) that diverges across
+  solutions. Previously the comparison filter only matched `.csproj` / `.fsproj` / `.vbproj` / `.vcxproj`,
+  so a `.pssproj` listed in one solution but not another silently read as "all solutions agree" even
+  though `Get-SolutionInventory` clearly showed the divergence.
+
+### Changed
+
+- The move commands now narrate their full plan under `-Verbose`: the solutions they would edit, the
+  consumer projects they would repoint, the references they would rebase, and (for native projects)
+  the path settings they cannot reconcile. `Move-X -WhatIf -Verbose` now previews every reconciliation
+  instead of summarizing as counts.
+
 ## [2.2.0] - 2026-05-28
 
 ### Changed

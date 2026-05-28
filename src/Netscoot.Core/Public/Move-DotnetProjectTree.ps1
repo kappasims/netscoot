@@ -133,10 +133,14 @@ function Move-DotnetProjectTree {
         $allExt = @(); $allSln = @()
         foreach ($it in $plan) { $allExt += $it.ExtConsumers; $allSln += $it.Solutions }
         $totalConsumers = @($allExt | Select-Object -Unique).Count
-        Write-Verbose "Plan: move tree $srcDir -> $newDir"
-        Write-Verbose "  projects moving      : $($moved.Count)"
-        Write-Verbose "  external consumers   : $totalConsumers"
-        Write-Verbose "  solutions touched    : $(@($allSln | Select-Object -Unique).Count)"
+        $movedRels = @($moved | ForEach-Object { Get-RelativePathSafe -From $repoFull -To $_ })
+        $extRels   = @($allExt | Select-Object -Unique | ForEach-Object { Get-RelativePathSafe -From $repoFull -To $_ })
+        $slnNamesT = @($allSln | Select-Object -Unique | ForEach-Object { Split-Path -Leaf $_ })
+        Write-MovePlan -Cmdlet $PSCmdlet -Caption "Move-DotnetProjectTree $srcDir -> $newDir" -Items ([ordered]@{
+                'projects moving'           = $movedRels
+                'external consumers to repoint' = $extRels
+                'solutions to update'       = $slnNamesT
+            })
 
         # Relocating the whole folder changes its depth, so warn if which Directory.Build.*
         # files apply differs at the destination. Checked once at the tree root (files inside

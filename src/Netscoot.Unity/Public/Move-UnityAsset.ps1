@@ -99,11 +99,11 @@ function Move-UnityAsset {
         $isAsmdef = ([System.IO.Path]::GetExtension($src) -eq '.asmdef')
         if ($isAsmdef) { $referencers = @(Get-AsmdefReferencers -AsmdefPath $src -RepositoryRoot $repoFull) }
 
-        Write-Verbose "Plan: $([System.IO.Path]::GetFileName($src))  $src -> $dst  (meta: $hasMeta)"
-        if ($referencers.Count -gt 0) {
-            Write-Verbose "  referenced by $($referencers.Count) asmdef(s) - references are by name/GUID and survive the move:"
-            foreach ($r in $referencers) { Write-Verbose "    $r" }
-        }
+        Write-MovePlan -Cmdlet $PSCmdlet -Caption "Move-UnityAsset $([System.IO.Path]::GetFileName($src))  $src -> $dst" -Items ([ordered]@{
+                'paired .meta moves alongside' = $hasMeta
+                'is .asmdef'                   = $isAsmdef
+                'referencing asmdefs (by name/GUID; survive the move)' = $referencers
+            })
 
         $performed = $false
         if ($PSCmdlet.ShouldProcess("$src -> $dst (with .meta)", 'Move Unity asset and its .meta')) {

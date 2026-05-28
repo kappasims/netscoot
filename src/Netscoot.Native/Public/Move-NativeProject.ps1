@@ -120,10 +120,12 @@ function Move-NativeProject {
         $hasFilters = Test-Path -LiteralPath $filters
 
         $slnNames = @(); foreach ($s in $solutions) { $slnNames += $s.Name }
-        Write-Verbose "Plan: $projFile  $oldDir -> $newDir"
-        Write-Verbose "  solutions : $($solutions.Count) ($($slnNames -join ', '))"
-        Write-Verbose "  .filters  : $hasFilters"
-        Write-Verbose "  unreconciled native settings : $($nativeSettings.Count)"
+        $settingLines = @($nativeSettings | ForEach-Object { "[$($_.Kind)] $($_.Value)" })
+        Write-MovePlan -Cmdlet $PSCmdlet -Caption "Move-NativeProject $projFile  $oldDir -> $newDir" -Items ([ordered]@{
+                'solutions to update'         = $slnNames
+                'paired .filters file moving' = $hasFilters
+                'unreconciled native settings (manual review)' = $settingLines
+            })
 
         $performed = $false
         $skippedCount = 0

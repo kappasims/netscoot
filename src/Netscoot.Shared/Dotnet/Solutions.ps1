@@ -2,7 +2,11 @@
 # consistency, and membership scans, so they are built here rather than per call.
 $script:SlnProjectEntryRegex = [regex]'^\s*Project\("\{[^}]+\}"\)\s*=\s*"[^"]*",\s*"([^"]+)",\s*"\{[^}]+\}"'
 $script:SlnProjectFullRegex = [regex]'^\s*Project\("\{([^}]+)\}"\)\s*=\s*"([^"]*)",\s*"([^"]+)",\s*"\{([^}]+)\}"'
-$script:ProjectFileExtRegex = [regex]'\.(cs|fs|vb|vcx)proj$'
+# Project-file extensions that count as a "project" for membership comparison and sync. Includes
+# managed (cs/fs/vb), native (vcx), and PowerShell (pss). Get-SolutionInventory shows pssproj rows;
+# Test-SolutionConsistency / Sync-Solution must compare them too, otherwise the inventory and the
+# consistency check disagree (a pssproj in slnx but not sln reads as "all solutions agree").
+$script:ProjectFileExtRegex = [regex]'\.(cs|fs|vb|vcx|pss)proj$'
 
 function Find-Solutions {
     # All .sln and .slnx files beneath a root.

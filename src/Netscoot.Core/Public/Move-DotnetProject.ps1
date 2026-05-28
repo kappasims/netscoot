@@ -138,10 +138,16 @@ function Move-DotnetProject {
         $ownRefs = @(Get-WorkspaceProjectRefs -Workspace $workspace -ProjectFile $projFull | Where-Object { $_.IsLiteral })
 
         $slnNames = @(); foreach ($s in $solutions) { $slnNames += $s.Name }
-        Write-Verbose "Plan: $projFile  $oldDir -> $newDir"
-        Write-Verbose "  solutions referencing it : $($solutions.Count) ($($slnNames -join ', '))"
-        Write-Verbose "  consumer projects        : $($consumers.Count)"
-        Write-Verbose "  its own references       : $($ownRefs.Count)"
+        # The detailed plan is emitted via Write-Verbose - a dry-run with `-WhatIf -Verbose` shows
+        # every solution that would be edited and every reference that would be repointed (not just
+        # counts), so the user can preview the reconciliation instead of trusting it.
+        $consumerRels = @($consumers | ForEach-Object { Get-RelativePathSafe -From $repoFull -To $_ })
+        $ownRefRels   = @($ownRefs   | ForEach-Object { Get-RelativePathSafe -From $repoFull -To $_.FullPath })
+        Write-MovePlan -Cmdlet $PSCmdlet -Caption "Move-DotnetProject $projFile  $oldDir -> $newDir" -Items ([ordered]@{
+                'solutions to update'      = $slnNames
+                'consumer projects to repoint' = $consumerRels
+                'own references to rebase' = $ownRefRels
+            })
 
         # Debug: full membership matrix for the whole repository.
         if ($DebugPreference -ne 'SilentlyContinue') {

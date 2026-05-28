@@ -70,7 +70,9 @@ function Move-PowerShellModule {
     $newDir = Resolve-MoveTarget -Source $moduleDir -Destination $Destination
     if (Test-Path -LiteralPath $newDir) { throw "Destination already exists: $newDir" }
 
-    Write-Verbose "Plan: move module $manifestName  $moduleDir -> $newDir"
+    Write-MovePlan -Cmdlet $PSCmdlet -Caption "Move-PowerShellModule $manifestName  $moduleDir -> $newDir" -Items ([ordered]@{
+            'manifest to update' = $manifestName
+        })
     $newManifest = Join-Path $newDir $manifestName
 
     $performed = $false
