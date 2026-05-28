@@ -595,7 +595,7 @@ the old path).
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue) | The item being/that was moved. Accepts pipeline input. |
+| `‑Path` | String | true | true (ByValue) | The path whose references to find (typically a recently moved item). Accepts pipeline input: a path string, or a file/directory item from Get-Item / Get-ChildItem. |
 | `‑RepositoryRoot` | String | false | false | Root to scan. Defaults to the enclosing git repository root. |
 | `‑AdditionalGlob` | String[] | false | false | Extra repository-relative globs to include in the candidate set (e.g. 'deploy/*.sh'). |
 
@@ -798,7 +798,7 @@ accepts them.
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `‑Path` | String | true | true (ByValue) | The item to move (file or folder). Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
-| `‑Destination` | String | true | false | New path - passed through to the engine. |
+| `‑Destination` | String | true | false | New path (file or folder), following `git mv` rules; passed through to the engine. |
 | `‑RepositoryRoot` | String | false | false | Repository root the engine scans for references. Defaults to the enclosing git repository root. Not used by the Unity engine. |
 | `‑NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build'. Only the .NET engine builds; ignored by the others. |
 | `‑Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. Forwarded to the engine. |
@@ -867,7 +867,7 @@ propagate to the specialist; `-Force` and `-RepositoryRoot`/`-NoBuild` are forwa
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `‑Path` | String | true | true (ByValue) | The .NET file to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
-| `‑Destination` | String | true | false | New path (file or folder) - passed through to the specialist. |
+| `‑Destination` | String | true | false | New path (file or folder), following `git mv` rules; passed through to the specialist. |
 | `‑RepositoryRoot` | String | false | false | Repository root the specialist scans for references. Defaults to the enclosing git repository root. |
 | `‑NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build' (forwarded to the project/import specialist). |
 | `‑Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
@@ -924,7 +924,7 @@ references ride along unchanged). If the folder contains no managed projects, th
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `‑Path` | String | true | true (ByValue) | The folder to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
-| `‑Destination` | String | true | false | New folder path. |
+| `‑Destination` | String | true | false | New folder path, following `git mv` rules (an existing directory means move into it, otherwise it is the new path); passed through to [Move-DotnetProjectTree](#move-dotnetprojecttree). |
 | `‑RepositoryRoot` | String | false | false | Repository root scanned for references. Defaults to the enclosing git repository root. |
 | `‑NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build' (forwarded to [Move-DotnetProjectTree](#move-dotnetprojecttree)). |
 | `‑Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
@@ -985,7 +985,7 @@ surfaced as a Warning (or, with `-Strict`, a non- terminating error honoring `-E
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Project` | String | true | true (ByValue) | Path to the project file (`.csproj/.fsproj/.vbproj`). Accepts pipeline input - pipe a path string or a Get-ChildItem/Get-Item item. Other object types are rejected. |
+| `‑Project` | String | true | true (ByValue) | Path to the project file (`.csproj/.fsproj/.vbproj`). Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
 | `‑Destination` | String | true | false | Where to move the project folder, following `git mv` rules: if Destination is an existing directory the folder moves into it (keeping its name, e.g. './libs' -&gt; './libs/Tarragon'); otherwise Destination is the project's new folder path (a rename, './libs/Tarragon'). The project file and its sibling contents move as one. |
 | `‑RepositoryRoot` | String | false | false | Root to scan for solutions/consumers. Defaults to the enclosing git repository root. |
 | `‑Strict` | SwitchParameter | false | false | Escalate solution-divergence warnings to non-terminating errors. |
@@ -1196,7 +1196,7 @@ module specialist has no RepositoryRoot).
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `‑Path` | String | true | true (ByValue) | The PowerShell item to move: a `.ps1` script, a `.psd1` manifest, or a module folder. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
-| `‑Destination` | String | true | false | New path - passed through to the specialist. |
+| `‑Destination` | String | true | false | New path (file or folder), following `git mv` rules; passed through to the specialist. |
 | `‑RepositoryRoot` | String | false | false | Repository root scanned for referencing scripts. Defaults to the enclosing git repository root. Forwarded to the script specialist only (the module specialist has no RepositoryRoot). |
 | `‑Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `‑NoJournal` | SwitchParameter | false | false | Skip recording this move in the undo journal for this call (forwarded to the specialist), even when journaling is enabled. |
@@ -1624,7 +1624,7 @@ directory.
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue) | The item to classify. Accepts pipeline input. |
+| `‑Path` | String | true | true (ByValue) | The item to classify. Accepts pipeline input: a path string, or a file/directory item from Get-Item / Get-ChildItem. |
 
 ##### Output
 
@@ -1784,7 +1784,7 @@ repository; preview with `-WhatIf` first and add specific projects by hand.
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑RepositoryRoot` | String | false | true (ByValue) | Root to scan. Accepts pipeline input. Defaults to the enclosing git repository root. Nested git worktrees are skipped. |
+| `‑RepositoryRoot` | String | false | true (ByValue) | Root to scan. Accepts pipeline input: a path string, or a file/directory item from Get-Item / Get-ChildItem. Defaults to the enclosing git repository root. Nested git worktrees are skipped. |
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
@@ -1838,7 +1838,7 @@ way it never updates - it only reports.
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Repository` | String | false | false | owner/name of the GitHub repository to check. Defaults to the project repository. |
+| `‑Repository` | String | false | false | The GitHub repository to check, in `owner/name` form. Defaults to the project repository. |
 | `‑Auto` | SwitchParameter | false | false | Run as the automatic check (for a SessionStart hook or other automation): proceed only when the update policy is Enabled, otherwise do nothing. Still read-only - it never updates. |
 
 ##### Output
@@ -2067,7 +2067,7 @@ overrides a Disabled you set for yourself (process or user scope), but NOT one a
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `‑Force` | SwitchParameter | false | false | Reinstall the latest release even if already current, and override a Disabled update policy that you set for yourself. A machine-scope (administrator) Disabled is never overridden. |
-| `‑Repository` | String | false | false | owner/name of the GitHub repository. Defaults to the project repository. |
+| `‑Repository` | String | false | false | The GitHub repository to install from, in `owner/name` form. Defaults to the project repository. |
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
@@ -2255,7 +2255,7 @@ Library/Temp/obj caches.
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Root` | String | false | true (ByValue) | Folder to scan (typically an 'Assets' folder). Accepts pipeline input. Defaults to the current directory. |
+| `‑Root` | String | false | true (ByValue) | Folder to scan (typically an 'Assets' folder). Accepts pipeline input: a path string, or a file/directory item from Get-Item / Get-ChildItem. Defaults to the current directory. |
 | `‑Strict` | SwitchParameter | false | false | Escalate problems from warnings to non-terminating errors. |
 
 ##### Output

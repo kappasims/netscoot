@@ -19,7 +19,8 @@ function Find-PathReference {
         Run it before a move (to see what will break) or after (searching the old path).
 
     .PARAMETER Path
-        The item being/that was moved. Accepts pipeline input.
+        The path whose references to find (typically a recently moved item). Accepts pipeline input:
+        a path string, or a file/directory item from Get-Item / Get-ChildItem.
 
     .PARAMETER RepositoryRoot
         Root to scan. Defaults to the enclosing git repository root.

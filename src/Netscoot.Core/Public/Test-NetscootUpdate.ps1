@@ -21,7 +21,7 @@ function Test-NetscootUpdate {
         updates - it only reports.
 
     .PARAMETER Repository
-        owner/name of the GitHub repository to check. Defaults to the project repository.
+        The GitHub repository to check, in `owner/name` form. Defaults to the project repository.
 
     .PARAMETER Auto
         Run as the automatic check (for a SessionStart hook or other automation): proceed only when

@@ -15,7 +15,7 @@ function Move-DotnetFile {
         The .NET file to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected).
 
     .PARAMETER Destination
-        New path (file or folder) - passed through to the specialist.
+        New path (file or folder), following `git mv` rules; passed through to the specialist.
 
     .PARAMETER RepositoryRoot
         Repository root the specialist scans for references. Defaults to the enclosing git repository root.

@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<test-results xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="nunit_schema_2.5.xsd" name="Pester" total="1" errors="0" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2026-05-29" time="01:27:46">
+  <environment os-version="10.0.26200" clr-version="10.0.8" machine-name="SMIMMO" platform="Microsoft Windows 11 Pro|C:\WINDOWS|\Device\Harddisk1\Partition2" cwd="G:\dotnet-move" user-domain="SMIMMO" nunit-version="2.5.8.0" user="simmo" />
+  <culture-info current-culture="en-US" current-uiculture="en-US" />
+  <test-suite type="TestFixture" name="Pester" executed="True" result="Success" success="True" time="1.9786" asserts="0" description="Pester">
+    <results>
+      <test-suite type="TestFixture" name="G:\dotnet-move\tests\UnreconcilableReferences.Tests.ps1" executed="True" result="Success" success="True" time="1.9786" asserts="0" description="G:\dotnet-move\tests\UnreconcilableReferences.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Unreconcilable references (StrictMode .Count guard)" executed="True" result="Success" success="True" time="0.5458" asserts="0" description="Unreconcilable references (StrictMode .Count guard)">
+            <results>
+              <test-case description="does not throw when a non-moved project has a single conditional ProjectReference" name="Unreconcilable references (StrictMode .Count guard).does not throw when a non-moved project has a single conditional ProjectReference" time="0.4206" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+    </results>
+  </test-suite>
+</test-results>

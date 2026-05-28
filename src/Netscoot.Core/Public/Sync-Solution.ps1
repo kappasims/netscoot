@@ -15,7 +15,8 @@ function Sync-Solution {
         this against the whole repository; preview with -WhatIf first and add specific projects by hand.
 
     .PARAMETER RepositoryRoot
-        Root to scan. Accepts pipeline input. Defaults to the enclosing git repository root. Nested git
+        Root to scan. Accepts pipeline input: a path string, or a file/directory item from
+        Get-Item / Get-ChildItem. Defaults to the enclosing git repository root. Nested git
         worktrees are skipped.
 
     .OUTPUTS

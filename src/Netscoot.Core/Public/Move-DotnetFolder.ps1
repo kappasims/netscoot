@@ -16,7 +16,8 @@ function Move-DotnetFolder {
         The folder to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected).
 
     .PARAMETER Destination
-        New folder path.
+        New folder path, following `git mv` rules (an existing directory means move into it,
+        otherwise it is the new path); passed through to Move-DotnetProjectTree.
 
     .PARAMETER RepositoryRoot
         Repository root scanned for references. Defaults to the enclosing git repository root.

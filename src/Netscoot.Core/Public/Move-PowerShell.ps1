@@ -17,7 +17,7 @@ function Move-PowerShell {
         types are rejected).
 
     .PARAMETER Destination
-        New path - passed through to the specialist.
+        New path (file or folder), following `git mv` rules; passed through to the specialist.
 
     .PARAMETER RepositoryRoot
         Repository root scanned for referencing scripts. Defaults to the enclosing git repository root.

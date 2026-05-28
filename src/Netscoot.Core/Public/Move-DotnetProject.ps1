@@ -17,8 +17,8 @@ function Move-DotnetProject {
         terminating error honoring -ErrorAction).
 
     .PARAMETER Project
-        Path to the project file (.csproj/.fsproj/.vbproj). Accepts pipeline input - pipe a
-        path string or a Get-ChildItem/Get-Item item. Other object types are rejected.
+        Path to the project file (.csproj/.fsproj/.vbproj). Accepts pipeline input (a path string
+        or a Get-ChildItem/Get-Item item; other object types are rejected).
 
     .PARAMETER Destination
         Where to move the project folder, following `git mv` rules: if Destination is an existing

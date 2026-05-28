@@ -16,8 +16,8 @@ function Test-UnityMetaIntegrity {
         and the Library/Temp/obj caches.
 
     .PARAMETER Root
-        Folder to scan (typically an 'Assets' folder). Accepts pipeline input. Defaults to
-        the current directory.
+        Folder to scan (typically an 'Assets' folder). Accepts pipeline input: a path string, or
+        a file/directory item from Get-Item / Get-ChildItem. Defaults to the current directory.
 
     .PARAMETER Strict
         Escalate problems from warnings to non-terminating errors.

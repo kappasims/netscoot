@@ -11,7 +11,8 @@ function Resolve-MoveEngine {
         classify regardless); folder cases require the directory.
 
     .PARAMETER Path
-        The item to classify. Accepts pipeline input.
+        The item to classify. Accepts pipeline input: a path string, or a file/directory item from
+        Get-Item / Get-ChildItem.
 
     .OUTPUTS
         A single [string], one of: dotnet, native, unity, ps-script, ps-module, unknown.

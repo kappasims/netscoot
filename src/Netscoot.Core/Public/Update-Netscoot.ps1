@@ -23,7 +23,8 @@ function Update-Netscoot {
         that you set for yourself. A machine-scope (administrator) Disabled is never overridden.
 
     .PARAMETER Repository
-        owner/name of the GitHub repository. Defaults to the project repository.
+        The GitHub repository to install from, in `owner/name` form. Defaults to the project
+        repository.
 
     .OUTPUTS
         Netscoot.Update - the record from Test-NetscootUpdate, so the decision is inspectable. Nothing on a failed check.

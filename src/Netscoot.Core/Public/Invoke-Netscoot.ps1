@@ -20,7 +20,7 @@ function Invoke-Netscoot {
         Get-ChildItem/Get-Item item; other object types are rejected).
 
     .PARAMETER Destination
-        New path - passed through to the engine.
+        New path (file or folder), following `git mv` rules; passed through to the engine.
 
     .PARAMETER RepositoryRoot
         Repository root the engine scans for references. Defaults to the enclosing git repository root.
