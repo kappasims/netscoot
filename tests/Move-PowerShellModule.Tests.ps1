@@ -5,7 +5,7 @@ BeforeAll {
     Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Core' ('Netscoot.Core.psd1'))))) -Force
 
     function New-ModuleFixture {
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_mod_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $root = New-TempRoot -Prefix 'netscoot_mod'
         $mod = Join-Path $root 'MyMod'
         New-Item -ItemType Directory -Path $mod -Force | Out-Null
         Set-Content -LiteralPath (Join-Path $mod 'MyMod.psm1') -Value 'function Get-X { 1 }; Export-ModuleMember -Function Get-X' -Encoding UTF8

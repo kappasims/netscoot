@@ -5,7 +5,7 @@ BeforeAll {
     Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Core' ('Netscoot.Core.psd1'))))) -Force
 
     function New-RefFixture {
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_ref_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $root = New-TempRoot -Prefix 'netscoot_ref'
         New-Item -ItemType Directory -Path (Join-Path $root 'lib') -Force | Out-Null
         New-Item -ItemType Directory -Path (Join-Path $root (Join-Path '.github' ('workflows'))) -Force | Out-Null
         New-Item -ItemType Directory -Path (Join-Path $root '.githooks') -Force | Out-Null

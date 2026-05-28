@@ -5,9 +5,7 @@ BeforeAll {
     Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'Netscoot.Core', 'Netscoot.Core.psd1')) -Force
 
     function New-TempDir {
-        $d = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_nlr_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
-        New-Item -ItemType Directory -Path $d | Out-Null
-        return $d
+        return (New-TempRoot -Prefix 'netscoot_nlr')
     }
 
     function Add-ProjectReference {

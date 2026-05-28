@@ -7,7 +7,7 @@ BeforeAll {
 
     function New-UnityFixture {
         # A tiny Unity-shaped tree in a git repo: Assets/Foo/Bar.cs with paired .meta files.
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_uni_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $root = New-TempRoot -Prefix 'netscoot_uni'
         $foo = Join-Path (Join-Path $root 'Assets') 'Foo'
         New-Item -ItemType Directory -Path $foo -Force | Out-Null
         Set-Content -LiteralPath (Join-Path $foo 'Bar.cs') -Value 'public class Bar {}' -Encoding UTF8
@@ -21,7 +21,7 @@ BeforeAll {
 
     function New-UnityAsmdefFixture {
         # Assets/Lib (Lib.asmdef) and Assets/App (App.asmdef references "Lib"), with metas.
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_asm_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $root = New-TempRoot -Prefix 'netscoot_asm'
         $assets = Join-Path $root 'Assets'
         foreach ($pair in @(@('Lib', '[]'), @('App', '["Lib"]'))) {
             $name = $pair[0]; $refs = $pair[1]

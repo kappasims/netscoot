@@ -8,7 +8,7 @@ BeforeAll {
 
     function New-NativeFixture {
         # A minimal hand-written .vcxproj with native path-bearing settings (no build needed).
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_nat_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $root = New-TempRoot -Prefix 'netscoot_nat'
         $proj = Join-Path $root 'Foo'
         New-Item -ItemType Directory -Path $proj -Force | Out-Null
         $vcx = Join-Path $proj 'Foo.vcxproj'

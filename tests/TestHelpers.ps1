@@ -9,11 +9,28 @@
 # importing any engine module.
 Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'Netscoot.Shared', 'Netscoot.Shared.psd1')) -Force -Global
 
+function New-TempRoot {
+    # Create a throwaway temp directory and return its CANONICAL path. On macOS the temp root
+    # /var/folders/... is a symlink to /private/var/folders/...; if a fixture used the /var form,
+    # git and `dotnet sln` (which canonicalize) would store cross-boundary relative paths and the
+    # reconciliation would mismatch. Resolving it up front keeps every path in one form. Every
+    # test temp root (and journal-home + fixture-template-root) goes through this so the contract is
+    # enforced in one place.
+    param([string]$Prefix = 'netscoot')
+    $d = Join-Path ([System.IO.Path]::GetTempPath()) ($Prefix + '_' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+    New-Item -ItemType Directory -Path $d | Out-Null
+    if (($PSVersionTable.PSEdition -eq 'Core') -and -not $IsWindows) {
+        $real = (& realpath $d 2>$null)
+        if ($LASTEXITCODE -eq 0 -and $real) { return ("$real").Trim() }
+    }
+    return $d
+}
+
 # Redirect the per-user undo journal to a throwaway temp dir for the whole test session, so moves in
 # the suite never write into the real LocalAppData/Application Support store. Each test file
-# dot-sources this; set it once.
+# dot-sources this; set it once, through New-TempRoot so macOS canonicalization applies.
 if (-not $env:NETSCOOT_JOURNAL_HOME) {
-    $env:NETSCOOT_JOURNAL_HOME = Join-Path ([System.IO.Path]::GetTempPath()) ('dnm-jhome-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+    $env:NETSCOOT_JOURNAL_HOME = New-TempRoot -Prefix 'dnm-jhome'
 }
 
 # Fixtures `git init` + `git commit` a starting state. A bare CI runner has no git identity, so the
@@ -25,21 +42,6 @@ foreach ($kv in @(
         @('GIT_AUTHOR_NAME', 'netscoot tests'), @('GIT_AUTHOR_EMAIL', 'tests@netscoot.invalid'),
         @('GIT_COMMITTER_NAME', 'netscoot tests'), @('GIT_COMMITTER_EMAIL', 'tests@netscoot.invalid'))) {
     if (-not [Environment]::GetEnvironmentVariable($kv[0])) { Set-Item -Path "Env:$($kv[0])" -Value $kv[1] }
-}
-
-function New-TempRoot {
-    # Create a throwaway temp directory and return its CANONICAL path. On macOS the temp root
-    # /var/folders/... is a symlink to /private/var/folders/...; if a fixture used the /var form,
-    # git and `dotnet sln` (which canonicalize) would store cross-boundary relative paths and the
-    # reconciliation would mismatch. Resolving it up front keeps every path in one form.
-    param([string]$Prefix = 'netscoot')
-    $d = Join-Path ([System.IO.Path]::GetTempPath()) ($Prefix + '_' + [guid]::NewGuid().ToString('N').Substring(0, 8))
-    New-Item -ItemType Directory -Path $d | Out-Null
-    if (($PSVersionTable.PSEdition -eq 'Core') -and -not $IsWindows) {
-        $real = (& realpath $d 2>$null)
-        if ($LASTEXITCODE -eq 0 -and $real) { return ("$real").Trim() }
-    }
-    return $d
 }
 
 function New-StubClassLib {
@@ -82,7 +84,7 @@ function New-StubConsole {
 # template is parked in its own session dir so per-test `Remove-Item $root` never touches it. This
 # keeps each test fully independent (its own working tree + .git), so it is safe under CI sharding.
 
-$script:FixtureTemplateRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('dnm-fixtpl-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+$script:FixtureTemplateRoot = New-TempRoot -Prefix 'dnm-fixtpl'
 $script:FixtureTemplates = @{}
 
 function Copy-Directory {

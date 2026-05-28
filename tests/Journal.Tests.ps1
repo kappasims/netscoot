@@ -233,11 +233,10 @@ Describe 'Move journal + Undo-Netscoot' {
 
     It 'Repair-NetscootJournal -Rollback restores edited files from the snapshot and clears the entry' {
         $root = New-JournalFixture
-        $snapDir = Join-Path ([System.IO.Path]::GetTempPath()) ('netscoot_snap_' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $snapDir = New-TempRoot -Prefix 'netscoot_snap'
         try {
             $edited = Join-Path $root 'edited.props'
             Set-Content -LiteralPath $edited -Value 'CHANGED'                       # current (partially-edited) content
-            New-Item -ItemType Directory -Path $snapDir | Out-Null
             Set-Content -LiteralPath (Join-Path $snapDir 'f0') -Value 'ORIGINAL'    # the snapshot of the original
 
             $jp = Get-MoveJournalPath -RepositoryRoot $root

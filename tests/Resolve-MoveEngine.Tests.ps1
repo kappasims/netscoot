@@ -5,7 +5,7 @@ BeforeAll {
     Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Core' ('Netscoot.Core.psd1'))))) -Force
 
     function New-EngineFixture {
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_eng_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $root = New-TempRoot -Prefix 'netscoot_eng'
         New-Item -ItemType Directory -Path (Join-Path $root (Join-Path 'Assets' ('Art'))) -Force | Out-Null
         New-Item -ItemType Directory -Path (Join-Path $root 'proj') -Force | Out-Null
         New-Item -ItemType Directory -Path (Join-Path $root 'mod') -Force | Out-Null

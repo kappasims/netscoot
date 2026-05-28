@@ -55,7 +55,7 @@ Describe 'git netscoot (end-to-end, universal cross-engine routing)' {
     }
 
     It 'routes a Unity asset (under Assets, has .meta) to the Unity engine' {
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_gitu_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $root = New-TempRoot -Prefix 'netscoot_gitu'
         New-Item -ItemType Directory -Path (Join-Path $root (Join-Path 'Assets' ('Foo'))) -Force | Out-Null
         Set-Content (Join-Path $root (Join-Path 'Assets' (Join-Path 'Foo' ('Bar.cs')))) 'public class Bar {}'
         Set-Content (Join-Path $root (Join-Path 'Assets' (Join-Path 'Foo' ('Bar.cs.meta')))) "guid: 11112222333344445555666677778888"
@@ -70,7 +70,7 @@ Describe 'git netscoot (end-to-end, universal cross-engine routing)' {
     }
 
     It 'routes a .ps1 to the PowerShell engine' {
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_gitp_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $root = New-TempRoot -Prefix 'netscoot_gitp'
         New-Item -ItemType Directory -Path (Join-Path $root 'lib') -Force | Out-Null
         New-Item -ItemType Directory -Path (Join-Path $root 'app') -Force | Out-Null
         Set-Content (Join-Path $root (Join-Path 'lib' ('helpers.ps1'))) 'function Get-Greeting { "hi" }'

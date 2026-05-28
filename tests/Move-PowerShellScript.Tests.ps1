@@ -6,7 +6,7 @@ BeforeAll {
 
     function New-ScriptFixture {
         # lib/helpers.ps1 dot-sourced by app/main.ps1 via $PSScriptRoot.
-        $root = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_ps1_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $root = New-TempRoot -Prefix 'netscoot_ps1'
         New-Item -ItemType Directory -Path (Join-Path $root 'lib') -Force | Out-Null
         New-Item -ItemType Directory -Path (Join-Path $root 'app') -Force | Out-Null
         Set-Content -LiteralPath (Join-Path $root (Join-Path 'lib' ('helpers.ps1'))) -Encoding UTF8 -Value 'function Get-Greeting { "hi" }'
