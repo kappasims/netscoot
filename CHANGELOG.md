@@ -28,6 +28,18 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the path settings they cannot reconcile. `Move-X -WhatIf -Verbose` now previews every reconciliation
   instead of summarizing as counts.
 
+### Added
+
+- New `netscoot-analyze` skill: cross-engine trigger surface for the analyzer cmdlets
+  (`Get-SolutionInventory`, `Test-SolutionConsistency`, `Find-PathReference`,
+  `Repair-SolutionReferences`, `Resolve-MoveEngine`, `Get-NetscootCapability`). AI agents now route
+  questions like "is the rename done?" / "where else does this appear?" / "what would break if I
+  moved X?" to Netscoot's structured output instead of ad-hoc text search. The existing
+  `restructure-*` skills continue to own the actual moves.
+- README's Inspecting section now documents `Find-PathReference -Path <old-id>` as the canonical
+  post-refactor sanity check, with the warning string Netscoot emits as the agent-readable
+  all-clear signal.
+
 ## [2.2.0] - 2026-05-28
 
 ### Changed

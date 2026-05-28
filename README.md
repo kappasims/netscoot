@@ -198,6 +198,27 @@ netscoot can be used purely to inspect a repository. These commands are read-onl
 
 Each returns objects, so results are filterable and scriptable, and print as a table by default.
 
+#### Canonical post-refactor sanity check
+
+When a refactor, rename, or move appears done, run
+
+```powershell
+Find-PathReference -Path <old identifier or path>
+```
+
+over the OLD identifier (the moved file's old path, a renamed type, an old DLL name in build
+scripts). The output is structured (`File`, `Line`, `Confidence`, `Text`) and the cmdlet emits the
+warning *"These are not auto-reconciled - review and fix them by hand."* Treat that warning as the
+agent-readable signal that some references survive in places the move machinery does not touch:
+build scripts, CI YAML, git hooks, container files, documentation snippets. Use this BEFORE
+declaring a rename complete. If it returns rows, fix them by hand and re-run; a zero-row result
+with no warning is the all-clear.
+
+This is the idiomatic "did I miss anything" pattern. It is what `netscoot-analyze` routes to when
+an AI agent is asked "is the rename done" / "any stragglers" / "where else does X appear" / "what
+would break." Prefer it over an ad-hoc `Grep`: `Find-PathReference` knows which file kinds are
+candidates, applies a confidence rating, and excludes paths the move machinery already reconciled.
+
 <details>
 <summary>Sample output</summary>
 
