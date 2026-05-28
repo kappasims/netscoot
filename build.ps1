@@ -85,11 +85,27 @@ function Invoke-TestTask {
     $cfg.Output.Verbosity = 'Detailed'
 
     if ($ShardCount -gt 1) {
-        # Round-robin the sorted test files into ShardCount slices and run this one. Each shard runs
-        # in its own CI job (process), so there is no shared-state contention between shards.
+        # Balance the test files across ShardCount slices by cost and run this one. A plain
+        # round-robin (by name) clustered the heavy end-to-end tests (real dotnet build/restore) into
+        # one shard, so it ran 3-4x longer than the lightest and gated total CI wall time. Instead use
+        # longest-processing-time bin packing: take files largest-first (file size is a proxy for cost
+        # - more It blocks / fixtures = a bigger file) and assign each to the currently-lightest shard.
+        # File size is identical on every runner, so all shards compute the SAME partition: slices stay
+        # disjoint and cover every file. Each shard runs in its own CI job (process); no shared state.
         $idx = if ($ShardIndex -lt 1) { 1 } else { $ShardIndex }
-        $all = @(Get-ChildItem -Path (Join-Path $root 'tests') -Recurse -File -Filter '*.Tests.ps1' | Sort-Object FullName)
-        $mine = @(for ($i = 0; $i -lt $all.Count; $i++) { if (($i % $ShardCount) -eq ($idx - 1)) { $all[$i] } })
+        $all = @(Get-ChildItem -Path (Join-Path $root 'tests') -Recurse -File -Filter '*.Tests.ps1')
+        # Heaviest first; the FullName secondary key makes the order total (no ties) so the packing is
+        # deterministic regardless of Sort-Object stability.
+        $ordered = @($all | Sort-Object -Property @{ Expression = 'Length'; Descending = $true }, @{ Expression = 'FullName'; Descending = $false })
+        $loads = New-Object 'System.Int64[]' $ShardCount
+        $buckets = @{}; for ($s = 0; $s -lt $ShardCount; $s++) { $buckets[$s] = @() }
+        foreach ($f in $ordered) {
+            $target = 0
+            for ($s = 1; $s -lt $ShardCount; $s++) { if ($loads[$s] -lt $loads[$target]) { $target = $s } }
+            $buckets[$target] += $f
+            $loads[$target] += $f.Length
+        }
+        $mine = @($buckets[$idx - 1])
         if (-not $mine.Count) {
             Write-Host "Shard ${idx}/${ShardCount} has no test files; nothing to run." -ForegroundColor Yellow
             return
