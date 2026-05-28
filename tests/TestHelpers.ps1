@@ -97,8 +97,13 @@ function Copy-Directory {
         if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($LASTEXITCODE) copying $Source -> $Destination" }
         $global:LASTEXITCODE = 0
     } else {
+        # Linux/macOS: enumerate the top-level entries (Get-ChildItem -Force includes .git and other
+        # dotfiles the fixtures depend on) and copy each into $Destination. Avoids the bug where
+        # Copy-Item -LiteralPath "$Source/*" treats the wildcard literally and throws ItemNotFound.
         New-Item -ItemType Directory -Path $Destination -Force | Out-Null
-        Copy-Item -LiteralPath (Join-Path $Source '*') -Destination $Destination -Recurse -Force
+        foreach ($entry in (Get-ChildItem -LiteralPath $Source -Force)) {
+            Copy-Item -LiteralPath $entry.FullName -Destination $Destination -Recurse -Force
+        }
     }
 }
 
