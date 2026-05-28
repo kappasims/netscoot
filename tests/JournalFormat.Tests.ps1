@@ -56,11 +56,15 @@ Describe 'Journal on-disk format (v2)' {
 
         # Fold the WAL: latest line per id wins, in append order. Mirrors what Get-MoveJournalEntries
         # does internally via Read-MoveJournalState. Used to check the LOGICAL entry state, not the
-        # raw transition log.
+        # raw transition log. Build via List[object] + ToArray so the result is unambiguously an
+        # array even when there's only one entry (PS5.1 + StrictMode treats a single-element
+        # @($orderedDict.Values) as a scalar, which makes .Count return $null at the call site).
         function script:Read-FoldedJournal {
             $byId = [ordered]@{}
             foreach ($e in Read-ParsedJournal) { $byId[$e.id] = $e }
-            @($byId.Values)
+            $list = [System.Collections.Generic.List[object]]::new()
+            foreach ($v in $byId.Values) { $list.Add($v) }
+            , $list.ToArray()
         }
     }
 

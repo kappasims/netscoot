@@ -93,11 +93,26 @@ Describe 'Snapshot dir lifecycle (v2)' {
         Test-Path -LiteralPath $snapDir | Should -BeFalse
     }
 
+    # Helper: create a synthetic netscoot_snap_* dir the same way Plan.ps1's production code does
+    # (`[IO.Path]::GetTempPath()` directly, no canonicalization). Using New-TempRoot here would
+    # canonicalize via `realpath` on macOS, putting the dir at `/private/var/...` while the orphan
+    # scanner enumerates `/var/...` - a string-equality mismatch that makes a referenced dir look
+    # like an orphan. Match production exactly.
+    function script:New-SyntheticSnapDir {
+        $d = Join-Path ([System.IO.Path]::GetTempPath()) ('netscoot_snap_' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        New-Item -ItemType Directory -Path $d | Out-Null
+        # Register for session-end auto-cleanup if the auto-cleanup list exists (TestHelpers).
+        if (Get-Variable -Scope Global -Name NetscootTestCleanup -ErrorAction SilentlyContinue) {
+            [void]$global:NetscootTestCleanup.Add($d)
+        }
+        $d
+    }
+
     It 'Repair-NetscootJournal -ClearOrphanSnapshots removes netscoot_snap_* dirs NOT referenced by any pending entry' {
         # Three orphan snap dirs (no journal entry references them).
-        $orphan1 = New-TempRoot -Prefix 'netscoot_snap'
-        $orphan2 = New-TempRoot -Prefix 'netscoot_snap'
-        $orphan3 = New-TempRoot -Prefix 'netscoot_snap'
+        $orphan1 = New-SyntheticSnapDir
+        $orphan2 = New-SyntheticSnapDir
+        $orphan3 = New-SyntheticSnapDir
         Set-Content -LiteralPath (Join-Path $orphan1 'f0') -Value 'orphan-1'
         Set-Content -LiteralPath (Join-Path $orphan2 'f0') -Value 'orphan-2'
         Set-Content -LiteralPath (Join-Path $orphan3 'f0') -Value 'orphan-3'
@@ -111,9 +126,9 @@ Describe 'Snapshot dir lifecycle (v2)' {
 
     It '-ClearOrphanSnapshots LEAVES snap dirs that ARE referenced by a pending entry' {
         # One pending entry referencing its own snapshot, and one orphan.
-        $referenced = New-TempRoot -Prefix 'netscoot_snap'
+        $referenced = New-SyntheticSnapDir
         Set-Content -LiteralPath (Join-Path $referenced 'f0') -Value 'referenced'
-        $orphan = New-TempRoot -Prefix 'netscoot_snap'
+        $orphan = New-SyntheticSnapDir
         Set-Content -LiteralPath (Join-Path $orphan 'f0') -Value 'orphan'
 
         $jp = Get-MoveJournalPath -RepositoryRoot $script:Repo
