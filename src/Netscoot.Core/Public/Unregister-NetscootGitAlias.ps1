@@ -19,6 +19,7 @@ function Unregister-NetscootGitAlias {
         Register-NetscootGitAlias
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
+    [OutputType([void])]
     param(
         [ValidateSet('Local', 'Global')]
         [string]$Scope = 'Local'
