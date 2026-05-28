@@ -40,6 +40,7 @@
         'Invoke-MovePlan',
         'Move-PathTracked',
         'New-DotnetReferenceItems',
+        'New-ForwardArgs',
         'New-MoveItem',
         'New-MoveResult',
         'Read-ProjectXml',

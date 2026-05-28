@@ -70,13 +70,9 @@ function Move-DotnetFolder {
                     'FolderNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, $Path))
             return
         }
-        $fwd = @{ Destination = $Destination }
-        if ($PSBoundParameters.ContainsKey('RepositoryRoot')) { $fwd.RepositoryRoot = $RepositoryRoot }
-        if ($Force) { $fwd.Force = $true }
-        if ($NoBuild) { $fwd.NoBuild = $true }
-        if ($NoJournal) { $fwd.NoJournal = $true }
-        foreach ($sw in 'WhatIf', 'Confirm', 'Verbose', 'Debug') { if ($PSBoundParameters.ContainsKey($sw)) { $fwd[$sw] = $PSBoundParameters[$sw] } }
+        # Move-DotnetProjectTree takes -Path; just substitute the resolved $full for the raw input.
+        $fwd = New-ForwardArgs $PSBoundParameters -Add @{ Path = $full }
         Write-Verbose "Routing folder -> Move-DotnetProjectTree"
-        Move-DotnetProjectTree -Path $full @fwd
+        Move-DotnetProjectTree @fwd
     }
 }
