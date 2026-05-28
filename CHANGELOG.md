@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-05-28
+
 ### Changed
 
 - Read and analysis commands (project/solution moves, `Get-SolutionInventory`, `Repair-SolutionReferences`,
@@ -61,7 +63,8 @@ See the release notes for the full pull-request list.
 
 DotnetMove 1.x history predates the rename; see the legacy DotnetMove releases.
 
-[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.1.1...HEAD
+[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/kappasims/netscoot/compare/v2.1.1...v2.2.0
 [2.1.1]: https://github.com/kappasims/netscoot/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/kappasims/netscoot/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/kappasims/netscoot/releases/tag/v2.0.0
