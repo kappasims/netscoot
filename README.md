@@ -29,6 +29,34 @@ through the tool that owns the format (`dotnet sln` / `dotnet reference`, `git m
 `Update-ModuleManifest`), with a targeted in-place rewrite only where no such tool exists. Every move
 rolls back to the original state if any step fails, and path-reference detection is report-only.
 
+## Project priorities
+
+For now, in priority order:
+
+1. **Accurate functionality.** Every move delegates path and GUID changes to first-party tooling
+   (`dotnet sln`, `git mv`, `Update-ModuleManifest`); netscoot never hand-edits `.sln` / `.slnx` /
+   `.csproj`. A move that breaks references is worse than no move.
+2. **Reliability.** Write-ahead journal, in-operation rollback, structured `-WhatIf` previews,
+   and CI gates against drift on both the Gallery-listed surface and the agent-discovery
+   (`.claude/skills/`) surface.
+3. **A well-thought-out public shape.** What ships as a public cmdlet is conservative; internal
+   helpers stay internal even when they leak through `Get-Command` (see CONTRIBUTING for the
+   convention). Result-type shapes are documented and gated.
+4. **Documentation.** The Command reference is generated from comment-based help so docs cannot
+   drift; CHANGELOG and CONTRIBUTING carry the operational and contributor contracts.
+
+Deferred until those are settled:
+
+- **Raw performance optimization** beyond the parse-once and shard-balance work already shipped.
+  The test suite is around two minutes and a typical move takes seconds; both are adequate. Further
+  squeezing waits for a concrete user-facing pain point.
+- **Pattern and coding-consistency refactors** are done when they collide with the priorities
+  above (the dispatcher-forwarding helper that replaced repeated boilerplate is a recent example).
+  Not done for their own sake.
+
+Design ideas flagged but not built (an async `Start-*` API, pattern-based / template moves) live
+in the project's design notes. The bar to add one is real feedback against a recent release.
+
 ## Setup
 
 ### Requirements
