@@ -7,17 +7,29 @@ BeforeAll {
     function New-RepoWithNestedWorktree {
         # A repo with a .sln and a .slnx (both listing Lib), plus a linked git worktree nested
         # under .claude/worktrees/wt holding duplicate copies of all of it.
-        $root = New-TempRoot -Prefix 'netscoot_wt'
+        #
+        # Two-phase build so the dotnet-sln work is cached once via Copy-FixtureTemplate (the
+        # 4 dotnet calls dominate this file's cost), and the per-test worktree add runs on a
+        # fresh copy. The worktree itself cannot live in the cached template - its linkage
+        # files (`.git/worktrees/<name>/gitdir`, the worktree's own `.git`) contain absolute
+        # paths to the original repo that go stale on copy.
+        $root = Copy-FixtureTemplate -Key 'worktree_repo' -Prefix 'netscoot_wt' -Build {
+            $r = New-TempRoot -Prefix 'netscoot_wt_tpl'
+            Push-Location $r
+            try {
+                & git init -q
+                & git config user.email t@t.test; & git config user.name test
+                New-StubClassLib -Name Lib -Directory (Join-Path $r 'Lib') | Out-Null
+                & dotnet new sln -n Demo --format sln | Out-Null
+                & dotnet new sln -n Demo --format slnx | Out-Null
+                & dotnet sln Demo.sln add (Join-Path $r (Join-Path 'Lib' 'Lib.csproj')) | Out-Null
+                & dotnet sln Demo.slnx add (Join-Path $r (Join-Path 'Lib' 'Lib.csproj')) | Out-Null
+                & git add -A; & git commit -qm fixture | Out-Null
+            } finally { Pop-Location }
+            return $r
+        }
         Push-Location $root
         try {
-            & git init -q
-            & git config user.email t@t.test; & git config user.name test
-            New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
-            & dotnet new sln -n Demo --format sln | Out-Null
-            & dotnet new sln -n Demo --format slnx | Out-Null
-            & dotnet sln Demo.sln add (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) | Out-Null
-            & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) | Out-Null
-            & git add -A; & git commit -qm fixture | Out-Null
             & git worktree add --quiet -b wt (Join-Path $root (Join-Path '.claude' (Join-Path 'worktrees' 'wt'))) 2>$null
         } finally { Pop-Location }
         return $root
