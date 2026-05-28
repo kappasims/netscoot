@@ -700,6 +700,25 @@ function Assert-DocsNotStale {
     $ghosts = @($mapped | Where-Object { $_ -notin $documented })
     if ($ghosts.Count) { throw "command-categories.psd1 names cmdlet(s) that are not exported: $($ghosts -join ', '). Remove or rename them." }
 
+    # (3) markdownlint-cli2, mirroring the CI step in .github/workflows/markdownlint.yml. Run in-tree
+    # when npx is on PATH so MD013/MD024/MD032 etc. fail at -Task CheckDocs / -Task Release prepare,
+    # not at CI time after the release commit has already been stamped and pushed. The CI workflow
+    # remains the authoritative gate; this just shifts the failure left for developers who have Node.
+    # Skipped (not failed) when npx is absent - so contributors without Node aren't blocked locally.
+    $npx = Get-Command npx -ErrorAction SilentlyContinue
+    if (-not $npx) {
+        Write-Host 'markdownlint-cli2 skipped (npx not on PATH). The CI workflow markdownlint.yml is the authoritative gate.' -ForegroundColor DarkYellow
+    } else {
+        Write-Host 'Running markdownlint-cli2 (CI parity)...' -ForegroundColor Cyan
+        Push-Location $root
+        try {
+            & npx --yes markdownlint-cli2 '**/*.md'
+            if ($LASTEXITCODE -ne 0) {
+                throw 'markdownlint-cli2 reported violations (see above). Fix the source markdown or the comment-based help that regenerates into README.md, then re-run.'
+            }
+        } finally { Pop-Location }
+    }
+
     Write-Host 'Docs are current.' -ForegroundColor Green
 }
 
