@@ -5,6 +5,34 @@
 # job via $PSCmdlet.ShouldProcess (canonical -WhatIf/-Confirm); this engine just runs the
 # transaction once the operation is approved.
 
+function New-ForwardArgs {
+    # Build a splatting hashtable for a dispatcher-to-specialist call. The dispatcher hands its own
+    # `$PSBoundParameters` in; every parameter the user actually bound flows through automatically
+    # (Destination, RepositoryRoot, Force, NoBuild, NoJournal, plus the common -WhatIf/-Confirm/
+    # -Verbose/-Debug), so adding a new common parameter to a dispatcher does not require touching
+    # every dispatcher. -Drop removes the dispatcher's own input params (or anything the specialist
+    # cannot accept, like NoBuild for the PowerShell movers); -Add (last writer wins) substitutes
+    # the dispatcher's resolved value (e.g., `$full` instead of the raw `$Path`) and renames the
+    # path-param when the specialist uses a different name (`Project`, `ModulePath`, `AssetPath`).
+    #
+    # Pattern in a dispatcher:
+    #     $fwd = New-ForwardArgs $PSBoundParameters -Drop 'Path' -Add @{ Project = $full }
+    #     Move-DotnetProject @fwd
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param(
+        [Parameter(Mandatory, Position = 0)][System.Collections.IDictionary]$BoundParameters,
+        [string[]]$Drop = @(),
+        [System.Collections.IDictionary]$Add = @{}
+    )
+    $fwd = @{}
+    foreach ($k in $BoundParameters.Keys) {
+        if ($Drop -notcontains $k) { $fwd[$k] = $BoundParameters[$k] }
+    }
+    foreach ($k in $Add.Keys) { $fwd[$k] = $Add[$k] }
+    return $fwd
+}
+
 function Write-MovePlan {
     # Emit a structured plan summary via Write-Verbose, so `-WhatIf -Verbose` reveals what a mover
     # would touch (solutions edited, consumer references repointed, own references rebased, etc.).
@@ -14,7 +42,7 @@ function Write-MovePlan {
     #
     # Why -Cmdlet: PowerShell does NOT auto-propagate $VerbosePreference across module boundaries -
     # a Netscoot.Core mover with -Verbose has $VerbosePreference='Continue', but a plain Write-Verbose
-    # called from inside this Netscoot.Shared function runs against Shared's own (default) preference.
+    # called from inside this NetscootShared function runs against Shared's own (default) preference.
     # Threading the caller's $PSCmdlet through and using $Cmdlet.WriteVerbose routes the records into
     # the CALLER's stream, so -Verbose at the mover level lights up these lines as the user expects.
     param(

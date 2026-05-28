@@ -24,7 +24,7 @@ function script:Import-Engine {
 }
 
 # Shared first: the engines call its helpers (loaded -Global so module functions resolve them).
-Import-Engine -Name 'Netscoot.Shared'
+Import-Engine -Name 'NetscootShared'
 Import-Engine -Name 'Netscoot.Core'
 Import-Engine -Name 'Netscoot.Unity'
 # Native is capability-based: load it only on Windows, and best-effort - if it fails to load, the
@@ -38,7 +38,7 @@ if (Test-IsWindowsHost) {
 # plain `Remove-Module Netscoot` would otherwise leave them resident (half-removed state); walking
 # them here lets `Remove-Module Netscoot` actually clean up everything we brought in.
 $ExecutionContext.SessionState.Module.OnRemove = {
-    foreach ($e in 'Netscoot.Native', 'Netscoot.Unity', 'Netscoot.Core', 'Netscoot.Shared') {
+    foreach ($e in 'Netscoot.Native', 'Netscoot.Unity', 'Netscoot.Core', 'NetscootShared') {
         if (Get-Module -Name $e) { Remove-Module -Name $e -Force -ErrorAction SilentlyContinue }
     }
 }

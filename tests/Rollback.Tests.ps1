@@ -31,8 +31,8 @@ Describe 'Move-DotnetProject rolls back on a failed reattach (-Force / no-git pa
 
             # Force the no-git plain-move path, and make every reattach (dotnet ... add) fail so the
             # transaction throws after the detaches + move have already happened.
-            Mock -ModuleName Netscoot.Shared Test-GitAvailable { $false }
-            Mock -ModuleName Netscoot.Shared Invoke-Dotnet {
+            Mock -ModuleName NetscootShared Test-GitAvailable { $false }
+            Mock -ModuleName NetscootShared Invoke-Dotnet {
                 if ($Arguments -contains 'add') { throw 'simulated reattach failure' }
                 & dotnet @Arguments 2>&1 | Out-Null
                 if ($LASTEXITCODE -ne 0) { throw "dotnet $($Arguments -join ' ') failed" }

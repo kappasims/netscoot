@@ -67,6 +67,28 @@ Describe 'Move-DotnetFile (routing)' {
             $lib | Should -Exist
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
+
+    It 'propagates -Verbose to the specialist so the planned reconciliation is emitted (regression)' {
+        # Before fix: Invoke-Netscoot / Move-DotnetFile forwarded -WhatIf/-Confirm but not -Verbose,
+        # so $PSCmdlet.WriteVerbose inside Write-MovePlan (which respects BOUND -Verbose more strictly
+        # than ambient $VerbosePreference) was silent under the dispatch chain. Result: the WhatIf
+        # plan invisibly disappeared in `Invoke-Netscoot -WhatIf -Verbose ...` even though it emitted
+        # for direct `Move-DotnetProject -WhatIf -Verbose ...`. The fix: forward Verbose/Debug from
+        # every dispatcher. This guards that the dispatch chain actually delivers the plan.
+        $root = New-DispatchFixture
+        try {
+            $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
+            $dest = Join-Path $root (Join-Path 'libs' ('Lib'))
+            $records = Invoke-Netscoot -Path $lib -Destination $dest -WhatIf -Verbose 4>&1 |
+                Where-Object { $_ -is [System.Management.Automation.VerboseRecord] } |
+                ForEach-Object Message
+            ($records -join "`n") | Should -Match 'Plan: Move-DotnetProject' `
+                -Because 'the dispatched verbose plan must reach the user, not just the routing trace'
+            ($records -join "`n") | Should -Match 'solutions to update' `
+                -Because 'the plan should enumerate the reconciliation set (solutions/consumers/own-refs)'
+            $lib | Should -Exist
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
 }
 
 Describe 'Invoke-Netscoot (legacy .vcproj)' {

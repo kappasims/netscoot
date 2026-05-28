@@ -11,7 +11,7 @@ Describe 'StrictMode is enforced in every module' {
     # Guards against anyone removing Set-StrictMode -Version Latest from a module loader:
     # accessing an undefined variable inside the module scope must throw.
     It '<Module> runs its code under StrictMode' -ForEach @(
-        @{ Module = 'Netscoot.Shared' }
+        @{ Module = 'NetscootShared' }
         @{ Module = 'Netscoot.Core' }
         @{ Module = 'Netscoot.Native' }
         @{ Module = 'Netscoot.Unity' }

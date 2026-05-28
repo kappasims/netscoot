@@ -56,7 +56,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 # Shared first: the engines call its helpers, so it must import/install before them.
-$modules = 'Netscoot.Shared', 'Netscoot.Core', 'Netscoot.Native', 'Netscoot.Unity'
+$modules = 'NetscootShared', 'Netscoot.Core', 'Netscoot.Native', 'Netscoot.Unity'
 # The umbrella bootstrap imports the engines above; it ships but is not in the per-engine
 # import/test loop (importing it would pull the engines in a second time).
 $umbrella = 'Netscoot'
@@ -174,9 +174,9 @@ function Invoke-DocsTask {
     foreach ($m in $modules) {
         Import-Module ([System.IO.Path]::Combine($root, 'src', $m, "$m.psd1")) -Force
     }
-    # Document only the public engine modules. Netscoot.Shared is internal infrastructure (its
+    # Document only the public engine modules. NetscootShared is internal infrastructure (its
     # helpers are not part of the user-facing API), so it is imported above but not listed here.
-    $docModules = @($modules | Where-Object { $_ -ne 'Netscoot.Shared' })
+    $docModules = @($modules | Where-Object { $_ -ne 'NetscootShared' })
 
     function Format-HelpText { param($Field) (($Field | ForEach-Object { $_.Text }) -join "`n").Trim() }
 
@@ -649,7 +649,7 @@ function Assert-DocsNotStale {
     # functional taxonomy exactly once, and the map must name no command that is not exported. This
     # is what forces a new cmdlet to be categorized before it can ship (the index is generated from
     # this map, so an uncategorized command would otherwise just be silently absent from the index).
-    $documented = @(Get-Command -Module ($modules | Where-Object { $_ -ne 'Netscoot.Shared' }) -CommandType Function | ForEach-Object Name)
+    $documented = @(Get-Command -Module ($modules | Where-Object { $_ -ne 'NetscootShared' }) -CommandType Function | ForEach-Object Name)
     $categories = Import-PowerShellDataFile ([System.IO.Path]::Combine($root, 'docs', 'command-categories.psd1'))
     $mapped = foreach ($cat in $categories.Categories) {
         if ($cat.Commands) { $cat.Commands }
@@ -761,7 +761,7 @@ function Invoke-PublishTask {
         # Umbrella files (manifest + RootModule) at the package root...
         Copy-Item -Path (Join-Path $root (Join-Path 'src' (Join-Path 'Netscoot' '*'))) -Destination $pkg -Recurse -Force
         # ...then Shared + the engines as subfolders the umbrella loads.
-        foreach ($name in 'Netscoot.Shared', 'Netscoot.Core', 'Netscoot.Unity', 'Netscoot.Native') {
+        foreach ($name in 'NetscootShared', 'Netscoot.Core', 'Netscoot.Unity', 'Netscoot.Native') {
             Copy-Item -Path (Join-Path $root (Join-Path 'src' $name)) -Destination (Join-Path $pkg $name) -Recurse -Force
         }
 

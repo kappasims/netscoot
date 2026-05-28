@@ -29,7 +29,7 @@ Describe 'Get-NetscootCapability' {
 
 Describe 'Required-tool gating (dotnet)' {
     It 'aborts with a clear error when dotnet is missing' {
-        Mock -ModuleName Netscoot.Shared Test-DotnetAvailable { $false }
+        Mock -ModuleName NetscootShared Test-DotnetAvailable { $false }
         Move-DotnetProject -Project 'X:/nope/Foo.csproj' -Destination 'X:/dst' `
             -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
         $errs[0].FullyQualifiedErrorId | Should -Match 'DotnetMissing'
@@ -38,7 +38,7 @@ Describe 'Required-tool gating (dotnet)' {
 
 Describe 'Optional-tool fallback (git)' {
     It 'falls back to a plain move when git is missing and -Force is given' {
-        Mock -ModuleName Netscoot.Shared Test-GitAvailable { $false }
+        Mock -ModuleName NetscootShared Test-GitAvailable { $false }
         $root = New-SoloFixture
         try {
             $lib = Join-Path $root (Join-Path 'Lib' ('Lib.csproj'))

@@ -92,27 +92,25 @@ function Invoke-Netscoot {
         $isContainer = Test-Path -LiteralPath $full -PathType Container
         $engine = Resolve-MoveEngine $full
 
-        # Common forwardables; an engine that lacks a parameter simply isn't given it.
-        $common = @{ Destination = $Destination }
-        if ($Force) { $common.Force = $true }
-        if ($NoJournal) { $common.NoJournal = $true }
-        if ($PSBoundParameters.ContainsKey('RepositoryRoot')) { $common.RepositoryRoot = $RepositoryRoot }
-        # Forward -WhatIf/-Confirm explicitly: $ConfirmPreference/$WhatIfPreference do not reliably
-        # inherit into cmdlets in the sibling engine modules (Unity/Native), so an unforwarded
-        # High-impact ShouldProcess would prompt - and hang a non-interactive caller such as the
-        # git alias, which passes -Confirm:$false.
-        foreach ($sw in 'WhatIf', 'Confirm') {
-            if ($PSBoundParameters.ContainsKey($sw)) { $common[$sw] = $PSBoundParameters[$sw] }
-        }
-
         Write-Verbose "Invoke-Netscoot: engine=$engine container=$isContainer target=$full"
+        # Per-engine forwarding via New-ForwardArgs: every dispatcher's bound param flows through to
+        # the specialist by default. -Drop strips things the target cmdlet does not accept (e.g.
+        # NoBuild for the PowerShell / Unity movers, RepositoryRoot for Unity); -Add substitutes the
+        # resolved $full for the dispatcher's raw -Path and renames the path-parameter where the
+        # specialist uses a different name (Project / ModulePath / AssetPath). Forwarding -WhatIf
+        # /-Confirm /-Verbose /-Debug is automatic because they appear in $PSBoundParameters when bound;
+        # this matters because $ConfirmPreference / $WhatIfPreference do not reliably inherit into
+        # cmdlets in the sibling engine modules (Unity / Native), and $PSCmdlet.WriteVerbose inside
+        # Write-MovePlan honors the cmdlet's bound -Verbose more strictly than ambient preference.
         switch ($engine) {
             'dotnet' {
-                if ($NoBuild) { $common.NoBuild = $true }
-                if ($isContainer) { Move-DotnetFolder -Path $full @common } else { Move-DotnetFile -Path $full @common }
+                $fwd = New-ForwardArgs $PSBoundParameters -Add @{ Path = $full }
+                if ($isContainer) { Move-DotnetFolder @fwd } else { Move-DotnetFile @fwd }
             }
             { $_ -in 'ps-script', 'ps-module' } {
-                Move-PowerShell -Path $full @common
+                # Move-PowerShell does not accept NoBuild.
+                $fwd = New-ForwardArgs $PSBoundParameters -Drop 'NoBuild' -Add @{ Path = $full }
+                Move-PowerShell @fwd
             }
             'unity' {
                 if (-not (Import-MoveEngine -Name 'Netscoot.Unity')) {
@@ -121,12 +119,9 @@ function Invoke-Netscoot {
                             'UnityEngineUnavailable', [System.Management.Automation.ErrorCategory]::NotInstalled, $full))
                     return
                 }
-                # Move-UnityAsset handles file and folder; it has no -RepositoryRoot/-NoBuild.
-                $u = @{ Destination = $Destination }
-                if ($Force) { $u.Force = $true }
-                if ($NoJournal) { $u.NoJournal = $true }
-                foreach ($sw in 'WhatIf', 'Confirm') { if ($common.ContainsKey($sw)) { $u[$sw] = $common[$sw] } }
-                Move-UnityAsset -AssetPath $full @u
+                # Move-UnityAsset uses -AssetPath and accepts neither -RepositoryRoot nor -NoBuild.
+                $fwd = New-ForwardArgs $PSBoundParameters -Drop 'Path', 'RepositoryRoot', 'NoBuild' -Add @{ AssetPath = $full }
+                Move-UnityAsset @fwd
             }
             'native' {
                 if (-not (Import-MoveEngine -Name 'Netscoot.Native')) {
@@ -135,7 +130,9 @@ function Invoke-Netscoot {
                             'NativeEngineUnavailable', [System.Management.Automation.ErrorCategory]::NotInstalled, $full))
                     return
                 }
-                Move-NativeProject -Project $full @common
+                # Move-NativeProject uses -Project.
+                $fwd = New-ForwardArgs $PSBoundParameters -Drop 'Path' -Add @{ Project = $full }
+                Move-NativeProject @fwd
             }
             default {
                 $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(

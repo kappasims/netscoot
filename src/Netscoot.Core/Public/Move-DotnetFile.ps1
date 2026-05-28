@@ -75,28 +75,22 @@ function Move-DotnetFile {
 
         switch -regex ($ext) {
             '\.(cs|fs|vb)proj$' {
-                $fwd = @{ Destination = $Destination }
-                if ($PSBoundParameters.ContainsKey('RepositoryRoot')) { $fwd.RepositoryRoot = $RepositoryRoot }
-                if ($Force) { $fwd.Force = $true }
-                if ($NoBuild) { $fwd.NoBuild = $true }
-                if ($NoJournal) { $fwd.NoJournal = $true }
+                # Specialist takes -Project (not -Path). Drop the dispatcher's Path, add Project=$full.
+                $fwd = New-ForwardArgs $PSBoundParameters -Drop 'Path' -Add @{ Project = $full }
                 Write-Verbose "Routing $ext -> Move-DotnetProject"
-                Move-DotnetProject -Project $full @fwd
+                Move-DotnetProject @fwd
             }
             '\.slnx?$' {
-                $fwd = @{ Destination = $Destination }
-                if ($Force) { $fwd.Force = $true }
-                if ($NoJournal) { $fwd.NoJournal = $true }
+                # Move-Solution does not take RepositoryRoot/NoBuild.
+                $fwd = New-ForwardArgs $PSBoundParameters -Drop 'RepositoryRoot', 'NoBuild' -Add @{ Path = $full }
                 Write-Verbose "Routing $ext -> Move-Solution"
-                Move-Solution -Path $full @fwd
+                Move-Solution @fwd
             }
             '\.(props|targets)$' {
-                $fwd = @{ Destination = $Destination }
-                if ($PSBoundParameters.ContainsKey('RepositoryRoot')) { $fwd.RepositoryRoot = $RepositoryRoot }
-                if ($Force) { $fwd.Force = $true }
-                if ($NoJournal) { $fwd.NoJournal = $true }
+                # Move-MSBuildImport does not take NoBuild.
+                $fwd = New-ForwardArgs $PSBoundParameters -Drop 'NoBuild' -Add @{ Path = $full }
                 Write-Verbose "Routing $ext -> Move-MSBuildImport"
-                Move-MSBuildImport -Path $full @fwd
+                Move-MSBuildImport @fwd
             }
             default {
                 $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(

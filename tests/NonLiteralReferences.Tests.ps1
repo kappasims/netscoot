@@ -29,7 +29,7 @@ Describe 'Reference classification' {
             Add-ProjectReference -ProjectFile $proj -Include '..\plugins\*.csproj'                # wildcard
             Add-ProjectReference -ProjectFile $proj -Include '..\Opt\Opt.csproj' -Condition "'`$(Cfg)'=='Debug'"  # conditional but literal path
 
-            InModuleScope Netscoot.Shared -Parameters @{ Proj = $proj } {
+            InModuleScope NetscootShared -Parameters @{ Proj = $proj } {
                 param($Proj)
                 $refs = Get-ProjectReferencePaths -ProjectFile $Proj
                 ($refs | Where-Object { $_.Raw -eq '..\Lib\Lib.csproj' }).IsLiteral | Should -BeTrue

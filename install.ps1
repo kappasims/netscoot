@@ -79,8 +79,8 @@ try {
     }
     New-Item -ItemType Directory -Path $InstallPath -Force | Out-Null
 
-    # Netscoot.Shared holds the helpers the engines call; install it alongside them.
-    foreach ($name in 'Netscoot.Shared', 'Netscoot.Core', 'Netscoot.Unity', 'Netscoot.Native', 'Netscoot') {
+    # NetscootShared holds the helpers the engines call; install it alongside them.
+    foreach ($name in 'NetscootShared', 'Netscoot.Core', 'Netscoot.Unity', 'Netscoot.Native', 'Netscoot') {
         $dest = Join-Path $InstallPath $name
         if (Test-Path -LiteralPath $dest) { Remove-Item -LiteralPath $dest -Recurse -Force }
         Copy-Item -LiteralPath (Join-Path $srcRoot $name) -Destination $dest -Recurse -Force

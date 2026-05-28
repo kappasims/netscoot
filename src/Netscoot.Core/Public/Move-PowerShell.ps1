@@ -75,19 +75,16 @@ function Move-PowerShell {
         $ext = ([System.IO.Path]::GetExtension($full)).ToLowerInvariant()
 
         if (-not $isContainer -and $ext -eq '.ps1') {
-            $fwd = @{ Destination = $Destination }
-            if ($PSBoundParameters.ContainsKey('RepositoryRoot')) { $fwd.RepositoryRoot = $RepositoryRoot }
-            if ($Force) { $fwd.Force = $true }
-            if ($NoJournal) { $fwd.NoJournal = $true }
+            # Move-PowerShellScript takes -Path.
+            $fwd = New-ForwardArgs $PSBoundParameters -Add @{ Path = $full }
             Write-Verbose 'Routing .ps1 -> Move-PowerShellScript'
-            Move-PowerShellScript -Path $full @fwd
+            Move-PowerShellScript @fwd
         }
         elseif ($isContainer -or $ext -eq '.psd1') {
-            $fwd = @{ Destination = $Destination }
-            if ($Force) { $fwd.Force = $true }
-            if ($NoJournal) { $fwd.NoJournal = $true }
+            # Move-PowerShellModule takes -ModulePath and does not accept RepositoryRoot.
+            $fwd = New-ForwardArgs $PSBoundParameters -Drop 'Path', 'RepositoryRoot' -Add @{ ModulePath = $full }
             Write-Verbose 'Routing module -> Move-PowerShellModule'
-            Move-PowerShellModule -ModulePath $full @fwd
+            Move-PowerShellModule @fwd
         }
         else {
             $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(

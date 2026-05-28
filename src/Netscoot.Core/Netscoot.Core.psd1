@@ -7,7 +7,7 @@
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Core', 'Desktop')
     # No RequiredModules: shipped as one bundled Netscoot package; the umbrella loads the bundled
-    # Netscoot.Shared (-Global) before this engine. (In dev, tests/build/the forwarder do the same.)
+    # NetscootShared (-Global) before this engine. (In dev, tests/build/the forwarder do the same.)
     FunctionsToExport    = @(
         'Clear-NetscootJournal',
         'Find-PathReference',

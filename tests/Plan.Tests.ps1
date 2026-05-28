@@ -7,7 +7,7 @@ BeforeAll {
 
 Describe 'Invoke-MovePlan (transaction engine)' {
     It 'detaches all items, then moves, then reattaches - in that order' {
-        InModuleScope Netscoot.Shared {
+        InModuleScope NetscootShared {
             $log = [System.Collections.Generic.List[string]]::new()
             $items = @(
                 New-MoveItem -Description 'A' -Detach ({ $log.Add('detachA') }.GetNewClosure()) -Reattach ({ $log.Add('reattachA') }.GetNewClosure())
@@ -21,7 +21,7 @@ Describe 'Invoke-MovePlan (transaction engine)' {
     }
 
     It 'passes per-item args by splat (not as a single array argument)' {
-        InModuleScope Netscoot.Shared {
+        InModuleScope NetscootShared {
             $seen = [System.Collections.Generic.List[string]]::new()
             $sb = { param($a, $b) $seen.Add("$a|$b") }.GetNewClosure()
             $items = @( New-MoveItem -Description 'X' -Reattach $sb -ReattachArgs @('one', 'two') )
@@ -31,7 +31,7 @@ Describe 'Invoke-MovePlan (transaction engine)' {
     }
 
     It 'runs the move even with no reconciliation items' {
-        InModuleScope Netscoot.Shared {
+        InModuleScope NetscootShared {
             $ran = [ref]$false
             $r = Invoke-MovePlan -Caption 't' -Items @() -Move ({ $ran.Value = $true }.GetNewClosure())
             $ran.Value | Should -BeTrue
@@ -42,7 +42,7 @@ Describe 'Invoke-MovePlan (transaction engine)' {
 
 Describe 'New-MoveResult' {
     It 'keeps the engine-specific extras in the order the caller wrote them' {
-        InModuleScope Netscoot.Shared {
+        InModuleScope NetscootShared {
             # An [ordered] -Extra must preserve insertion order so the emitted shape matches the
             # documented one (docs/output-types.psd1). A plain [hashtable] would enumerate by hash.
             $r = New-MoveResult -TypeName 'Netscoot.MoveResult' -Engine 'dotnet' -Source 'a' -Destination 'b' `
@@ -54,7 +54,7 @@ Describe 'New-MoveResult' {
     }
 
     It 'always emits the uniform base shape first' {
-        InModuleScope Netscoot.Shared {
+        InModuleScope NetscootShared {
             $r = New-MoveResult -TypeName 'Netscoot.SolutionMoveResult' -Engine 'dotnet' -Source 'a' -Destination 'b' `
                 -Performed $false -SkippedCount 3 -Extra ([ordered]@{ ProjectsRebased = 4 })
             $names = $r.PSObject.Properties.Name

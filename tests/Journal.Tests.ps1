@@ -207,7 +207,7 @@ Describe 'Move journal + Undo-Netscoot' {
     }
 
     It 'Compress-MoveJournalLines folds to the latest line per id and drops rolled-back moves' {
-        InModuleScope Netscoot.Shared {
+        InModuleScope NetscootShared {
             $mk = { param($id, $status) (@{ v = 2; id = $id; timestamp = '2026-01-01T00:00:00Z'; status = $status; command = 'Move-DotnetProject'; engine = 'dotnet'; source = 's'; destination = 'd'; undo = @{}; snapshot = ''; backup = @() } | ConvertTo-Json -Compress) }
             $lines = @((& $mk 'A' 'pending'), (& $mk 'A' 'committed'), (& $mk 'B' 'pending'), (& $mk 'C' 'pending'), (& $mk 'C' 'rolledback'))
             $out = @(Compress-MoveJournalLines -Lines $lines)

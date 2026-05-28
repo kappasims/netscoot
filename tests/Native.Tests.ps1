@@ -65,7 +65,7 @@ Describe 'Native project handling' {
 
 Describe 'OS-aware path comparison' {
     It 'matches Windows case-insensitivity / non-Windows case-sensitivity' {
-        InModuleScope Netscoot.Shared {
+        InModuleScope NetscootShared {
             # Test-IsWindowsHost is 5.1-safe; a bare $IsWindows throws here under the module's
             # StrictMode on Windows PowerShell 5.1 (where $IsWindows is not an automatic variable).
             $expected = [bool](Test-IsWindowsHost)

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Default table views for Netscoot's diagnostic / list result types and the undo-journal entries.
-  Loaded via Netscoot.Shared's FormatsToProcess, so the views are available whenever any engine is
+  Loaded via NetscootShared's FormatsToProcess, so the views are available whenever any engine is
   imported (formatting matches by PSTypeName at render time). Each emitting cmdlet stamps the
   matching PSTypeName on its objects. Array-valued columns are joined with ', ' so they read as text
   rather than "System.Object[]"; verbose columns (absolute paths, candidate lists) are left out of

@@ -56,20 +56,36 @@ one bundled Gallery package: the engines declare no `RequiredModules`; the `nets
 loads Shared first, then each available engine, with `-Global` so all their commands surface
 together.
 
-- `Netscoot.Shared`: cross-platform path/git/MSBuild/solution helpers used by the engines. Not
-  imported directly.
+- `NetscootShared`: cross-platform path/git/MSBuild/solution helpers used by the engines. Not
+  imported directly. **Naming asymmetry on purpose**: the public engines all use `Netscoot.<X>`,
+  while the internal helpers module is `NetscootShared` (no dot), so `Get-Command -Module Netscoot.*`
+  returns just the public engine surface (30 cmdlets) and never the 54 internal helpers. The
+  alternative would be `Get-Command -Module <explicit-list>` every time, since `-Module Netscoot*`
+  (no literal dot) still matches `NetscootShared` because the wildcard `*` matches the missing dot.
+  Pick the right query: `Netscoot.*` for the public surface, `NetscootShared` to opt-in to plumbing.
 - `Netscoot.Core`: cross-platform (PowerShell 7 and Windows PowerShell 5.1). The .NET and
   PowerShell engines, the `Invoke-Netscoot` dispatcher, and the utilities.
 - `Netscoot.Unity`: cross-platform Unity engine.
 - `Netscoot.Native`: Windows-only native C++ engine (loaded best-effort; absent elsewhere).
 - `netscoot`: the umbrella package (what you `Import-Module`).
 
+## Path-style convention in outputs
+
+Move-result objects (`Netscoot.MoveResult`, `Netscoot.TreeMoveResult`, etc.) carry **absolute**
+`Source`/`Destination` because those record the actual on-disk locations the move acted on - a
+result emitted from a script run in one directory still names the right paths when consumed later
+from a different working directory. Every other surface (verbose plan output via `-Verbose`,
+inventory rows, repair reports, `Find-PathReference` rows) uses **repository-relative** paths so
+the human-facing read of "where in this repo" stays short and stable across machines. Pick whichever
+matches the consumer: scripts that need to re-locate the moved file use the absolute fields;
+humans/agents looking at a working tree read the relative ones. The asymmetry is deliberate.
+
 ## Layout
 
 ```text
 build.ps1                Test / Analyze / Install / Docs / Release / Publish tasks
 .github/workflows/      ci.yml (push: Windows + PS 5.1 + lint); platforms.yml (on-demand: Linux + macOS)
-src/Netscoot.Shared/   shared helpers module (Common/ + Dotnet/); loaded by the umbrella first
+src/NetscootShared/   shared helpers module (Common/ + Dotnet/); loaded by the umbrella first
 src/Netscoot/          umbrella module (loads Shared + every available engine)
 src/Netscoot.Core/     cross-platform module; Private/ = helpers, Public/ = cmdlets
 src/Netscoot.Native/   Windows-only native module

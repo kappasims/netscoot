@@ -28,7 +28,7 @@ Describe 'Nested worktrees are excluded from repo scans' {
     It 'Find-Solutions ignores the worktree copies' {
         $root = New-RepoWithNestedWorktree
         try {
-            InModuleScope Netscoot.Shared -Parameters @{ Root = $root } {
+            InModuleScope NetscootShared -Parameters @{ Root = $root } {
                 param($Root)
                 # Two solutions at the root, not the four that the worktree copy would add.
                 @(Find-Solutions -Root $Root).Count | Should -Be 2

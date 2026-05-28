@@ -7,12 +7,12 @@
 # aborting Move-DotnetProject before ShouldProcess. The call site now wraps with @(...).
 
 BeforeAll {
-    Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'Netscoot.Shared', 'Netscoot.Shared.psd1')) -Force
+    Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'NetscootShared', 'NetscootShared.psd1')) -Force
 }
 
 Describe 'Unreconcilable references (StrictMode .Count guard)' {
     It 'does not throw when a non-moved project has a single conditional ProjectReference' {
-        InModuleScope Netscoot.Shared {
+        InModuleScope NetscootShared {
             $root = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), 'nr_' + [guid]::NewGuid().ToString('N').Substring(0, 8))
             New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($root, 'A')) -Force | Out-Null
             New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($root, 'B')) -Force | Out-Null

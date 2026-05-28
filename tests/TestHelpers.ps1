@@ -4,10 +4,10 @@
 # Mirrors `dotnet new <tmpl> -n <Name> -o <Directory>`: creates <Directory>/<Name>.csproj and
 # returns that path.
 
-# The engine modules declare Netscoot.Shared in RequiredModules; load it (by path) up front so a
+# The engine modules declare NetscootShared in RequiredModules; load it (by path) up front so a
 # test that imports an engine from src can resolve that dependency. Dot-source this helper before
 # importing any engine module.
-Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'Netscoot.Shared', 'Netscoot.Shared.psd1')) -Force -Global
+Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'NetscootShared', 'NetscootShared.psd1')) -Force -Global
 
 # Per-process list of throwaway directories to remove when the pwsh process exits, so a test session
 # doesn't leave its fixture-template cache and journal-home behind in $env:TEMP. Pester scopes its
