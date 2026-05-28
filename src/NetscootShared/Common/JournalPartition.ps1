@@ -4,8 +4,8 @@
 # transition, see Journal.ps1), these helpers store each entry as its own file in a per-repository
 # directory:
 #
-#   <appdata>/netscoot/<leaf>-<hash>.jsonl       ← existing single-file storage
-#   <appdata>/netscoot/<leaf>-<hash>/entries/    ← per-entry storage (this file's helpers)
+#   <appdata>/netscoot/<leaf>-<hash>.jsonl       <- existing single-file storage
+#   <appdata>/netscoot/<leaf>-<hash>/entries/    <- per-entry storage (this file's helpers)
 #       20260529143012123-a1b2c3d4.json
 #       20260529143245456-e5f6g7h8.json
 #

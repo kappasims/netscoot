@@ -21,7 +21,10 @@ Describe 'First-party tooling drift monitor' {
         #   Journal.ps1        - writes the repo-local undo journal and its self-.gitignore under
         #                        .netscoot/; a tool sidecar, never a solution/project file, so the
         #                        "no hand-writing project files" contract is unaffected.
-        $sanctioned = @('MSBuildImports.ps1', 'Journal.ps1')
+        #   JournalPartition.ps1 - same family as Journal.ps1: writes per-entry storage for the
+        #                          per-user undo journal. Tool sidecar, not solution/project files;
+        #                          the "no hand-writing project files" contract is unaffected.
+        $sanctioned = @('MSBuildImports.ps1', 'Journal.ps1', 'JournalPartition.ps1')
         $offenders = $srcFiles |
             Where-Object { (Get-Content -LiteralPath $_.FullName -Raw) -match $writePattern } |
             Where-Object { $sanctioned -notcontains $_.Name } |
