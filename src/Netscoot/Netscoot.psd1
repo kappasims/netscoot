@@ -1,6 +1,6 @@
 @{
     RootModule           = 'Netscoot.psm1'
-    ModuleVersion        = '2.1.1'
+    ModuleVersion        = '2.2.0'
     GUID                 = '917ef9d9-9117-4ee4-a07f-eb1c1902b9d6'
     Author               = 'kappasims'
     Description          = 'Move/restructure .NET projects (and PowerShell, Unity, native C++) from the command line without breaking references. A single bundled package: Import-Module Netscoot loads the .NET/PowerShell and Unity engines everywhere, and the native C++ (.vcxproj) engine on Windows. Independent community project; not affiliated with or endorsed by Microsoft.'

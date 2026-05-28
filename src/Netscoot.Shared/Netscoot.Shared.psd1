@@ -1,6 +1,6 @@
 @{
     RootModule           = 'Netscoot.Shared.psm1'
-    ModuleVersion        = '2.1.1'
+    ModuleVersion        = '2.2.0'
     GUID                 = 'f0448d52-8cf4-4e39-a620-1d4b4c3503f5'
     Author               = 'kappasims'
     Description          = 'Shared cross-platform helpers for the Netscoot toolkit (path/git/MSBuild/solution primitives). A support module required by Netscoot.Core/.Unity/.Native; not used directly.'
