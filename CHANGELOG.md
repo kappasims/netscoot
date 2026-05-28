@@ -6,6 +6,31 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-05-29
+
+Internal test infrastructure release. No user-visible API or behavior changes from 2.4.0; the
+regression baseline this introduces will make the upcoming v3 journal-layout migration safer.
+
+### Added
+
+- Three-tier regression test suite locking down the v2 move-journal contract:
+  - `tests/JournalFormat.Tests.ps1` asserts the on-disk per-entry schema (11 fields,
+    `id` is 8 lowercase hex, status is one of `pending`/`committed`/`rolledback`, paths
+    are absolute, etc.).
+  - Extensions to `tests/Journal.Tests.ps1` lock the WAL append-order ("successful move
+    writes [pending, committed]"), the post-crash Repair-Rollback entry-removal contract,
+    the closed status taxonomy, and the compaction-never-trims-pending safety invariant.
+  - `tests/JournalSnapshot.Tests.ps1` locks the snapshot directory lifecycle - by path
+    *semantics* (`$entry.snapshot` is the canonical reference), not by path *shape*,
+    so a future relocation of snapshots into the journal partition dir still passes
+    every assertion.
+
+### Changed
+
+- `tests/WorktreeExclusion.Tests.ps1` fixture now uses `Copy-FixtureTemplate`, so the
+  4 dotnet sln/add calls in its setup run once per session instead of per `It` block.
+  Trims a few seconds off whichever CI shard the file lands in.
+
 ## [2.4.0] - 2026-05-29
 
 ### Changed
@@ -191,7 +216,8 @@ See the release notes for the full pull-request list.
 
 DotnetMove 1.x history predates the rename; see the legacy DotnetMove releases.
 
-[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.4.0...HEAD
+[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/kappasims/netscoot/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/kappasims/netscoot/compare/v2.3.2...v2.4.0
 [2.3.2]: https://github.com/kappasims/netscoot/compare/v2.3.1...v2.3.2
 [2.3.1]: https://github.com/kappasims/netscoot/compare/v2.3.0...v2.3.1
