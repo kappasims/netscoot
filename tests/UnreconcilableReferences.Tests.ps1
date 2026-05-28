@@ -7,17 +7,18 @@
 # aborting Move-DotnetProject before ShouldProcess. The call site now wraps with @(...).
 
 BeforeAll {
+    . (Join-Path $PSScriptRoot TestHelpers.ps1)
     Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'NetscootShared', 'NetscootShared.psd1')) -Force
 }
 
 Describe 'Unreconcilable references (StrictMode .Count guard)' {
     It 'does not throw when a non-moved project has a single conditional ProjectReference' {
-        InModuleScope NetscootShared {
-            $root = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), 'nr_' + [guid]::NewGuid().ToString('N').Substring(0, 8))
-            New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($root, 'A')) -Force | Out-Null
-            New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($root, 'B')) -Force | Out-Null
-            $a = [System.IO.Path]::Combine($root, 'A', 'A.csproj')
-            $b = [System.IO.Path]::Combine($root, 'B', 'B.csproj')
+        $root = New-TempRoot -Prefix 'netscoot_nr'
+        try {
+            New-Item -ItemType Directory -Path (Join-Path $root 'A') -Force | Out-Null
+            New-Item -ItemType Directory -Path (Join-Path $root 'B') -Force | Out-Null
+            $a = Join-Path $root (Join-Path 'A' 'A.csproj')
+            $b = Join-Path $root (Join-Path 'B' 'B.csproj')
             '<Project Sdk="Microsoft.NET.Sdk"></Project>' | Set-Content -LiteralPath $a
             # Exactly one ProjectReference, made unreconcilable by a Condition (single element ->
             # this is what used to unwrap to a scalar and break .Count).
@@ -28,15 +29,16 @@ Describe 'Unreconcilable references (StrictMode .Count guard)' {
   </ItemGroup>
 </Project>
 '@ | Set-Content -LiteralPath $b
-            try {
+            InModuleScope NetscootShared -Parameters @{ A = $a; B = $b } {
+                param($A, $B)
                 {
-                    Write-UnreconcilableReferenceWarning -MovedProject $a `
-                        -AllProjects @([pscustomobject]@{ FullName = $b }) `
+                    Write-UnreconcilableReferenceWarning -MovedProject $A `
+                        -AllProjects @([pscustomobject]@{ FullName = $B }) `
                         -LiteralConsumers @() -WarningAction SilentlyContinue
                 } | Should -Not -Throw
-            } finally {
-                Remove-Item -Recurse -Force $root -ErrorAction SilentlyContinue
             }
+        } finally {
+            Remove-Item -Recurse -Force $root -ErrorAction SilentlyContinue
         }
     }
 }
