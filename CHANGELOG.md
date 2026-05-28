@@ -34,11 +34,26 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (`Get-SolutionInventory`, `Test-SolutionConsistency`, `Find-PathReference`,
   `Repair-SolutionReferences`, `Resolve-MoveEngine`, `Get-NetscootCapability`). AI agents now route
   questions like "is the rename done?" / "where else does this appear?" / "what would break if I
-  moved X?" to Netscoot's structured output instead of ad-hoc text search. The existing
-  `restructure-*` skills continue to own the actual moves.
+  moved X?" to Netscoot's structured output instead of ad-hoc text search.
+- New `netscoot-manage` skill: trigger surface for the admin / config cmdlets that change
+  netscoot's own behavior (`Get/Set-NetscootUpdatePolicy`, `Set-NetscootJournal`,
+  `Clear-NetscootJournal`, `Unregister-NetscootGitAlias`). Distinct use case from moves;
+  agents now route "stop netscoot auto-updating," "wipe my undo history," "remove the git verb"
+  to this skill instead of the move-focused `restructure-*` skills.
+- `restructure-dotnet` skill body now documents the full .NET-side move surface (the dispatcher
+  movers `Invoke-Netscoot`, `Move-DotnetFile`, `Move-DotnetFolder`, the multi-project
+  `Move-DotnetProjectTree`, the file movers `Move-Solution` and `Move-MSBuildImport`). Previously
+  only `Move-DotnetProject` was named, so an agent that activated the skill could miss the
+  right cmdlet for the move at hand.
 - README's Inspecting section now documents `Find-PathReference -Path <old-id>` as the canonical
   post-refactor sanity check, with the warning string Netscoot emits as the agent-readable
   all-clear signal.
+- New CI gate `tests/SkillCoverage.Tests.ps1`: asserts every cmdlet in the umbrella manifest's
+  `FunctionsToExport` appears in at least one `.claude/skills/*/SKILL.md`. Catches the same
+  declared-vs-delivered drift on the agent surface that `UmbrellaSurface.Tests.ps1` catches on
+  the Gallery surface. Closes a real gap: at audit time 10 of the 30 exported cmdlets had no
+  skill mention, so AI agents using netscoot in this repository couldn't discover them through
+  the skill system.
 
 ## [2.2.0] - 2026-05-28
 

@@ -60,6 +60,30 @@ consumer `<ProjectReference>`s, and the project's own references, then runs `dot
 folder's name (`-Destination ./libs` puts the project at `./libs/Tarragon`); otherwise it is the
 project's new folder path, a rename (`-Destination ./libs/Tarragon`).
 
+## Other move operations (folders, solutions, imports)
+
+`Move-DotnetProject` handles a single project; the rest of the .NET move surface:
+
+- `Move-DotnetProjectTree` - move a FOLDER of one or more `.csproj` (and their subfolders) as a
+  group. Fixes external `<ProjectReference>`s into the moved set; leaves internal sibling refs
+  alone. Use this when reorganizing layout, not a single project.
+- `Move-Solution` - move the `.sln` / `.slnx` file itself and rebase the relative project paths
+  it stores. The dotnet CLI has no native "rebase" so this rewrites those paths in place.
+- `Move-MSBuildImport` - move a shared `.props` / `.targets` and fix every `<Import>` that points
+  at it (and the file's own outgoing imports). Treats `Directory.Build.props` / `Directory.Packages.props`
+  as by-location imports: warns about inheritance changes, doesn't try to "fix" them.
+- `Move-DotnetFile` / `Move-DotnetFolder` - dispatchers that route by extension/content. Use these
+  when you have a `.NET` file or folder and want netscoot to pick the right specialist
+  (`Move-DotnetProject` for `.csproj`, `Move-MSBuildImport` for `.props`, etc.). Same -WhatIf and
+  result-object shape as the specialists.
+- `Invoke-Netscoot` - the top-level cross-engine dispatcher. Routes a file/folder to the
+  right engine (.NET / PowerShell / Unity / native) by extension and context. Use it when the
+  caller doesn't know or care which engine handles the input. Alias: `scoot`.
+
+Every mover supports `-WhatIf` (preview) and `-Verbose` (full plan: solutions edited, references
+repointed, GUIDs touched). Run `Move-X -WhatIf -Verbose` before a real move on anything
+non-trivial.
+
 ## Inspecting and repairing (no move)
 
 These work on an existing repository without moving anything. Inspect first, then repair if needed.
