@@ -9,20 +9,37 @@
 # importing any engine module.
 Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'Netscoot.Shared', 'Netscoot.Shared.psd1')) -Force -Global
 
+# Per-process list of throwaway directories to remove when the pwsh process exits, so a test session
+# doesn't leave its fixture-template cache and journal-home behind in $env:TEMP. Pester scopes its
+# BeforeAll per file (re-dot-sourcing this helper), so we anchor the list and the engine-exit
+# subscription in the global scope and gate registration on whether the global already exists.
+if (-not (Test-Path Variable:Global:NetscootTestCleanup)) {
+    $global:NetscootTestCleanup = [System.Collections.Generic.List[string]]::new()
+    Register-EngineEvent PowerShell.Exiting -SupportEvent -Action {
+        foreach ($p in $global:NetscootTestCleanup) {
+            if ($p -and (Test-Path -LiteralPath $p)) {
+                Remove-Item -LiteralPath $p -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+    } | Out-Null
+}
+
 function New-TempRoot {
     # Create a throwaway temp directory and return its CANONICAL path. On macOS the temp root
     # /var/folders/... is a symlink to /private/var/folders/...; if a fixture used the /var form,
     # git and `dotnet sln` (which canonicalize) would store cross-boundary relative paths and the
     # reconciliation would mismatch. Resolving it up front keeps every path in one form. Every
     # test temp root (and journal-home + fixture-template-root) goes through this so the contract is
-    # enforced in one place.
+    # enforced in one place. The returned path is also registered for session-end cleanup, so a
+    # crashed test or a finally that only did Pop-Location doesn't leave behind a temp dir.
     param([string]$Prefix = 'netscoot')
     $d = Join-Path ([System.IO.Path]::GetTempPath()) ($Prefix + '_' + [guid]::NewGuid().ToString('N').Substring(0, 8))
     New-Item -ItemType Directory -Path $d | Out-Null
     if (($PSVersionTable.PSEdition -eq 'Core') -and -not $IsWindows) {
         $real = (& realpath $d 2>$null)
-        if ($LASTEXITCODE -eq 0 -and $real) { return ("$real").Trim() }
+        if ($LASTEXITCODE -eq 0 -and $real) { $d = ("$real").Trim() }
     }
+    [void]$global:NetscootTestCleanup.Add($d)
     return $d
 }
 
@@ -30,6 +47,8 @@ function New-TempRoot {
 # the suite never write into the real LocalAppData/Application Support store. Each test file
 # dot-sources this; set it once, through New-TempRoot so macOS canonicalization applies.
 if (-not $env:NETSCOOT_JOURNAL_HOME) {
+    # New-TempRoot registers the dir for session-end cleanup; a developer's persistently-set
+    # NETSCOOT_JOURNAL_HOME is left alone (we never enter this branch in that case).
     $env:NETSCOOT_JOURNAL_HOME = New-TempRoot -Prefix 'dnm-jhome'
 }
 

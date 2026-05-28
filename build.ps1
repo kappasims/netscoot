@@ -755,30 +755,38 @@ function Invoke-PublishTask {
     $pkg = Join-Path $stage 'Netscoot'
     New-Item -ItemType Directory -Path $pkg -Force | Out-Null
 
-    # Umbrella files (manifest + RootModule) at the package root...
-    Copy-Item -Path (Join-Path $root (Join-Path 'src' (Join-Path 'Netscoot' '*'))) -Destination $pkg -Recurse -Force
-    # ...then Shared + the engines as subfolders the umbrella loads.
-    foreach ($name in 'Netscoot.Shared', 'Netscoot.Core', 'Netscoot.Unity', 'Netscoot.Native') {
-        Copy-Item -Path (Join-Path $root (Join-Path 'src' $name)) -Destination (Join-Path $pkg $name) -Recurse -Force
+    # Remove the staging dir on every exit path (success, dry run, smoke-import failure, network
+    # error during Publish-Module) so $env:TEMP doesn't accumulate one netscoot_pkg_* per publish.
+    try {
+        # Umbrella files (manifest + RootModule) at the package root...
+        Copy-Item -Path (Join-Path $root (Join-Path 'src' (Join-Path 'Netscoot' '*'))) -Destination $pkg -Recurse -Force
+        # ...then Shared + the engines as subfolders the umbrella loads.
+        foreach ($name in 'Netscoot.Shared', 'Netscoot.Core', 'Netscoot.Unity', 'Netscoot.Native') {
+            Copy-Item -Path (Join-Path $root (Join-Path 'src' $name)) -Destination (Join-Path $pkg $name) -Recurse -Force
+        }
+
+        $manifest = Join-Path $pkg 'Netscoot.psd1'
+        Write-Host "Validating bundled manifest: $manifest" -ForegroundColor Cyan
+        $null = Test-ModuleManifest -Path $manifest
+
+        # Smoke-import in a clean child pwsh to prove the single package self-loads with no separate
+        # modules on the path (this is what catches missing-bundle / load-order bugs).
+        Write-Host 'Smoke-importing the bundled package in a clean session...' -ForegroundColor Cyan
+        & pwsh -NoProfile -Command "Import-Module '$manifest' -Force; if (-not (Get-Command Invoke-Netscoot -ErrorAction SilentlyContinue)) { throw 'Invoke-Netscoot was not surfaced by the bundled package.' }; 'bundled import OK'"
+        if ($LASTEXITCODE -ne 0) { throw 'The bundled package failed to import in a clean session.' }
+
+        Write-Host "Staged single package at: $pkg" -ForegroundColor Green
+        if (-not $ApiKey) {
+            Write-Host 'No -ApiKey given: staged + validated only (dry run). Re-run with -ApiKey to publish.' -ForegroundColor Yellow
+            return
+        }
+        Publish-Module -Path $pkg -NuGetApiKey $ApiKey -Repository PSGallery
+        Write-Host 'Published netscoot to the PowerShell Gallery.' -ForegroundColor Green
+    } finally {
+        if (Test-Path -LiteralPath $stage) {
+            Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue
+        }
     }
-
-    $manifest = Join-Path $pkg 'Netscoot.psd1'
-    Write-Host "Validating bundled manifest: $manifest" -ForegroundColor Cyan
-    $null = Test-ModuleManifest -Path $manifest
-
-    # Smoke-import in a clean child pwsh to prove the single package self-loads with no separate
-    # modules on the path (this is what catches missing-bundle / load-order bugs).
-    Write-Host 'Smoke-importing the bundled package in a clean session...' -ForegroundColor Cyan
-    & pwsh -NoProfile -Command "Import-Module '$manifest' -Force; if (-not (Get-Command Invoke-Netscoot -ErrorAction SilentlyContinue)) { throw 'Invoke-Netscoot was not surfaced by the bundled package.' }; 'bundled import OK'"
-    if ($LASTEXITCODE -ne 0) { throw 'The bundled package failed to import in a clean session.' }
-
-    Write-Host "Staged single package at: $pkg" -ForegroundColor Green
-    if (-not $ApiKey) {
-        Write-Host 'No -ApiKey given: staged + validated only (dry run). Re-run with -ApiKey to publish.' -ForegroundColor Yellow
-        return
-    }
-    Publish-Module -Path $pkg -NuGetApiKey $ApiKey -Repository PSGallery
-    Write-Host 'Published netscoot to the PowerShell Gallery.' -ForegroundColor Green
 }
 
 switch ($Task) {
