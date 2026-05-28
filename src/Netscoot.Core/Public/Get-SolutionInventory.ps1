@@ -44,12 +44,17 @@ function Get-SolutionInventory {
         $RepositoryRoot = Resolve-FullPath $RepositoryRoot
         function _rel([string]$p) { (Get-RelativePathSafe -From $RepositoryRoot -To $p) }
 
-        $solutions = @(Find-Solutions -Root $RepositoryRoot)
+        # One repository parse for this invocation: solutions (each already parsed via Read-Solution)
+        # and the project glob both come from the workspace, so no file is read twice.
+        $workspace = Get-Workspace -RepositoryRoot $RepositoryRoot
+        $solutions = @(Get-WorkspaceSolutions -Workspace $workspace)
         $seen = [System.Collections.Generic.List[string]]::new()
 
         foreach ($sln in $solutions) {
             $rel = _rel $sln.FullName
-            $content = Get-SolutionContent -SolutionFile $sln.FullName
+            # The workspace solution entry IS the parsed Netscoot.Solution, so its file contents
+            # (projects of any type, folders, items) are already on it - no second Get-SolutionContent.
+            $content = $sln
             foreach ($p in $content.Projects) {
                 $seen.Add($p.Abs)
                 [pscustomobject]@{
@@ -70,7 +75,7 @@ function Get-SolutionInventory {
         }
 
         # Projects on disk (managed and native) that no solution references at all.
-        foreach ($disk in (Find-ProjectFiles -Root $RepositoryRoot -IncludeNative)) {
+        foreach ($disk in (Get-WorkspaceProjectFiles -Workspace $workspace -IncludeNative)) {
             $abs = Resolve-FullPath $disk.FullName
             if (-not (Test-PathInList -Path $abs -List $seen)) {
                 [pscustomobject]@{

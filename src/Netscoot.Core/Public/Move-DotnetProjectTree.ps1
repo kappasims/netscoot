@@ -110,15 +110,18 @@ function Move-DotnetProjectTree {
             return
         }
 
-        $allSolutions = @(Find-Solutions -Root $repoFull)
-        $allProjects = @(Find-ProjectFiles -Root $repoFull)
+        # One repository parse for the whole invocation: the per-moved-project lookups below
+        # (consumers, own references, solutions-referencing) all read from this single workspace
+        # instead of re-globbing the tree and re-parsing every solution/project per moved project.
+        $workspace = Get-Workspace -RepositoryRoot $repoFull
+        $allSolutions = @(Get-WorkspaceSolutions -Workspace $workspace)
 
         # Per moved project: which solutions list it, and which outside projects consume it.
         $plan = @()
         foreach ($p in $moved) {
-            $extConsumers = @(Get-ConsumingProjects -ProjectFile $p -Candidates $allProjects |
+            $extConsumers = @(Get-ConsumingProjects -ProjectFile $p -Workspace $workspace |
                     Where-Object { -not (Test-PathUnder -Path $_ -Dir $srcDir) })
-            $extRefs = @(Get-ProjectReferencePaths -ProjectFile $p |
+            $extRefs = @(Get-WorkspaceProjectRefs -Workspace $workspace -ProjectFile $p |
                     Where-Object { $_.IsLiteral -and -not (Test-PathUnder -Path $_.FullPath -Dir $srcDir) })
             $slns = @(Get-SolutionsReferencing -ProjectFile $p -Candidates $allSolutions)
             $newP = $newDir + $p.Substring($srcDir.Length)   # rebase under destination
@@ -143,7 +146,7 @@ function Move-DotnetProjectTree {
 
         # Warn about references the CLI cannot reconcile on a move (non-literal path or conditional).
         foreach ($p in $moved) {
-            foreach ($r in (Get-UnreconcilableReferences -ProjectFile $p)) {
+            foreach ($r in (Get-UnreconcilableReferences -ProjectFile $p -Workspace $workspace)) {
                 $why = if (-not $r.IsLiteral) { 'non-literal path' } else { 'conditional' }
                 Write-Warning ("$(Split-Path -Leaf $p) has an unreconcilable ProjectReference '$($r.Raw)' ($why); verify it by hand after the move.")
             }

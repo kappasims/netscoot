@@ -111,7 +111,9 @@ function Move-NativeProject {
             return
         }
 
-        $allSolutions = @(Find-Solutions -Root $repoFull)
+        # One repository parse for this invocation; solutions-referencing reuses the embedded parse.
+        $workspace = Get-Workspace -RepositoryRoot $repoFull
+        $allSolutions = @(Get-WorkspaceSolutions -Workspace $workspace)
         $solutions = @(Get-SolutionsReferencing -ProjectFile $projFull -Candidates $allSolutions)
         $nativeSettings = @(Get-NativePathSettings -ProjectFile $projFull)
         $filters = "$projFull.filters"

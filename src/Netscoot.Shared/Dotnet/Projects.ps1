@@ -69,9 +69,16 @@ function Get-ProjectReferencePaths {
 function Get-UnreconcilableReferences {
     # ProjectReferences the dotnet CLI cannot safely reconcile on a move: a non-literal Include
     # (MSBuild property / item list / wildcard) or a conditional reference. Reported, not rewritten.
+    # Reads the project's references from $Workspace's parse-once cache when one is supplied,
+    # otherwise parses the file directly.
     [CmdletBinding()]
-    param([Parameter(Mandatory)][string]$ProjectFile)
-    return @(Get-ProjectReferencePaths -ProjectFile $ProjectFile | Where-Object { -not $_.IsLiteral -or $_.HasCondition })
+    param(
+        [Parameter(Mandatory)][string]$ProjectFile,
+        [object]$Workspace
+    )
+    $refs = if ($Workspace) { Get-WorkspaceProjectRefs -Workspace $Workspace -ProjectFile $ProjectFile }
+            else { Get-ProjectReferencePaths -ProjectFile $ProjectFile }
+    return @($refs | Where-Object { -not $_.IsLiteral -or $_.HasCondition })
 }
 
 function Write-UnreconcilableReferenceWarning {
@@ -82,29 +89,34 @@ function Write-UnreconcilableReferenceWarning {
     param(
         [Parameter(Mandatory)][string]$MovedProject,
         [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$AllProjects,
-        [Parameter(Mandatory)][AllowEmptyCollection()][string[]]$LiteralConsumers
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]]$LiteralConsumers,
+        [object]$Workspace
     )
     $movedFull = Resolve-FullPath $MovedProject
-    foreach ($r in (Get-UnreconcilableReferences -ProjectFile $movedFull)) {
+    foreach ($r in (Get-UnreconcilableReferences -ProjectFile $movedFull -Workspace $Workspace)) {
         $why = if (-not $r.IsLiteral) { 'non-literal path' } else { 'conditional' }
         Write-Warning ("$(Split-Path -Leaf $movedFull) has an unreconcilable ProjectReference '$($r.Raw)' ($why); verify it by hand after the move.")
     }
     foreach ($proj in $AllProjects) {
         $pf = Resolve-FullPath $proj.FullName
         if ((Test-PathEqual $pf $movedFull) -or (Test-PathInList $pf $LiteralConsumers)) { continue }
-        if (@(Get-UnreconcilableReferences -ProjectFile $pf).Count -gt 0) {
+        if (@(Get-UnreconcilableReferences -ProjectFile $pf -Workspace $Workspace).Count -gt 0) {
             Write-Warning ("$(Split-Path -Leaf $pf) has non-literal/conditional ProjectReference(s); if any point at $(Split-Path -Leaf $movedFull), they were not reconciled - verify by hand.")
         }
     }
 }
 
 function Get-ConsumingProjects {
-    # Project files (from $Candidates) that have a ProjectReference to $ProjectFile.
+    # Project files that have a literal ProjectReference to $ProjectFile. With -Workspace, reads the
+    # prebuilt target->consumers index (each project parsed once for the whole invocation); otherwise
+    # walks $Candidates and parses each. Both return the same consumer FullName paths.
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$ProjectFile,
-        [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Candidates
+        [AllowEmptyCollection()][object[]]$Candidates,
+        [object]$Workspace
     )
+    if ($Workspace) { return @(Get-WorkspaceConsumingProjects -Workspace $Workspace -ProjectFile $ProjectFile) }
     $target = Resolve-FullPath $ProjectFile
     $hits = @()
     foreach ($proj in $Candidates) {

@@ -56,10 +56,15 @@ function Repair-SolutionReferences {
         if (-not $RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath (Get-Location).Path }
         $RepositoryRoot = Resolve-FullPath $RepositoryRoot
 
+        # One repository parse for this invocation: the project glob (for the leaf index and the
+        # reference scan) and every solution come from the workspace, so no file is read twice.
+        $workspace = Get-Workspace -RepositoryRoot $RepositoryRoot
+        $managedProjects = @(Get-WorkspaceProjectFiles -Workspace $workspace)
+
         # Index existing project files by leaf name, so a dangling target can be matched to where
         # its project now lives.
         $byLeaf = @{}
-        foreach ($pf in (Find-ProjectFiles -Root $RepositoryRoot)) {
+        foreach ($pf in $managedProjects) {
             if (-not $byLeaf.ContainsKey($pf.Name)) { $byLeaf[$pf.Name] = [System.Collections.Generic.List[string]]::new() }
             $byLeaf[$pf.Name].Add($pf.FullName)
         }
@@ -67,17 +72,16 @@ function Repair-SolutionReferences {
         # First pass: collect the dangling entries (a path recorded somewhere points at a project
         # file that no longer exists there).
         $dangling = [System.Collections.Generic.List[object]]::new()
-        foreach ($sln in (Find-Solutions -Root $RepositoryRoot)) {
-            $parsed = Read-Solution -SolutionFile $sln.FullName
+        foreach ($parsed in (Get-WorkspaceSolutions -Workspace $workspace)) {
             foreach ($entry in $parsed.Projects) {
                 if ($entry.Stored -notmatch '\.(cs|fs|vb|vcx)proj$') { continue }
                 if (-not (Test-Path -LiteralPath $entry.Abs)) {
-                    $dangling.Add([pscustomobject]@{ Kind = 'Solution'; Container = $sln.FullName; Missing = $entry.Stored; MissingAbs = $entry.Abs })
+                    $dangling.Add([pscustomobject]@{ Kind = 'Solution'; Container = $parsed.FullName; Missing = $entry.Stored; MissingAbs = $entry.Abs })
                 }
             }
         }
-        foreach ($proj in (Find-ProjectFiles -Root $RepositoryRoot)) {
-            foreach ($ref in (Get-ProjectReferencePaths -ProjectFile $proj.FullName)) {
+        foreach ($proj in $managedProjects) {
+            foreach ($ref in (Get-WorkspaceProjectRefs -Workspace $workspace -ProjectFile $proj.FullName)) {
                 # Non-literal references (MSBuild property / glob / conditional) have no single
                 # resolved path, so they cannot be "dangling" in a way we could repair - skip them.
                 if (-not $ref.IsLiteral) { continue }

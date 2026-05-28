@@ -41,7 +41,9 @@ function Sync-Solution {
         $RepositoryRoot = Resolve-FullPath $RepositoryRoot
         function _rel([string]$p) { (Get-RelativePathSafe -From $RepositoryRoot -To $p) }
 
-        $solutions = @(Find-Solutions -Root $RepositoryRoot)
+        # One repository parse for this invocation; membership reuses the embedded solution parse.
+        $workspace = Get-Workspace -RepositoryRoot $RepositoryRoot
+        $solutions = @(Get-WorkspaceSolutions -Workspace $workspace)
         if ($solutions.Count -lt 2) {
             Write-Verbose "Fewer than two solutions under $RepositoryRoot; nothing to sync."
             return

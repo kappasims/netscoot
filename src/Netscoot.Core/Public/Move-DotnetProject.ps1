@@ -124,14 +124,18 @@ function Move-DotnetProject {
         }
 
         Write-Verbose "Scanning repository root: $repoFull"
-        $allSolutions = @(Find-Solutions -Root $repoFull)
-        $allProjects = @(Find-ProjectFiles -Root $repoFull)
+        # One parse of the whole repository for this invocation: solutions, the project glob, and
+        # the reference index. Every membership / consumer / own-reference lookup below reads from
+        # it instead of re-globbing the tree or re-parsing each .sln/.csproj per helper call.
+        $workspace = Get-Workspace -RepositoryRoot $repoFull
+        $allSolutions = @(Get-WorkspaceSolutions -Workspace $workspace)
+        $allProjects = @(Get-WorkspaceProjectFiles -Workspace $workspace)
 
         $solutions = @(Get-SolutionsReferencing -ProjectFile $projFull -Candidates $allSolutions)
-        $consumers = @(Get-ConsumingProjects -ProjectFile $projFull -Candidates $allProjects)
+        $consumers = @(Get-ConsumingProjects -ProjectFile $projFull -Workspace $workspace)
         # Only literal references are reconciled by the CLI; non-literal/conditional ones are
         # warned about below (Write-UnreconcilableReferenceWarning) and left untouched.
-        $ownRefs = @(Get-ProjectReferencePaths -ProjectFile $projFull | Where-Object { $_.IsLiteral })
+        $ownRefs = @(Get-WorkspaceProjectRefs -Workspace $workspace -ProjectFile $projFull | Where-Object { $_.IsLiteral })
 
         $slnNames = @(); foreach ($s in $solutions) { $slnNames += $s.Name }
         Write-Verbose "Plan: $projFile  $oldDir -> $newDir"
@@ -165,7 +169,7 @@ function Move-DotnetProject {
         }
 
         Test-DirectoryBuildInheritance -OldDir $oldDir -NewDir $newDir -RepositoryRoot $repoFull
-        Write-UnreconcilableReferenceWarning -MovedProject $projFull -AllProjects $allProjects -LiteralConsumers $consumers
+        Write-UnreconcilableReferenceWarning -MovedProject $projFull -AllProjects $allProjects -LiteralConsumers $consumers -Workspace $workspace
 
         $built = $null
         $performed = $false

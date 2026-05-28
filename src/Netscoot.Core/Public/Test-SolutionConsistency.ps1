@@ -46,7 +46,10 @@ function Test-SolutionConsistency {
         if (-not $RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath (Get-Location).Path }
         $RepositoryRoot = Resolve-FullPath $RepositoryRoot
 
-        $solutions = @(Find-Solutions -Root $RepositoryRoot)
+        # One repository parse for this invocation; membership is derived from the solutions it
+        # already parsed (Get-SolutionMembership reuses the embedded parse rather than re-reading).
+        $workspace = Get-Workspace -RepositoryRoot $RepositoryRoot
+        $solutions = @(Get-WorkspaceSolutions -Workspace $workspace)
         if ($solutions.Count -lt 2) {
             Write-Verbose "Fewer than two solutions under $RepositoryRoot; nothing to diverge."
             return
