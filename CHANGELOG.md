@@ -6,6 +6,34 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.3.2] - 2026-05-29
+
+### Added
+
+- The generated Command reference now linkifies cmdlet mentions inside cmdlet help prose
+  (e.g. a reference to `Get-NetscootUpdatePolicy` from another cmdlet's help renders as a
+  link to that cmdlet's section). `Get-Help` is unchanged; this affects the README's
+  Command reference only.
+- Comment-based help `.LINK` cross-references for the natural cmdlet pairs and the
+  analysis clusters (update policy, journal, solution analysis). `Get-Help` shows them
+  under RELATED LINKS, and the README renders a compact "Related" line per cmdlet.
+
+### Changed
+
+- `Move-PowerShellModule` reports "missing .psd1 manifest" and "destination already exists"
+  as structured non-terminating errors (FQEIDs `ManifestNotFound` and `DestinationExists`),
+  matching every other mover in the family. Previously these were bare terminating throws;
+  callers using `-ErrorAction Stop` see the same outcome.
+- The dispatch-chain trace under `-Verbose` now reads uniformly across all layers - the
+  outer dispatcher names the target cmdlet the same way the inner dispatchers do, instead
+  of emitting a different shape at the top.
+
+### Fixed
+
+- Help-prose consistency pass across the 30 public cmdlets: tightened `.SYNOPSIS` first
+  sentences (these drive the Command reference index blurbs), uniform `.PARAMETER` phrasing
+  for pipeline input and `git mv`-rule destinations, and small grammar/casing fixes.
+
 ## [2.3.1] - 2026-05-29
 
 ### Fixed
@@ -133,7 +161,8 @@ See the release notes for the full pull-request list.
 
 DotnetMove 1.x history predates the rename; see the legacy DotnetMove releases.
 
-[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.3.1...HEAD
+[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.3.2...HEAD
+[2.3.2]: https://github.com/kappasims/netscoot/compare/v2.3.1...v2.3.2
 [2.3.1]: https://github.com/kappasims/netscoot/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/kappasims/netscoot/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/kappasims/netscoot/compare/v2.1.1...v2.2.0
