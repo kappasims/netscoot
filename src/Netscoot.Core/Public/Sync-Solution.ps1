@@ -37,7 +37,7 @@ function Sync-Solution {
     .LINK
         Repair-SolutionReferences
     #>
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('Netscoot.SyncResult')]
     param(
         [Parameter(Position = 0, ValueFromPipeline)]

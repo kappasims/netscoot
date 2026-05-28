@@ -53,7 +53,7 @@ function Repair-SolutionReferences {
     .LINK
         Find-PathReference
     #>
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('Netscoot.RepairResult')]
     param(
         [Parameter(Position = 0, ValueFromPipeline)]
