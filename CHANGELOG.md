@@ -12,6 +12,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and the consistency/sync checks) now parse the repository once per invocation instead of re-scanning it
   for each project. Large repositories see multi-times-faster moves and inventories, with the gap widening
   as the project count grows.
+- Commands that take a path or repository root from the pipeline now accept a path string or a file/directory
+  item (`Get-Item` / `Get-ChildItem`); piping any other kind of object reports a clear input error instead
+  of binding an unexpected property. This makes one consistent pipeline contract across the module.
 
 ## [2.1.1] - 2026-05-28
 

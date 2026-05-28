@@ -33,8 +33,8 @@ function Test-UnityMetaIntegrity {
     [CmdletBinding()]
     [OutputType('Netscoot.MetaIntegrity')]
     param(
-        [Parameter(Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [Alias('FullName', 'Path', 'PSPath')]
+        [Parameter(Position = 0, ValueFromPipeline)]
+        [Netscoot.PathInputTransform()]
         [string]$Root,
         [switch]$Strict
     )

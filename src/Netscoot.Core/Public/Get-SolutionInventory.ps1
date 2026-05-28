@@ -15,8 +15,9 @@ function Get-SolutionInventory {
         Read-only: One record per item, so you can group, filter, or format it however you like.
 
     .PARAMETER RepositoryRoot
-        Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path
-        property). Defaults to the enclosing git repository root. Nested git worktrees are skipped.
+        Root to scan. Accepts pipeline input: a path string, or a file/directory item from
+        Get-Item / Get-ChildItem. Defaults to the enclosing git repository root. Nested git
+        worktrees are skipped.
 
     .OUTPUTS
         Netscoot.SolutionItem - one per item.
@@ -34,8 +35,8 @@ function Get-SolutionInventory {
     [CmdletBinding()]
     [OutputType('Netscoot.SolutionItem')]
     param(
-        [Parameter(Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [Alias('FullName', 'Path', 'PSPath')]
+        [Parameter(Position = 0, ValueFromPipeline)]
+        [Netscoot.PathInputTransform()]
         [string]$RepositoryRoot
     )
 

@@ -554,7 +554,7 @@ the old path).
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue, ByPropertyName) | The item being/that was moved. Accepts pipeline input. |
+| `‑Path` | String | true | true (ByValue) | The item being/that was moved. Accepts pipeline input. |
 | `‑RepositoryRoot` | String | false | false | Root to scan. Defaults to the enclosing git repository root. |
 | `‑AdditionalGlob` | String[] | false | false | Extra repository-relative globs to include in the candidate set (e.g. 'deploy/*.sh'). |
 
@@ -696,7 +696,7 @@ Read-only: One record per item, so you can group, filter, or format it however y
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑RepositoryRoot` | String | false | true (ByValue, ByPropertyName) | Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path property). Defaults to the enclosing git repository root. Nested git worktrees are skipped. |
+| `‑RepositoryRoot` | String | false | true (ByValue) | Root to scan. Accepts pipeline input: a path string, or a file/directory item from Get-Item / Get-ChildItem. Defaults to the enclosing git repository root. Nested git worktrees are skipped. |
 
 ##### Output
 
@@ -1520,7 +1520,7 @@ be combined.
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑RepositoryRoot` | String | false | true (ByValue, ByPropertyName) | Root to scan. Defaults to the enclosing git repository root of the current directory. |
+| `‑RepositoryRoot` | String | false | true (ByValue) | Root to scan. Defaults to the enclosing git repository root of the current directory. |
 | `‑Fix` | SwitchParameter | false | false | Re-point each dangling entry at the moved project when its new location is unambiguous. Honors `-WhatIf`. |
 | `‑Prune` | SwitchParameter | false | false | Remove entries whose project cannot be found anywhere in the repository. Honors `-WhatIf`. |
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
@@ -1578,7 +1578,7 @@ directory.
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue, ByPropertyName) | The item to classify. Accepts pipeline input. |
+| `‑Path` | String | true | true (ByValue) | The item to classify. Accepts pipeline input. |
 
 ##### Output
 
@@ -1738,7 +1738,7 @@ projects by hand.
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑RepositoryRoot` | String | false | true (ByValue, ByPropertyName) | Root to scan. Accepts pipeline input. Defaults to the enclosing git repository root. Nested git worktrees are skipped. |
+| `‑RepositoryRoot` | String | false | true (ByValue) | Root to scan. Accepts pipeline input. Defaults to the enclosing git repository root. Nested git worktrees are skipped. |
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
@@ -1847,7 +1847,7 @@ of every solution and its projects.
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑RepositoryRoot` | String | false | true (ByValue, ByPropertyName) | Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path property such as Get-Item output). Defaults to the enclosing git repository root. |
+| `‑RepositoryRoot` | String | false | true (ByValue) | Root to scan. Accepts pipeline input: a path string, or a file/directory item from Get-Item / Get-ChildItem. Defaults to the enclosing git repository root. |
 | `‑Strict` | SwitchParameter | false | false | Escalate divergences from warnings to non-terminating errors. |
 
 ##### Output
@@ -2205,7 +2205,7 @@ Library/Temp/obj caches.
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Root` | String | false | true (ByValue, ByPropertyName) | Folder to scan (typically an 'Assets' folder). Accepts pipeline input. Defaults to the current directory. |
+| `‑Root` | String | false | true (ByValue) | Folder to scan (typically an 'Assets' folder). Accepts pipeline input. Defaults to the current directory. |
 | `‑Strict` | SwitchParameter | false | false | Escalate problems from warnings to non-terminating errors. |
 
 ##### Output

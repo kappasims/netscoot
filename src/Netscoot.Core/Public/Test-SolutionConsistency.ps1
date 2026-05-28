@@ -13,8 +13,8 @@ function Test-SolutionConsistency {
         full membership matrix of every solution and its projects.
 
     .PARAMETER RepositoryRoot
-        Root to scan. Accepts pipeline input (path string, or any object with a FullName/Path
-        property such as Get-Item output). Defaults to the enclosing git repository root.
+        Root to scan. Accepts pipeline input: a path string, or a file/directory item from
+        Get-Item / Get-ChildItem. Defaults to the enclosing git repository root.
 
     .PARAMETER Strict
         Escalate divergences from warnings to non-terminating errors.
@@ -35,8 +35,8 @@ function Test-SolutionConsistency {
     [CmdletBinding()]
     [OutputType('Netscoot.ConsistencyResult')]
     param(
-        [Parameter(Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [Alias('FullName', 'Path', 'PSPath')]
+        [Parameter(Position = 0, ValueFromPipeline)]
+        [Netscoot.PathInputTransform()]
         [string]$RepositoryRoot,
         [switch]$Strict
     )

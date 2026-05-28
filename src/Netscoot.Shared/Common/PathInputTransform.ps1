@@ -1,11 +1,13 @@
-# Pipeline-input gate for the MUTATING move cmdlets.
+# Pipeline-input gate for every cmdlet that takes a path/root from the pipeline - the MUTATING movers
+# and reconcilers (Move-*, Repair-SolutionReferences, Sync-Solution) and the read-only analysis
+# cmdlets (Test-SolutionConsistency, Get-SolutionInventory, Test-UnityMetaIntegrity, Find-PathReference,
+# Resolve-MoveEngine), so the whole module shares ONE pipeline contract.
 #
-# The movers accept their target as a [string] path bound ByValue from the pipeline. We also want to
-# accept a Get-ChildItem/Get-Item item (System.IO.FileSystemInfo) by taking its .FullName - but we
-# must NOT bind arbitrary objects' like-named properties. The old design used
-# ValueFromPipelineByPropertyName + an [Alias('FullName','PSPath','Path')], which made read-only
-# audit outputs (Test-SolutionConsistency.Project, Get-SolutionInventory/Test-UnityMetaIntegrity.Path)
-# silently bind row-by-row into the mutators and attempt moves. That is the hazard this closes.
+# Each accepts its target as a [string] path bound ByValue from the pipeline. We also want to accept a
+# Get-ChildItem/Get-Item item (System.IO.FileSystemInfo) by taking its .FullName - but we must NOT bind
+# arbitrary objects' like-named properties. The old design used ValueFromPipelineByPropertyName + an
+# [Alias('FullName','PSPath','Path')], which made read-only audit outputs (e.g. a row's .Project /
+# .Path) silently bind row-by-row into the mutators and attempt moves. That is the hazard this closes.
 #
 # This ArgumentTransformationAttribute positively defines acceptable input: a path string passes
 # through, a FileSystemInfo becomes its FullName, and ANY other object type throws a clear error so

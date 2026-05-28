@@ -41,8 +41,8 @@ function Find-PathReference {
     [CmdletBinding()]
     [OutputType('Netscoot.PathReference')]
     param(
-        [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [Alias('FullName', 'PSPath')]
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [Netscoot.PathInputTransform()]
         [ValidateNotNullOrEmpty()]
         [string]$Path,
         [string]$RepositoryRoot,

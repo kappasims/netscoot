@@ -129,6 +129,42 @@ Describe 'Pipeline-input gate (PathInputTransform)' {
         }
     }
 
+    Context 'reconcilers and analysis cmdlets share the same gate' {
+        # The two non-move MUTATORS (Repair/Sync) and the read-only analysis cmdlets all take their
+        # root/path ByValue through the same transform: a string or a FileSystemInfo binds, any other
+        # object throws. This closes the report->reconciler dual-context and gives one pipeline contract.
+        $gated = @(
+            @{ Name = 'Repair-SolutionReferences' }, @{ Name = 'Sync-Solution' }
+            @{ Name = 'Test-SolutionConsistency' }, @{ Name = 'Get-SolutionInventory' }
+            @{ Name = 'Find-PathReference' }, @{ Name = 'Resolve-MoveEngine' }
+            @{ Name = 'Test-UnityMetaIntegrity' }
+        )
+        It '<Name> rejects a piped result object' -ForEach $gated {
+            $rec = [pscustomobject]@{ PSTypeName = 'Netscoot.SolutionItem'; Path = 'src/Lib/Lib.csproj'; Project = 'src/Lib/Lib.csproj' }
+            { $rec | & $Name -ErrorAction Stop } |
+                Should -Throw -ErrorId "ParameterArgumentTransformationError,$Name"
+        }
+        It '<Name> binds a piped path string (no transformation error)' -ForEach $gated {
+            # A string must BIND. The cmdlet may then fail downstream on the fake path (not found),
+            # which is NOT a binding/transformation failure - the only thing this gate is about. So we
+            # tolerate a terminating downstream error and assert only that it is not a transform error.
+            $errs = $null; $caught = $null
+            try {
+                './does/not/exist' | & $Name -ErrorAction SilentlyContinue -ErrorVariable errs -WarningAction SilentlyContinue
+            } catch { $caught = $_ }
+            @($errs | Where-Object { $_.FullyQualifiedErrorId -like 'ParameterArgumentTransformationError*' }).Count |
+                Should -Be 0 -Because 'a string path must bind'
+            if ($caught) { $caught.FullyQualifiedErrorId | Should -Not -BeLike 'ParameterArgumentTransformationError*' }
+        }
+        It 'Get-Item <dir> | Test-SolutionConsistency binds the directory item (no transformation error)' {
+            $root = New-TempRoot -Prefix 'gate'
+            $errs = $null
+            Get-Item -LiteralPath $root | Test-SolutionConsistency -ErrorAction SilentlyContinue -ErrorVariable errs -WarningAction SilentlyContinue
+            @($errs | Where-Object { $_.FullyQualifiedErrorId -like 'ParameterArgumentTransformationError*' }).Count |
+                Should -Be 0 -Because 'a Get-Item directory must bind via its FullName'
+        }
+    }
+
     Context 'native mover (Windows-only)' {
         It 'Move-NativeProject rejects a piped result object' -Skip:(-not $script:IsWindowsHost) {
             $rec = [pscustomobject]@{ Project = 'src/Native/Native.vcxproj' }
