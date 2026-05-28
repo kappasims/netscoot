@@ -86,7 +86,9 @@ function Undo-Netscoot {
     param(
         [string]$RepositoryRoot,
         [Parameter(ParameterSetName = 'Last')][switch]$Last,
-        [Parameter(ParameterSetName = 'Id', Mandatory)][string]$Id,
+        [Parameter(ParameterSetName = 'Id', Mandatory)]
+        [ValidatePattern('^[a-zA-Z0-9]{8}$')]
+        [string]$Id,
         [Parameter(ParameterSetName = 'After', Mandatory)][datetime]$After,
         [Parameter(ParameterSetName = 'All', Mandatory)][switch]$All,
         [Parameter(ParameterSetName = 'After')][Parameter(ParameterSetName = 'All')][switch]$Force,

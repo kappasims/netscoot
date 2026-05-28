@@ -65,7 +65,10 @@ function Repair-NetscootJournal {
         [string]$RepositoryRoot,
         [Parameter(ParameterSetName = 'Rollback', Mandatory)][switch]$Rollback,
         [Parameter(ParameterSetName = 'Discard', Mandatory)][switch]$Discard,
-        [Parameter(ParameterSetName = 'Rollback')][Parameter(ParameterSetName = 'Discard')][string]$Id,
+        [Parameter(ParameterSetName = 'Rollback')]
+        [Parameter(ParameterSetName = 'Discard')]
+        [ValidatePattern('^[a-zA-Z0-9]{8}$')]
+        [string]$Id,
         [Parameter(ParameterSetName = 'Rollback')][Parameter(ParameterSetName = 'Discard')][switch]$Force,
         [switch]$ClearOrphanSnapshots
     )
