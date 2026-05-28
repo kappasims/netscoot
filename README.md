@@ -2032,6 +2032,18 @@ moves ran (it is by default; opt out with `$env:NETSCOOT_JOURNAL` or git config 
 The move-result object(s) from the reversing move(s); their type matches the original mover. With `-List`, the journal
 entries. Nothing when there is nothing to undo.
 
+- [Netscoot.MoveResult](#netscootmoveresult)
+- [Netscoot.TreeMoveResult](#netscoottreemoveresult)
+- [Netscoot.SolutionMoveResult](#netscootsolutionmoveresult)
+- [Netscoot.ImportMoveResult](#netscootimportmoveresult)
+- [Netscoot.ScriptMoveResult](#netscootscriptmoveresult)
+- [Netscoot.PSModuleMoveResult](#netscootpsmodulemoveresult)
+- [Netscoot.NativeMoveResult](#netscootnativemoveresult)
+- [Netscoot.UnityMoveResult](#netscootunitymoveresult)
+- [Netscoot.JournalEntry](#netscootjournalentry)
+
+These result types are heterogeneous - they share no common fields. See [Output types](#output-types).
+
 ##### Examples
 
 ```powershell
@@ -2449,7 +2461,7 @@ Netscoot.GitAlias
 #### Netscoot.ImportMoveResult
 
 [ [Invoke-Netscoot](#invoke-netscoot) | [Move-DotnetFile](#move-dotnetfile) | [Move-MSBuildImport](#move-msbuildimport)
-]
+| [Undo-Netscoot](#undo-netscoot) ]
 
 Result of moving a shared MSBuild `.props/.targets` file and fixing its importers.
 
@@ -2471,7 +2483,7 @@ Netscoot.ImportMoveResult
 
 #### Netscoot.JournalEntry
 
-[ [Repair-NetscootJournal](#repair-netscootjournal) ]
+[ [Repair-NetscootJournal](#repair-netscootjournal) | [Undo-Netscoot](#undo-netscoot) ]
 
 One move in the undo journal: a completed (committed) move, or a pending one interrupted by a crash.
 
@@ -2509,7 +2521,7 @@ Netscoot.MetaIntegrity
 #### Netscoot.MoveResult
 
 [ [Invoke-Netscoot](#invoke-netscoot) | [Move-DotnetFile](#move-dotnetfile) | [Move-DotnetProject](#move-dotnetproject)
-]
+| [Undo-Netscoot](#undo-netscoot) ]
 
 Result of moving a .NET project folder and reconciling solutions and project references.
 
@@ -2532,7 +2544,7 @@ Netscoot.MoveResult
 
 #### Netscoot.NativeMoveResult
 
-[ [Invoke-Netscoot](#invoke-netscoot) | [Move-NativeProject](#move-nativeproject) ]
+[ [Invoke-Netscoot](#invoke-netscoot) | [Move-NativeProject](#move-nativeproject) | [Undo-Netscoot](#undo-netscoot) ]
 
 Result of moving a native / C++/CLI project (`.vcxproj`).
 
@@ -2591,7 +2603,7 @@ Netscoot.PathReference
 #### Netscoot.PSModuleMoveResult
 
 [ [Invoke-Netscoot](#invoke-netscoot) | [Move-PowerShell](#move-powershell) |
-[Move-PowerShellModule](#move-powershellmodule) ]
+[Move-PowerShellModule](#move-powershellmodule) | [Undo-Netscoot](#undo-netscoot) ]
 
 Result of moving a PowerShell module folder and reconciling its manifest.
 
@@ -2633,7 +2645,7 @@ Netscoot.RepairResult
 #### Netscoot.ScriptMoveResult
 
 [ [Invoke-Netscoot](#invoke-netscoot) | [Move-PowerShell](#move-powershell) |
-[Move-PowerShellScript](#move-powershellscript) ]
+[Move-PowerShellScript](#move-powershellscript) | [Undo-Netscoot](#undo-netscoot) ]
 
 Result of moving a standalone `.ps1` and fixing dot-source/call paths.
 
@@ -2674,7 +2686,8 @@ Netscoot.SolutionItem
 
 #### Netscoot.SolutionMoveResult
 
-[ [Invoke-Netscoot](#invoke-netscoot) | [Move-DotnetFile](#move-dotnetfile) | [Move-Solution](#move-solution) ]
+[ [Invoke-Netscoot](#invoke-netscoot) | [Move-DotnetFile](#move-dotnetfile) | [Move-Solution](#move-solution) |
+[Undo-Netscoot](#undo-netscoot) ]
 
 Result of moving a solution file and rebasing the relative project paths it stores.
 
@@ -2728,7 +2741,7 @@ Netscoot.ToolInfo
 #### Netscoot.TreeMoveResult
 
 [ [Invoke-Netscoot](#invoke-netscoot) | [Move-DotnetFolder](#move-dotnetfolder) |
-[Move-DotnetProjectTree](#move-dotnetprojecttree) ]
+[Move-DotnetProjectTree](#move-dotnetprojecttree) | [Undo-Netscoot](#undo-netscoot) ]
 
 Result of moving a folder of one or more .NET projects in one operation.
 
@@ -2750,7 +2763,7 @@ Netscoot.TreeMoveResult
 
 #### Netscoot.UnityMoveResult
 
-[ [Invoke-Netscoot](#invoke-netscoot) | [Move-UnityAsset](#move-unityasset) ]
+[ [Invoke-Netscoot](#invoke-netscoot) | [Move-UnityAsset](#move-unityasset) | [Undo-Netscoot](#undo-netscoot) ]
 
 Result of moving a Unity asset/folder while keeping its paired `.meta` file(s).
 

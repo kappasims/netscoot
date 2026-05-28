@@ -82,6 +82,7 @@ function Undo-Netscoot {
     #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '', Justification = 'Delegates to a mover cmdlet that calls ShouldProcess')]
     [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = 'Last')]
+    [OutputType('Netscoot.MoveResult', 'Netscoot.TreeMoveResult', 'Netscoot.SolutionMoveResult', 'Netscoot.ImportMoveResult', 'Netscoot.ScriptMoveResult', 'Netscoot.PSModuleMoveResult', 'Netscoot.NativeMoveResult', 'Netscoot.UnityMoveResult', 'Netscoot.JournalEntry')]
     param(
         [string]$RepositoryRoot,
         [Parameter(ParameterSetName = 'Last')][switch]$Last,

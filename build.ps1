@@ -301,9 +301,13 @@ function Invoke-DocsTask {
         $defs = @($Names | Where-Object { $typeDefs.ContainsKey($_) } | ForEach-Object { $typeDefs[$_] })
         if ($defs.Count -lt 2) { return @() }
         $rest = @($defs | Select-Object -Skip 1)
+        # Case-sensitive name match: a field named 'Engine' (e.g. MoveResult) and one named 'engine'
+        # (e.g. JournalEntry) are not the same property on the returned object - $r.Engine and $r.engine
+        # are distinct in code, and the page-rendered "common shape" line lists the *displayed* casing,
+        # so collapsing them would mislead a reader of Undo-Netscoot's docs.
         @($defs[0].Fields) | Where-Object {
             $f = $_
-            -not ($rest | Where-Object { -not (@($_.Fields) | Where-Object { $_.Name -eq $f.Name -and $_.Type -eq $f.Type }) })
+            -not ($rest | Where-Object { -not (@($_.Fields) | Where-Object { $_.Name -ceq $f.Name -and $_.Type -ceq $f.Type }) })
         }
     }
 
