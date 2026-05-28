@@ -33,3 +33,12 @@ if (Test-IsWindowsHost) {
     try { Import-Engine -Name 'Netscoot.Native' }
     catch { Write-Warning "Netscoot: the native C++ engine (Netscoot.Native) did not load; native (.vcxproj) moves are unavailable. $($_.Exception.Message)" }
 }
+
+# Unload the nested engines when this umbrella module is removed. We imported them -Global, so a
+# plain `Remove-Module Netscoot` would otherwise leave them resident (half-removed state); walking
+# them here lets `Remove-Module Netscoot` actually clean up everything we brought in.
+$ExecutionContext.SessionState.Module.OnRemove = {
+    foreach ($e in 'Netscoot.Native', 'Netscoot.Unity', 'Netscoot.Core', 'Netscoot.Shared') {
+        if (Get-Module -Name $e) { Remove-Module -Name $e -Force -ErrorAction SilentlyContinue }
+    }
+}

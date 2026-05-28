@@ -6,16 +6,20 @@
     Description          = 'Move/restructure .NET projects (and PowerShell, Unity, native C++) from the command line without breaking references. A single bundled package: Import-Module Netscoot loads the .NET/PowerShell and Unity engines everywhere, and the native C++ (.vcxproj) engine on Windows. Independent community project; not affiliated with or endorsed by Microsoft.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Core', 'Desktop')
-    # Single bundled package: the RootModule loads the bundled Shared + engine modules -Global
-    # (native only on Windows, best-effort), so commands are surfaced by one Import-Module. The
-    # engines do the actual exporting at load; this list is the public, user-facing surface declared
-    # for discoverability so the PowerShell Gallery lists the cmdlets (it reads the manifest, not the
-    # runtime -Global imports). Keep it in sync with the engines' public exports (Shared plumbing is
-    # intentionally excluded). Move-NativeProject is Windows-only at runtime but part of the package.
+    # Single bundled package: the RootModule loads the bundled Shared + engine modules -Global, so
+    # commands are surfaced by one Import-Module (native only on Windows, best-effort). This list is
+    # METADATA-ONLY: at runtime, PowerShell would only filter functions defined IN THIS PSM1, but the
+    # engine cmdlets come from the nested modules loaded -Global - PowerShell doesn't filter those
+    # through the umbrella manifest. The list exists so the PowerShell Gallery lists the cmdlets by
+    # name (Gallery indexes the manifest, not the runtime surface).
+    # The hand-sync of this list with the engines' actual exports (Shared plumbing intentionally
+    # excluded) is enforced by tests/UmbrellaSurface.Tests.ps1; do not edit blindly.
+    # Move-NativeProject is Windows-only at runtime but part of the package.
     FunctionsToExport    = @(
         'Clear-NetscootJournal',
         'Find-PathReference',
         'Get-NetscootCapability',
+        'Get-NetscootUpdatePolicy',
         'Get-SolutionInventory',
         'Invoke-Netscoot',
         'Move-DotnetFile',
@@ -30,9 +34,11 @@
         'Move-Solution',
         'Move-UnityAsset',
         'Register-NetscootGitAlias',
+        'Repair-NetscootJournal',
         'Repair-SolutionReferences',
         'Resolve-MoveEngine',
         'Set-NetscootJournal',
+        'Set-NetscootUpdatePolicy',
         'Sync-Solution',
         'Test-NetscootUpdate',
         'Test-SolutionConsistency',
