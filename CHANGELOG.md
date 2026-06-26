@@ -16,6 +16,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   solution drift). It inspects `.vscode/settings.json`
   (`dotnet.automaticallyCreateSolutionInWorkspace`, `dotnet.defaultSolution`) and `.gitignore`,
   warning when a guard is missing or misconfigured. `-Strict` escalates findings to errors for CI.
+- `Find-PathReference -AllFiles`: search every text file under the repository instead of only the
+  build/CI/hook/container file class. Caches/vendored dirs and binary files stay excluded. Use it
+  for the thorough "look everywhere" sweep when a hardcoded path may live in an ordinary source
+  file the default (focused) scan deliberately skips. The default behavior is unchanged.
 
 ### Fixed
 
