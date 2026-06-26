@@ -34,8 +34,7 @@ function Get-NetscootCapability {
         elseif ((Test-Path Variable:\IsMacOS) -and (Get-Variable IsMacOS -ValueOnly)) { 'macOS' }
         else { 'Linux' }
 
-    [pscustomobject]@{
-        PSTypeName         = 'Netscoot.Capability'
+    [Netscoot.Capability]@{
         Platform           = $platform
         PSEdition          = $PSVersionTable.PSEdition
         Git                = $git

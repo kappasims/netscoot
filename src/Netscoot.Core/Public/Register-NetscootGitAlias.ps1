@@ -70,8 +70,7 @@ function Register-NetscootGitAlias {
         Write-Host "Registered 'git netscoot' ($Scope). Try: git netscoot <src> <dst> --whatif   |  undo: Unregister-NetscootGitAlias -Scope $Scope" -ForegroundColor Green
     }
 
-    [pscustomobject]@{
-        PSTypeName = 'Netscoot.GitAlias'
+    [Netscoot.GitAlias]@{
         Alias      = 'netscoot'
         Scope      = $Scope
         Forwarder  = $forwarder

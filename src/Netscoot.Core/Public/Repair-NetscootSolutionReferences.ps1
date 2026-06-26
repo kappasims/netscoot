@@ -128,8 +128,7 @@ function Repair-NetscootSolutionReferences {
                 if ($best) { $resolution = 'Relocatable'; $newPath = $best }
                 else { $resolution = 'Ambiguous'; $newPath = $null }
             }
-            $problems.Add([pscustomobject]@{
-                    PSTypeName = 'Netscoot.RepairResult'
+            $problems.Add([Netscoot.RepairResult]@{
                     Kind       = $d.Kind
                     Resolution = $resolution
                     Missing    = $d.Missing

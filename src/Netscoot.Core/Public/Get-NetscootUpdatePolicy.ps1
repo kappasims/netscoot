@@ -53,8 +53,7 @@ function Get-NetscootUpdatePolicy {
         default { 'Manual' }
     }
 
-    [pscustomobject]@{
-        PSTypeName = 'Netscoot.UpdatePolicy'
+    [Netscoot.UpdatePolicy]@{
         State      = $state
         Source     = $source
         Value      = $resolved

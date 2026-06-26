@@ -101,8 +101,7 @@ function Test-NetscootSolutionConsistency {
                 if ($absent.Count -eq 0) { continue } # in every solution of the cluster - consistent
                 $divergences++
 
-                $record = [pscustomobject]@{
-                    PSTypeName = 'Netscoot.ConsistencyResult'
+                $record = [Netscoot.ConsistencyResult]@{
                     Project   = $proj
                     PresentIn = @($present.Solution)
                     AbsentFrom = @($absent.Solution)

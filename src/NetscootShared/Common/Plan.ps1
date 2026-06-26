@@ -95,9 +95,9 @@ function New-MoveResult {
         SkippedCount = $SkippedCount
     }
     foreach ($k in $Extra.Keys) { $ordered[$k] = $Extra[$k] }
-    $obj = [pscustomobject]$ordered
-    $obj.PSObject.TypeNames.Insert(0, $TypeName)
-    return $obj
+    # Construct the real DTO (DomainTypes.ps1) by name and populate its public fields from the
+    # ordered map. New-Object -Property accepts the [ordered] dictionary directly.
+    return (New-Object -TypeName $TypeName -Property $ordered)
 }
 
 function Resolve-MoveContext {

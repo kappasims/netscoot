@@ -107,8 +107,7 @@ function Find-NetscootPathReference {
                 }
                 if ($confidence) {
                     $hits++
-                    [pscustomobject]@{
-                        PSTypeName = 'Netscoot.PathReference'
+                    [Netscoot.PathReference]@{
                         File       = $file.FullName
                         Line       = $n
                         Confidence = $confidence

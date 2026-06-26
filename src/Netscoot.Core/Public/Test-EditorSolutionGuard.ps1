@@ -78,8 +78,7 @@ function Test-EditorSolutionGuard {
         # final "all good" decision, so no separate counter is needed.
         $records = [System.Collections.Generic.List[object]]::new()
         function _emit([string]$Check, [string]$Severity, [string]$Detail) {
-            $record = [pscustomobject]@{
-                PSTypeName = 'Netscoot.EditorSolutionGuard'
+            $record = [Netscoot.EditorSolutionGuard]@{
                 Check      = $Check
                 Severity   = $Severity
                 Detail     = $Detail

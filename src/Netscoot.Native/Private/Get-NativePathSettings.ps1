@@ -12,14 +12,14 @@ function Get-NativePathSettings {
         foreach ($n in $xml.SelectNodes("//*[local-name()='$kind']")) {
             $v = $n.InnerText
             if ($v -and ($v -match '\.\.[\\/]' -or $v -match '\$\(SolutionDir\)')) {
-                $found += [pscustomobject]@{ PSTypeName = 'Netscoot.NativeSetting'; Kind = $kind; Value = $v.Trim() }
+                $found += [Netscoot.NativeSetting]@{ Kind = $kind; Value = $v.Trim() }
             }
         }
     }
     foreach ($imp in $xml.SelectNodes("//*[local-name()='Import']")) {
         $p = $imp.GetAttribute('Project')
         if ($p -and ($p -match '\.\.[\\/]' -or $p -match '\$\(SolutionDir\)')) {
-            $found += [pscustomobject]@{ PSTypeName = 'Netscoot.NativeSetting'; Kind = 'Import'; Value = $p.Trim() }
+            $found += [Netscoot.NativeSetting]@{ Kind = 'Import'; Value = $p.Trim() }
         }
     }
     # Dedupe identical Kind+Value pairs repeated across build configurations.

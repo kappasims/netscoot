@@ -62,8 +62,7 @@ function Get-NetscootSolutionInventory {
         # One builder for every row, so the Netscoot.SolutionItem shape (property set and order) is
         # defined in a single place rather than repeated at each call site.
         function _item([string]$Solution, [Netscoot.SolutionItemKind]$Kind, [string]$Name, [string]$Path = '', [string]$Type = '') {
-            [pscustomobject]@{
-                PSTypeName = 'Netscoot.SolutionItem'
+            [Netscoot.SolutionItem]@{
                 Solution   = $Solution
                 Kind       = $Kind
                 Type       = $Type
