@@ -50,4 +50,29 @@ Describe 'Find-PathReference' {
             foreach ($f in 'File', 'Line', 'Confidence', 'Text') { $r[0].PSObject.Properties.Name | Should -Contain $f }
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
+
+    It 'derives the repository root from the current directory, not from -Path, so sweeping an already-moved (nonexistent) path does not throw (regression)' {
+        # The canonical use is sweeping the OLD identifier after a rename - the needle no longer
+        # exists on disk. Pre-fix, with -RepositoryRoot omitted, the cmdlet derived the repo root by
+        # walking up FROM the -Path needle, so Get-RepositoryRoot's Get-Item threw on the missing
+        # path. Fix: derive the root from the current directory; the needle is a search string, not
+        # a location.
+        $root = New-RefFixture
+        Push-Location $root
+        try {
+            & git init -q   # so Get-RepositoryRoot resolves to $root via .git, deterministically
+            # Simulate "after the rename": the old project path is gone from disk.
+            Remove-Item -LiteralPath (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -Force
+
+            # Pre-fix this threw at Get-RepositoryRoot (Get-Item on the missing -Path needle); a throw
+            # here fails the test, which is the regression guard. Then confirm it still finds the
+            # lingering references in the build/CI/hook files (the whole point of the sweep).
+            $r = Find-PathReference -Path 'lib\Foo.csproj' -WarningAction SilentlyContinue
+            ($r | Where-Object Confidence -eq 'High' | ForEach-Object { Split-Path -Leaf $_.File }) |
+                Should -Contain 'build.ps1' -Because 'the old path is exactly what we are sweeping for'
+        } finally {
+            Pop-Location
+            Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
 }
