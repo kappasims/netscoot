@@ -83,4 +83,59 @@ EndProject
             ($pss.AbsentFrom -join ',') | Should -Match 'Partial\.sln'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
+
+    It 'does NOT flag intentionally-separate solutions that share no projects (regression: every project read as diverging)' {
+        # Three independent solutions, each with its own project and no overlap (a standalone client,
+        # a server, a tools solution). The pre-fix behavior unioned every project across all
+        # solutions and flagged each as absent from the other two - a false positive on a clean tree.
+        $root = New-TempRoot -Prefix 'netscoot_indep'
+        try {
+            $stub = "<Project Sdk=`"Microsoft.NET.Sdk`"></Project>"
+            foreach ($name in 'Client', 'Server', 'Tools') {
+                New-Item -ItemType Directory -Path (Join-Path $root $name) | Out-Null
+                Set-Content -LiteralPath (Join-Path $root (Join-Path $name "$name.csproj")) -Value $stub -Encoding UTF8
+                Set-Content -LiteralPath (Join-Path $root "$name.slnx") -Encoding UTF8 -Value @"
+<Solution>
+  <Project Path="$name/$name.csproj" />
+</Solution>
+"@
+            }
+            $result = @(Test-SolutionConsistency -RepositoryRoot $root -WarningVariable warns -WarningAction SilentlyContinue)
+            $result | Should -BeNullOrEmpty -Because 'solutions that share no projects were never meant to agree'
+            $warns | Should -BeNullOrEmpty
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'still catches drift within an overlapping pair while ignoring an independent solution in the same repo' {
+        # Both.slnx and Partial.slnx share App (a mirror pair that has drifted: Both also lists Lib).
+        # Other.slnx is independent (lists only Widget). Lib must be flagged (real drift in the pair);
+        # Widget must NOT be flagged (Other shares nothing with the pair).
+        $root = New-TempRoot -Prefix 'netscoot_mixed'
+        try {
+            $stub = "<Project Sdk=`"Microsoft.NET.Sdk`"></Project>"
+            foreach ($p in 'App', 'Lib', 'Widget') {
+                New-Item -ItemType Directory -Path (Join-Path $root $p) | Out-Null
+                Set-Content -LiteralPath (Join-Path $root (Join-Path $p "$p.csproj")) -Value $stub -Encoding UTF8
+            }
+            Set-Content -LiteralPath (Join-Path $root 'Both.slnx') -Encoding UTF8 -Value @"
+<Solution>
+  <Project Path="App/App.csproj" />
+  <Project Path="Lib/Lib.csproj" />
+</Solution>
+"@
+            Set-Content -LiteralPath (Join-Path $root 'Partial.slnx') -Encoding UTF8 -Value @"
+<Solution>
+  <Project Path="App/App.csproj" />
+</Solution>
+"@
+            Set-Content -LiteralPath (Join-Path $root 'Other.slnx') -Encoding UTF8 -Value @"
+<Solution>
+  <Project Path="Widget/Widget.csproj" />
+</Solution>
+"@
+            $result = @(Test-SolutionConsistency -RepositoryRoot $root -WarningAction SilentlyContinue)
+            ($result | Where-Object { $_.Project -match 'Lib\.csproj' }) | Should -Not -BeNullOrEmpty -Because 'drift within the overlapping mirror pair must still be caught'
+            ($result | Where-Object { $_.Project -match 'Widget\.csproj' }) | Should -BeNullOrEmpty -Because 'an independent solution must not be compared against the pair'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
 }

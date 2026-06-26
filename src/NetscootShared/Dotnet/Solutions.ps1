@@ -130,6 +130,67 @@ function Get-SolutionMembership {
     return $result
 }
 
+function Group-SolutionsBySharedProjects {
+    # Partition solution-membership records into clusters so only solutions that PLAUSIBLY describe
+    # the same project set are compared for consistency. Two solutions land in the same cluster when
+    # their project sets intersect (directly, or transitively through a third solution). The motive:
+    # a .sln and its .slnx mirror share their whole project list and should agree, but a repository
+    # may also carry intentionally-separate solutions (a standalone client, a submodule's own
+    # solution) that share nothing and were never meant to agree. Treating every solution in the
+    # tree as one workspace flags every project in an independent solution as "diverging" - a
+    # false-positive class. Clustering removes it without any new config: intent is read from the
+    # data (shared projects) rather than declared.
+    #
+    # Returns one object per cluster: @{ Solutions = @(<membership records>) }. A solution that
+    # shares no project with any other is its own singleton cluster; the caller skips clusters with
+    # fewer than two solutions (a lone solution cannot diverge from anything).
+    #
+    # Known limit: two solutions meant to mirror that have drifted to ZERO shared projects fall into
+    # separate clusters and are not compared - but at that point they are unrecognizable as mirrors,
+    # and reporting "every project diverges" would be as unhelpful as the false positive this fixes.
+    [CmdletBinding()]
+    [OutputType([object[]])]
+    param([Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Membership)
+
+    $records = @($Membership)
+    $n = $records.Count
+    if ($n -eq 0) { return @() }
+
+    # A case-insensitive set of project paths per solution (matches the case-insensitive string
+    # comparison the consistency check uses elsewhere via -contains). Built with explicit .Add so
+    # the enumerable HashSets are stored as elements, not unrolled into their member strings.
+    $sets = [System.Collections.Generic.List[object]]::new()
+    foreach ($r in $records) {
+        $sets.Add([System.Collections.Generic.HashSet[string]]::new([string[]]@($r.Projects), [System.StringComparer]::OrdinalIgnoreCase))
+    }
+
+    # Union-find: link any two solutions whose project sets overlap. n is tiny (solutions per repo),
+    # so a plain root-walk without path compression is fine.
+    $parent = [int[]]@(0..($n - 1))
+    for ($i = 0; $i -lt $n; $i++) {
+        for ($j = $i + 1; $j -lt $n; $j++) {
+            if ($sets[$i].Overlaps($sets[$j])) {
+                $ri = $i; while ($parent[$ri] -ne $ri) { $ri = $parent[$ri] }
+                $rj = $j; while ($parent[$rj] -ne $rj) { $rj = $parent[$rj] }
+                if ($ri -ne $rj) { $parent[$rj] = $ri }
+            }
+        }
+    }
+
+    # Group records by their cluster root. String keys: an OrderedDictionary indexed by an INTEGER
+    # does positional lookup, not key lookup, so the root index is stringified for the key. Each
+    # cluster value is wrapped in a pscustomobject so the array never gets unrolled at the call site.
+    $byRoot = [ordered]@{}
+    for ($i = 0; $i -lt $n; $i++) {
+        $r = $i; while ($parent[$r] -ne $r) { $r = $parent[$r] }
+        $key = [string]$r
+        if (-not $byRoot.Contains($key)) { $byRoot[$key] = [System.Collections.Generic.List[object]]::new() }
+        $byRoot[$key].Add($records[$i])
+    }
+    $out = foreach ($k in $byRoot.Keys) { [pscustomobject]@{ Solutions = @($byRoot[$k]) } }
+    return @($out)
+}
+
 function Get-SolutionsReferencing {
     # Solutions (from $Candidates) whose project list includes $ProjectFile.
     [CmdletBinding()]

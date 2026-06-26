@@ -34,6 +34,7 @@
         'Get-WorkspaceProjectFiles',
         'Get-WorkspaceProjectRefs',
         'Get-WorkspaceSolutions',
+        'Group-SolutionsBySharedProjects',
         'Invoke-Dotnet',
         'Invoke-DotnetRead',
         'Invoke-MovePhase',
