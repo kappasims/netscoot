@@ -6,6 +6,17 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- The umbrella `Netscoot` module now owns its cmdlets. It loaded each engine globally, so the 31
+  public cmdlets were owned by the engine modules: `Get-Command -Module Netscoot` returned nothing
+  and `(Get-Module Netscoot).ExportedCommands` was empty (and `Test-ModuleManifest` warned that the
+  manifest exported functions the root module did not define) - even though every cmdlet resolved
+  and ran. The engines are now imported nested and their functions re-exported from the umbrella,
+  so `Get-Command -Module Netscoot` lists all 31, `ExportedCommands` is populated, and
+  `Get-Command <cmdlet>` reports `Netscoot` as the source. The Windows-only native engine stays
+  conditional and runtime behavior is unchanged.
+
 ## [2.6.0] - 2026-06-26
 
 ### Added
