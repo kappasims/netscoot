@@ -238,6 +238,17 @@
         )
     }
 
+    'Netscoot.EditorSolutionGuard' = @{
+        Summary = "One editor-config check that governs whether a .slnx consolidation stays durable (VS Code C# Dev Kit)."
+        Array   = $true
+        EmptyIsNull = $false
+        Fields  = @(
+            @{ Name = 'Check';    Type = 'string'; Note = 'AutoCreateGuard | DefaultSolution | GitignoreGuard' }
+            @{ Name = 'Severity'; Type = 'string'; Note = 'OK | Info | Warning' }
+            @{ Name = 'Detail';   Type = 'string'; Note = 'what was found and how to fix it' }
+        )
+    }
+
     'Netscoot.Update' = @{
         Summary = 'Whether the installed Netscoot is behind the latest GitHub release.'
         Array   = $false

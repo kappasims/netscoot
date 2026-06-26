@@ -137,7 +137,7 @@ Describe 'Pipeline-input gate (PathInputTransform)' {
             @{ Name = 'Repair-SolutionReferences' }, @{ Name = 'Sync-Solution' }
             @{ Name = 'Test-SolutionConsistency' }, @{ Name = 'Get-SolutionInventory' }
             @{ Name = 'Find-PathReference' }, @{ Name = 'Resolve-MoveEngine' }
-            @{ Name = 'Test-UnityMetaIntegrity' }
+            @{ Name = 'Test-UnityMetaIntegrity' }, @{ Name = 'Test-EditorSolutionGuard' }
         )
         It '<Name> rejects a piped result object' -ForEach $gated {
             $rec = [pscustomobject]@{ PSTypeName = 'Netscoot.SolutionItem'; Path = 'src/Lib/Lib.csproj'; Project = 'src/Lib/Lib.csproj' }

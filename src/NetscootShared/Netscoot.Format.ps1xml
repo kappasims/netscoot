@@ -205,5 +205,26 @@
       </TableControl>
     </View>
 
+    <View>
+      <Name>Netscoot.EditorSolutionGuard</Name>
+      <ViewSelectedBy><TypeName>Netscoot.EditorSolutionGuard</TypeName></ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>Check</Label><Width>16</Width></TableColumnHeader>
+          <TableColumnHeader><Label>Severity</Label><Width>9</Width></TableColumnHeader>
+          <TableColumnHeader><Label>Detail</Label></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>Check</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Severity</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Detail</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+
   </ViewDefinitions>
 </Configuration>
