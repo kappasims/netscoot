@@ -8,6 +8,8 @@ on:
   push:
     branches: [develop, master]
   pull_request:
+  # Manual trigger to run the full matrix (including the Linux/macOS jobs below) on demand.
+  workflow_dispatch:
 
 # One in-flight run per PR (or per pushed ref); a newer commit cancels the superseded run instead of
 # letting both race to completion.
@@ -137,4 +139,34 @@ jobs:
           }
       - name: Run tests on Windows PowerShell 5.1
         shell: powershell
+        run: ./build.ps1 -Task Test -ShardIndex ${{ matrix.shard }} -ShardCount 3
+
+  # Linux + macOS. Per-push CI stays Windows-only for speed; these run only when this is a release
+  # prep commit ("release: vX.Y.Z", pushed by the release flow) or on a manual dispatch, so a module
+  # release always gets the full cross-platform gate automatically - no separate platforms.yml
+  # dispatch + poll. (platforms.yml is still available for an ad-hoc on-demand run.)
+  test-platforms:
+    name: Test (${{ matrix.os }}) [${{ matrix.shard }}/3]
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release: '))
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        shard: [1, 2, 3]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          for ($i = 1; $i -le 3; $i++) {
+            try { Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck; break }
+            catch { if ($i -eq 3) { throw }; Write-Host "Install-Module Pester failed (attempt $i); retrying in 10s..."; Start-Sleep 10 }
+          }
+      - name: Run tests
+        shell: pwsh
         run: ./build.ps1 -Task Test -ShardIndex ${{ matrix.shard }} -ShardCount 3

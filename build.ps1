@@ -58,6 +58,11 @@ param(
     # plugin instead (see CONTRIBUTING "Two release cadences"). Use this only for a deliberate
     # module-identical bump (e.g. version parity).
     [switch]$AllowEmptyModuleRelease,
+    # Release (prepare): skip the expensive local gate (PSScriptAnalyzer + the full Pester suite) and
+    # only stamp + commit + push. For the automated release.yml, where CI runs the full matrix on the
+    # pushed commit instead. The cheap prep checks (docs-not-stale, CHANGELOG entry, src-change guard)
+    # still run. Do NOT use for a local hand-run release - there the local gate is the safety net.
+    [switch]$SkipGate,
     # Test: split the test files into -ShardCount slices and run only the -ShardIndex'th (1-based).
     # Used by CI to run the suite as parallel jobs (separate processes - the tests share process-
     # global state, so they cannot be parallelized in-process). The default runs the whole suite.
@@ -384,11 +389,16 @@ function Invoke-ReleaseTask {
         if (-not $changed) { throw "No manifest changed - already at $Version?" }
 
         # Static analysis is a hard gate here (must be installed AND clean), then the full suite.
-        Write-Host 'Static analysis (release prerequisite)...' -ForegroundColor Cyan
-        if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) { throw 'Release requires PSScriptAnalyzer. Install: Install-Module PSScriptAnalyzer -Scope CurrentUser' }
-        Invoke-AnalyzeTask
-        Write-Host 'Running the test suite before release...' -ForegroundColor Cyan
-        Invoke-TestTask
+        # -SkipGate (CI/release.yml) skips both because CI runs the full matrix on the pushed commit.
+        if ($SkipGate) {
+            Write-Host 'Skipping the local Analyze + Test gate (-SkipGate); CI gates the pushed commit.' -ForegroundColor Yellow
+        } else {
+            Write-Host 'Static analysis (release prerequisite)...' -ForegroundColor Cyan
+            if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) { throw 'Release requires PSScriptAnalyzer. Install: Install-Module PSScriptAnalyzer -Scope CurrentUser' }
+            Invoke-AnalyzeTask
+            Write-Host 'Running the test suite before release...' -ForegroundColor Cyan
+            Invoke-TestTask
+        }
 
         & git -C $root add (($modules + $umbrella) | ForEach-Object { "src/$_/$_.psd1" })
         & git -C $root commit -m "release: $tag"
