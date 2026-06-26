@@ -127,11 +127,16 @@ function Invoke-TestTask {
 
 $script:AnalyzerFields = @('RuleName', 'Severity', 'ScriptName', 'Line', 'Message')
 
+$script:AnalyzerIsolatedRetries = 3
+
 function script:Invoke-AnalyzerInChildProcess {
     # Re-analyze ONE file in a fresh PowerShell process so PSScriptAnalyzer's reflection-emit state
     # starts clean. This is the recovery path for an analyzer-engine crash in the shared in-process
     # loop (see Invoke-AnalyzeTask). Paths go through the environment to dodge any quoting pitfalls.
-    # Returns the file's findings as plain objects; throws if even the isolated run crashes.
+    # PSScriptAnalyzer's NullReferenceException is intermittent and can recur even in a fresh process,
+    # so attempt the isolated run up to $AnalyzerIsolatedRetries times; only a crash (non-zero exit)
+    # triggers a retry, never a real finding (which exits 0 with results), so retries can't mask a
+    # lint violation. Returns the file's findings as plain objects; throws only if every attempt crashes.
     param([Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)][string]$Settings)
     $exeName = if ($PSVersionTable.PSEdition -eq 'Core') { 'pwsh' } else { 'powershell' }
     if (script:Test-IsWindowsBuild) { $exeName += '.exe' }
@@ -142,12 +147,19 @@ function script:Invoke-AnalyzerInChildProcess {
         $cmd = 'Import-Module PSScriptAnalyzer; ' +
         'Invoke-ScriptAnalyzer -Path $env:NS_ANALYZE_FILE -Settings $env:NS_ANALYZE_SETTINGS | ' +
         'Select-Object ' + ($script:AnalyzerFields -join ',') + ' | ConvertTo-Json -Depth 4 -Compress'
-        $json = & $psExe -NoProfile -NonInteractive -Command $cmd
-        if ($LASTEXITCODE -ne 0) {
-            throw "PSScriptAnalyzer crashed analyzing $(Split-Path $Path -Leaf) even in an isolated process (exit $LASTEXITCODE)."
+        for ($attempt = 1; $attempt -le $script:AnalyzerIsolatedRetries; $attempt++) {
+            $json = & $psExe -NoProfile -NonInteractive -Command $cmd
+            if ($LASTEXITCODE -eq 0) {
+                if ([string]::IsNullOrWhiteSpace(($json -join ''))) { return @() }
+                return @($json | ConvertFrom-Json)
+            }
+            $leaf = Split-Path $Path -Leaf
+            if ($attempt -lt $script:AnalyzerIsolatedRetries) {
+                Write-Warning "PSScriptAnalyzer crashed analyzing $leaf in an isolated process (exit $LASTEXITCODE, attempt $attempt/$($script:AnalyzerIsolatedRetries)); retrying."
+            } else {
+                throw "PSScriptAnalyzer crashed analyzing $leaf in $($script:AnalyzerIsolatedRetries) isolated attempts (exit $LASTEXITCODE)."
+            }
         }
-        if ([string]::IsNullOrWhiteSpace(($json -join ''))) { return @() }
-        return @($json | ConvertFrom-Json)
     } finally {
         Remove-Item Env:\NS_ANALYZE_FILE, Env:\NS_ANALYZE_SETTINGS -ErrorAction SilentlyContinue
     }
