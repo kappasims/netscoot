@@ -53,7 +53,9 @@ function Test-IsWindowsHost {
 if ($Version) {
     $tag = 'v' + ($Version -replace '^v', '')
 } else {
-    $rel = Invoke-RestMethod -Uri "https://api.github.com/repositories/$Repository/releases/latest" -Headers $headers
+    # /repos/<owner>/<name> - NOT /repositories/ (the numeric-repo-id endpoint, which 404s for an
+    # owner/name string, leaving the installer unable to resolve the latest release).
+    $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repository/releases/latest" -Headers $headers
     $tag = "$($rel.tag_name)"
     if (-not $tag) { throw "No releases found for $Repository." }
 }

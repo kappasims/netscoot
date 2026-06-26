@@ -6,6 +6,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- `Test-NetscootUpdate`, `Update-Netscoot`, and `install.ps1` now reach the correct GitHub release
+  endpoint. They queried `/repositories/<owner>/<name>`, which is the numeric-repo-id path and 404s
+  for an `owner/name` string, so every update check failed with a generic "could not get the latest
+  release" and the installer's latest-version path could not resolve a release. Now uses
+  `/repos/<owner>/<name>`. (Note: the broken check shipped in earlier versions, so a self-update
+  from one of those still needs a one-time manual `Install-Module Netscoot` to land this fix.)
+
 ## [2.6.0] - 2026-06-26
 
 ### Added
