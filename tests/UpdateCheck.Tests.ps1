@@ -32,6 +32,20 @@ Describe 'Test-NetscootUpdate' {
             ($err.FullyQualifiedErrorId -join ';') | Should -Match 'UpdateCheckFailed'
         }
     }
+
+    It 'requests the /repos/<owner>/<name> release endpoint, not the numeric /repositories/ one (regression)' {
+        # The /repositories/ endpoint expects a numeric repo id and 404s for an owner/name string,
+        # so every update check failed (the 404 was swallowed into a generic "could not get release").
+        # The prior tests mocked Invoke-RestMethod without checking the URI, so the wrong endpoint
+        # slipped through. Assert the exact, correct request path here.
+        InModuleScope Netscoot.Core {
+            Mock Invoke-RestMethod { @{ tag_name = 'v1.0.0'; html_url = 'x' } }
+            Test-NetscootUpdate -Repository 'kappasims/netscoot' | Out-Null
+            Should -Invoke Invoke-RestMethod -Times 1 -Exactly -ParameterFilter {
+                $Uri -eq 'https://api.github.com/repos/kappasims/netscoot/releases/latest'
+            }
+        }
+    }
 }
 
 Describe 'Update-Netscoot' {
