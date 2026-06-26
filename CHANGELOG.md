@@ -6,6 +6,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.6.3] - 2026-06-26
+
+### Changed
+
+- Maintenance release. Documentation and AI-agent skill updates only - no change to the shipped
+  module or any cmdlet behavior. The released package is functionally identical to 2.6.2.
+
 ## [2.6.2] - 2026-06-26
 
 ### Changed
