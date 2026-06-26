@@ -36,12 +36,13 @@ be overridden by `-Force` if the user explicitly wants to install anyway.
 
 ## Journal (undo history)
 
-The move journal is a per-user, per-repository file. `Set-NetscootJournal -Enabled $false` turns
-journaling off for the current repository (subsequent moves are not undoable); use `-Global` to
-default-off across every repository unless re-enabled. `Clear-NetscootJournal` wipes the
-journal file for this repository (does NOT reverse any moves; just removes the undo record).
-The journal location is shown by `Get-MoveJournalPath` if exposed in the current netscoot version,
-or by inspecting `$env:NETSCOOT_JOURNAL_HOME`.
+The move journal is a per-user, per-repository file in a per-user data directory
+(`%LOCALAPPDATA%\netscoot` on Windows, `~/Library/Application Support/netscoot` on macOS,
+`~/.local/share/netscoot` on Linux); set `$env:NETSCOOT_JOURNAL_HOME` to relocate the store.
+`Set-NetscootJournal -Enabled $false` turns journaling off for the current repository (subsequent
+moves are not undoable); add `-Global` to default-off across every repository unless re-enabled.
+`Clear-NetscootJournal` wipes this repository's journal file (it does NOT reverse any moves; it
+just removes the undo record).
 
 ## Git verb
 

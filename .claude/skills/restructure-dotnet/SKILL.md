@@ -5,23 +5,18 @@ description: Use when moving, relocating, or restructuring managed .NET projects
 
 # Restructuring managed .NET repositories (cross-platform)
 
-Purpose (full overview: the [netscoot README](https://github.com/kappasims/netscoot)): a move
-that fixes what it would otherwise break. Dragging a project in Visual Studio reconciles the
-`.sln`/`.slnx`, the `<ProjectReference>`s that point at it, and the GUID wiring; netscoot does the
-same from the command line, everywhere Visual Studio is not, delegating every path/GUID change to
-first-party tooling rather than hand-editing files.
+Purpose (full overview: the [netscoot README](https://github.com/kappasims/netscoot)): a move that
+fixes what it would otherwise break. Where dragging a project in Visual Studio reconciles the
+`.sln`/`.slnx`, the `<ProjectReference>`s, and the GUID wiring, netscoot does the same from the
+command line - delegating every path/GUID change to first-party tooling (`dotnet sln`,
+`dotnet reference`, `git mv`), never hand-editing `.sln`, `.slnx`, or `.csproj`/`.fsproj`/`.vbproj`
+(hand-typed paths and GUIDs drift).
 
-These cmdlets are **cross-platform** (PowerShell 7 on Windows/Linux/macOS); they rely only
-on the dotnet CLI and git. For native C++ (`.vcxproj`), which is Windows-only, see the
-`restructure-native` skill (`Move-DotnetProject` deliberately refuses `.vcxproj`). For moving
-PowerShell modules/scripts, see the `restructure-powershell` skill.
-
-**Rule: never hand-edit `.sln`, `.slnx`, or `.csproj`/`.fsproj`/`.vbproj` to move things.**
-Relative paths and solution GUIDs drift out of sync when typed by hand. Delegate every
-path/GUID change to first-party tooling.
-
-Use the installed `netscoot` module (`Import-Module Netscoot`). If it is not installed, point
-the user to the project's install steps and let them run them; never auto-install.
+Cross-platform: PowerShell 7 on Windows/Linux/macOS, needing only the dotnet CLI and git. Use the
+installed module (`Import-Module Netscoot`); never auto-install - if it or a prerequisite (git,
+dotnet) is missing, give the user the install command and let them run it. For native C++
+(`.vcxproj`, Windows-only) see `restructure-native` (`Move-DotnetProject` refuses `.vcxproj`); for
+PowerShell modules or scripts see `restructure-powershell`.
 
 ## Analyze/audit first (read-only)
 
@@ -36,6 +31,9 @@ To understand a repository before touching it, use these; do not parse solution/
 - `Find-NetscootPathReference` - build/CI/hook scripts that hardcode a path no move reconciles.
 - `Resolve-MoveEngine` - which engine a given path classifies to.
 - `Get-NetscootCapability` - whether git and dotnet are present, plus the platform.
+- `Test-EditorSolutionGuard` - after consolidating to a single `.slnx`, checks that VS Code's C#
+  Dev Kit will not silently re-mint a legacy `.sln` next to it (inspects `.vscode/settings.json`
+  and `.gitignore`; `-Strict` makes it CI-failing). Run it whenever you migrate `.sln` -> `.slnx`.
 
 To resolve a divergence that `Test-NetscootSolutionConsistency` reports, run `Sync-NetscootSolution` (it adds each
 project to the solutions missing it; preview with `-WhatIf`), or add it by hand with
@@ -118,10 +116,10 @@ Use the raw CLI, never a text editor:
 
 ## Undoing a move
 
-Every move is journaled to a per-user data directory (LocalAppData on Windows,
-~/Library/Application Support on macOS, ~/.local/share on Linux), so you can reverse it later -
-even in a new session - with `Undo-Netscoot`. It replays the inverse (the same move with source
-and destination swapped), re-reconciling from the current state.
+Every move is journaled (on by default) to a per-user data directory outside the working tree
+(LocalAppData on Windows, ~/Library/Application Support on macOS, ~/.local/share on Linux), so git
+never tracks it and you can reverse a move later - even in a new session - with `Undo-Netscoot`. It
+replays the inverse (source and destination swapped), re-reconciling from the current state.
 
 ```powershell
 Undo-Netscoot -List     # what can be undone
@@ -129,10 +127,9 @@ Undo-Netscoot -WhatIf   # preview reversing the most recent move
 Undo-Netscoot           # reverse the most recent move (call again to walk back)
 ```
 
-Journaling is on by default and lives in the per-user data directory above, outside the working
-tree, so git never tracks it. A move interrupted by a crash is recoverable with
-`Repair-NetscootJournal`.
-Opt out per repository with `Set-NetscootJournal -Enabled $false` (or `-Global` for all repositories). See the [README](https://github.com/kappasims/netscoot).
+A move interrupted by a crash is recoverable with `Repair-NetscootJournal`. Opt out per repository
+with `Set-NetscootJournal -Enabled $false` (`-Global` for all). See the
+[README](https://github.com/kappasims/netscoot).
 
 ## The `git netscoot` verb (optional; ask first)
 
@@ -144,14 +141,10 @@ prerequisite is missing, tell the user the install command and let them run it.
 
 ## Staying current
 
-netscoot does not auto-update; cutting a release changes nothing on an installed machine until
-you update. Check with `Test-NetscootUpdate` (it compares the installed module to the latest
-GitHub release). Update in place with `Update-Netscoot` (no git); from a dev clone instead,
-`git pull` then `./build.ps1 -Task Install`. Updating from a release before 2.6.1 needs a one-time
-manual step: those versions shipped a broken release-lookup endpoint, so their own
-`Test-NetscootUpdate`/`Update-Netscoot` cannot reach the fix. Use `Update-Module Netscoot` (Gallery),
-the `git pull` clone path above, or re-run the installer; the in-box updater works again from 2.6.1
-on. For automatic reminders, consider a
-Claude Code SessionStart hook that runs `Test-NetscootUpdate -Auto` (gated: it checks only when
-the update policy is Enabled, and never updates); ask the user before adding it,
+netscoot does not auto-update. Check with `Test-NetscootUpdate` (compares the installed module to
+the latest GitHub release); update in place with `Update-Netscoot`, or from a dev clone with
+`git pull` then `./build.ps1 -Task Install`. (Updating from a release before 2.6.1 needs a one-time
+manual `Update-Module Netscoot` or installer re-run - those shipped a broken update endpoint; the
+in-box updater works from 2.6.1 on.) A SessionStart hook running `Test-NetscootUpdate -Auto` can
+remind automatically (gated to the update policy, never updates); ask the user before adding it,
 since it edits their settings.json.

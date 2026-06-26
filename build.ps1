@@ -53,6 +53,11 @@ param(
     # Install-Module; still installable by explicit -RequiredVersion - the Gallery never hard-deletes).
     # Pass -KeepOldVersions to skip the unlisting and leave the full version history listed.
     [switch]$KeepOldVersions,
+    # Release: override the "no src/ change since the last tag" guard. A module release only makes
+    # sense when src/ (the Gallery-packaged code) changed; doc/skill/tooling changes ship via the
+    # plugin instead (see CONTRIBUTING "Two release cadences"). Use this only for a deliberate
+    # module-identical bump (e.g. version parity).
+    [switch]$AllowEmptyModuleRelease,
     # Test: split the test files into -ShardCount slices and run only the -ShardIndex'th (1-based).
     # Used by CI to run the suite as parallel jobs (separate processes - the tests share process-
     # global state, so they cannot be parallelized in-process). The default runs the whole suite.
@@ -127,11 +132,16 @@ function Invoke-TestTask {
 
 $script:AnalyzerFields = @('RuleName', 'Severity', 'ScriptName', 'Line', 'Message')
 
+$script:AnalyzerIsolatedRetries = 3
+
 function script:Invoke-AnalyzerInChildProcess {
     # Re-analyze ONE file in a fresh PowerShell process so PSScriptAnalyzer's reflection-emit state
     # starts clean. This is the recovery path for an analyzer-engine crash in the shared in-process
     # loop (see Invoke-AnalyzeTask). Paths go through the environment to dodge any quoting pitfalls.
-    # Returns the file's findings as plain objects; throws if even the isolated run crashes.
+    # PSScriptAnalyzer's NullReferenceException is intermittent and can recur even in a fresh process,
+    # so attempt the isolated run up to $AnalyzerIsolatedRetries times; only a crash (non-zero exit)
+    # triggers a retry, never a real finding (which exits 0 with results), so retries can't mask a
+    # lint violation. Returns the file's findings as plain objects; throws only if every attempt crashes.
     param([Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)][string]$Settings)
     $exeName = if ($PSVersionTable.PSEdition -eq 'Core') { 'pwsh' } else { 'powershell' }
     if (script:Test-IsWindowsBuild) { $exeName += '.exe' }
@@ -142,12 +152,19 @@ function script:Invoke-AnalyzerInChildProcess {
         $cmd = 'Import-Module PSScriptAnalyzer; ' +
         'Invoke-ScriptAnalyzer -Path $env:NS_ANALYZE_FILE -Settings $env:NS_ANALYZE_SETTINGS | ' +
         'Select-Object ' + ($script:AnalyzerFields -join ',') + ' | ConvertTo-Json -Depth 4 -Compress'
-        $json = & $psExe -NoProfile -NonInteractive -Command $cmd
-        if ($LASTEXITCODE -ne 0) {
-            throw "PSScriptAnalyzer crashed analyzing $(Split-Path $Path -Leaf) even in an isolated process (exit $LASTEXITCODE)."
+        for ($attempt = 1; $attempt -le $script:AnalyzerIsolatedRetries; $attempt++) {
+            $json = & $psExe -NoProfile -NonInteractive -Command $cmd
+            if ($LASTEXITCODE -eq 0) {
+                if ([string]::IsNullOrWhiteSpace(($json -join ''))) { return @() }
+                return @($json | ConvertFrom-Json)
+            }
+            $leaf = Split-Path $Path -Leaf
+            if ($attempt -lt $script:AnalyzerIsolatedRetries) {
+                Write-Warning "PSScriptAnalyzer crashed analyzing $leaf in an isolated process (exit $LASTEXITCODE, attempt $attempt/$($script:AnalyzerIsolatedRetries)); retrying."
+            } else {
+                throw "PSScriptAnalyzer crashed analyzing $leaf in $($script:AnalyzerIsolatedRetries) isolated attempts (exit $LASTEXITCODE)."
+            }
         }
-        if ([string]::IsNullOrWhiteSpace(($json -join ''))) { return @() }
-        return @($json | ConvertFrom-Json)
     } finally {
         Remove-Item Env:\NS_ANALYZE_FILE, Env:\NS_ANALYZE_SETTINGS -ErrorAction SilentlyContinue
     }
@@ -328,6 +345,22 @@ function Invoke-ReleaseTask {
     if (-not $Publish) {
         # PREPARE on develop: stamp, gate locally, commit the bump, push so CI runs on that commit.
         if (& git -C $root status --porcelain) { throw 'Working tree is not clean; commit or stash first so the release commit is only the version bump.' }
+
+        # Gate: a module release must actually change src/ (the only thing the Gallery package ships).
+        # Doc/skill/tooling changes since the last tag are NOT a module release - they reach users via
+        # the plugin (bump .claude-plugin/plugin.json + /plugin update) or just by fast-forwarding
+        # master. This guard stops accidental module-identical bumps (see CONTRIBUTING). Skipped when
+        # there is no prior tag (first release) or when overridden with -AllowEmptyModuleRelease.
+        $lastTag = "$(& git -C $root describe --tags --abbrev=0 --match 'v*' 2>$null)".Trim()
+        if ($lastTag -and -not $AllowEmptyModuleRelease) {
+            & git -C $root diff --quiet "$lastTag" HEAD -- src/
+            if ($LASTEXITCODE -eq 0) {
+                throw "No src/ changes since $lastTag, so a module release would be byte-identical to it. " +
+                "Skill/doc/tooling changes ship via the plugin (bump .claude-plugin/plugin.json, then users " +
+                "/plugin update) - see CONTRIBUTING 'Two release cadences'. To force a module-identical bump " +
+                "anyway (e.g. version parity), re-run with -AllowEmptyModuleRelease."
+            }
+        }
 
         # Gate: docs must not be stale (README reference current; README + skills reference no removed
         # brand/cmdlets). Run while the tree is clean, before stamping.

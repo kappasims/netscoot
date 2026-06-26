@@ -1,0 +1,31 @@
+{
+  "name": "netscoot",
+  "displayName": "netscoot",
+  "version": "1.0.0",
+  "description": "Move and restructure .NET, PowerShell, Unity, and native C++ projects without breaking references. Solutions, project references, and hardcoded paths are reconciled through first-party tooling, with solution-consistency analysis and post-move verification.",
+  "author": {
+    "name": "kappasims",
+    "url": "https://github.com/kappasims"
+  },
+  "homepage": "https://github.com/kappasims/netscoot",
+  "repository": "https://github.com/kappasims/netscoot",
+  "license": "MIT",
+  "keywords": [
+    "dotnet",
+    "csproj",
+    "sln",
+    "slnx",
+    "msbuild",
+    "powershell",
+    "unity",
+    "native",
+    "vcxproj",
+    "refactor",
+    "restructure",
+    "solution",
+    "monorepo"
+  ],
+  "skills": [
+    "./.claude/skills"
+  ]
+}

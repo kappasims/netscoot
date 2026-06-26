@@ -9,9 +9,9 @@ Purpose (full overview: the [netscoot README](https://github.com/kappasims/netsc
 answers to "what's in this repository," "is this rename actually done," "where else does X
 appear," "what would break if I moved Y" without ad-hoc Grep/Read over `.sln`/`.slnx`/`.csproj`.
 
-Every cmdlet here is **read-only**: nothing is moved, no file is rewritten. For the actual moves,
-the project-type-specific skills (`restructure-dotnet`, `restructure-powershell`,
-`restructure-unity`, `restructure-native`) own those operations.
+Every cmdlet here is **read-only**: nothing is moved, no file is rewritten. The actual moves belong
+to the project-type-specific skills (`restructure-dotnet`, `restructure-powershell`,
+`restructure-unity`, `restructure-native`).
 
 ## Map a question to the right cmdlet
 
@@ -40,23 +40,17 @@ Find-NetscootPathReference -Path <old identifier or path>
 
 over the OLD identifier (a moved file's old path, a renamed type, a removed namespace, an old DLL
 name in build scripts). The output is structured (`File`, `Line`, `Confidence`, `Text`) and the
-cmdlet emits the warning
+cmdlet emits the warning *"These are not auto-reconciled - review and fix them by hand."* That is
+the agent-readable signal that references survive in places the move machinery does not touch:
+build scripts, CI YAML, git hooks, container files, documentation snippets. Use it BEFORE declaring
+a rename "complete." If it returns rows, fix them by hand and re-run; a zero-row result with no
+warning is the all-clear.
 
-> These are not auto-reconciled - review and fix them by hand.
-
-That warning is the agent-readable signal that some references survive in places the move
-machinery does not touch: build scripts, CI YAML, git hooks, container files, documentation
-snippets. Use this BEFORE declaring a rename "complete." If it returns rows, fix them by hand
-and re-run; treat a zero-row result with no warning as the all-clear.
-
-This is the canonical pattern for "did I miss anything." Do not substitute ad-hoc `Grep` over
-the repository: `Find-NetscootPathReference` already knows which file kinds are candidates, applies a
-confidence rating, and excludes paths the move machinery already reconciled.
-
-By default it scans only the non-canonical automation file class (build/CI/hooks/containers). If
-a reference might live in an ordinary source file in a non-standard directory - common mid-refactor
-when files were moved into new dirs - add `-AllFiles` to search every text file under the
-repository (caches/vendored dirs and binaries still excluded). Use `-AllFiles` for the thorough
+This is the canonical "did I miss anything" pattern - do not substitute an ad-hoc `Grep`.
+`Find-NetscootPathReference` already knows which file kinds are candidates, applies a confidence
+rating, and excludes paths the move machinery already reconciled. By default it scans only the
+non-canonical automation file class (build/CI/hooks/containers); add `-AllFiles` to search every
+text file under the repository (caches/vendored dirs and binaries still excluded) for the thorough
 "search literally everywhere" pass when the default returns nothing but you suspect a reference
 survives.
 
@@ -67,8 +61,7 @@ survives.
 
 ## Cross-engine, not engine-specific
 
-These cmdlets work across all four engine families. For the actual MOVES, route by project type
-to the appropriate restructure skill:
+These cmdlets work across all four engine families. For the actual MOVES, route by project type:
 
 - `restructure-dotnet` for `.csproj`/`.fsproj`/`.vbproj` and solutions.
 - `restructure-powershell` for `.ps1` scripts and PowerShell modules.

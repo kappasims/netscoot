@@ -49,6 +49,28 @@ therefore prepared on `develop` and `master` is fast-forwarded to it. Run both f
 The PowerShell Gallery is a separate step: `./build.ps1 -Task Publish -ApiKey <key>` assembles and
 publishes the single bundled package (a dry run without `-ApiKey`).
 
+## Two release cadences
+
+netscoot ships two independently-versioned artifacts. A change goes through the cadence that matches
+what it touches - never both unless it changes both:
+
+- **The module** (`src/`) - the PowerShell engines that ship as the bundled Gallery package. Cut a
+  module release (above) only when `src/` actually changes. `-Task Release` enforces this: it refuses
+  a bump with no `src/` change since the last tag (override with `-AllowEmptyModuleRelease` only for a
+  deliberate parity bump). This is what stopped the module-identical churn that used to ride along on
+  doc and skill edits.
+- **The plugin** (`.claude-plugin/` + the skills in `.claude/skills/`) - the AI-agent skills. They
+  reach users via `/plugin update`, gated on the `version` in `.claude-plugin/plugin.json`, which is
+  versioned independently of the module. The marketplace tracks the repository's default branch
+  (`develop`), so a skill or plugin fix ships with **no module release and no `master` involvement**:
+
+  1. Make the change and bump `version` in `.claude-plugin/plugin.json`.
+  2. Commit and push `develop`. Once it is on `develop`, `/plugin update netscoot` picks it up.
+
+  No manifest stamp, no Gallery publish, no `master` fast-forward, no full module gate. (`master` is
+  only for module releases - the Gallery package and its tag.) Build/CI tooling and standalone docs
+  ride along the same way: they land on `develop` and need no module version bump.
+
 ## Modules
 
 Split by platform so the cross-platform core never ships native, Windows-only code. It ships as

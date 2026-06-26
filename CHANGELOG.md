@@ -15,6 +15,19 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `Repair-SolutionReferences` -> `Repair-NetscootSolutionReferences`. The old names continue to work
   as deprecated aliases that emit a warning on use and will be removed in a later release; update
   scripts to the new names.
+- **BREAKING (3.0):** every result and report object is now a real .NET type (`Netscoot.MoveResult`,
+  `Netscoot.ConsistencyResult`, and the rest) instead of a `pscustomobject` stamped with a
+  `PSTypeName`. Property access, formatting, and `$x.PSTypeNames[0]` checks are unchanged; only code
+  that tested `-is [pscustomobject]` is affected.
+- `Clear-NetscootJournal` now prompts before wiping a repository's undo journal
+  (`ConfirmImpact = 'High'`, matching `Repair-NetscootJournal`). Pass `-Confirm:$false` to suppress.
+
+## [2.6.3] - 2026-06-26
+
+### Changed
+
+- Maintenance release. Documentation and AI-agent skill updates only - no change to the shipped
+  module or any cmdlet behavior. The released package is functionally identical to 2.6.2.
 
 ## [2.6.2] - 2026-06-26
 
