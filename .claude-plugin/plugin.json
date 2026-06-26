@@ -1,0 +1,28 @@
+{
+  "name": "netscoot",
+  "displayName": "netscoot",
+  "version": "1.0.0",
+  "description": "AI-agent skills for moving and restructuring .NET, PowerShell, Unity, and native C++ projects without breaking references, plus solution analysis and refactor verification. Wraps the netscoot PowerShell module's cmdlets.",
+  "author": {
+    "name": "kappasims",
+    "url": "https://github.com/kappasims"
+  },
+  "homepage": "https://github.com/kappasims/netscoot",
+  "repository": "https://github.com/kappasims/netscoot",
+  "license": "MIT",
+  "keywords": [
+    "dotnet",
+    "powershell",
+    "unity",
+    "native",
+    "refactoring",
+    "restructure",
+    "solution",
+    "msbuild",
+    "csproj",
+    "slnx"
+  ],
+  "skills": [
+    "./.claude/skills"
+  ]
+}

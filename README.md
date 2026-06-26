@@ -134,6 +134,17 @@ language and run the commands above:
 | `restructure-unity` | moving a Unity asset, folder, or `.asmdef` |
 | `restructure-native` | moving a native C++ `.vcxproj` (Windows) |
 
+Two analysis skills, `netscoot-analyze` (inventory/consistency/reference checks) and `netscoot-manage`
+(update policy, journal, git alias), round out the set. Install them as a Claude Code plugin:
+
+```text
+/plugin marketplace add kappasims/netscoot
+/plugin install netscoot@netscoot
+```
+
+`/plugin update netscoot` pulls newer skill versions; the plugin is versioned independently of the
+PowerShell module, so skill fixes ship without a module release.
+
 ### Moving
 
 Every move recomputes the stored paths after the files move, delegating each change to the tool
@@ -315,8 +326,9 @@ included), see [Turning the journal off](#turning-the-journal-off).
 
 Nothing updates automatically. For Gallery installs, `Update-Module Netscoot` is the one-liner.
 Otherwise `Test-NetscootUpdate` checks GitHub for a newer release and `Update-Netscoot` (or
-re-running the installer) applies it in place. The Claude Code skills are separate files: Refresh
-them with `git pull` in a clone, or re-sync `.claude/skills` if installed globally.
+re-running the installer) applies it in place. The Claude Code skills update separately via the
+plugin: `/plugin update netscoot` (after `/plugin marketplace add kappasims/netscoot` and
+`/plugin install netscoot@netscoot`). In a clone, `git pull` refreshes them in place.
 
 > Updating from a release before 2.6.1: the in-box `Test-NetscootUpdate` / `Update-Netscoot`
 > cannot fetch the fix, because the broken release endpoint they shipped with is exactly what 2.6.1

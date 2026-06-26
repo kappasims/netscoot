@@ -1,0 +1,26 @@
+{
+  "name": "netscoot",
+  "owner": {
+    "name": "kappasims",
+    "url": "https://github.com/kappasims"
+  },
+  "description": "The netscoot plugin: AI-agent skills for restructuring .NET, PowerShell, Unity, and native C++ projects.",
+  "plugins": [
+    {
+      "name": "netscoot",
+      "source": "./",
+      "description": "AI-agent skills for moving and restructuring .NET, PowerShell, Unity, and native C++ projects without breaking references, plus solution analysis and refactor verification.",
+      "homepage": "https://github.com/kappasims/netscoot",
+      "license": "MIT",
+      "category": "developer-tools",
+      "keywords": [
+        "dotnet",
+        "powershell",
+        "unity",
+        "native",
+        "restructure",
+        "refactoring"
+      ]
+    }
+  ]
+}
