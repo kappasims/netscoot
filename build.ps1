@@ -23,6 +23,8 @@
                           only ever receives a CI-passed commit; ModuleVersion stays equal to the tag.
       Publish           - assemble the single bundled netscoot package, validate and smoke-import
                           it, then Publish-Module to the PowerShell Gallery (dry run without -ApiKey).
+                          After a successful publish it unlists every prior version (only the new one
+                          stays listed); pass -KeepOldVersions to keep the full history listed.
 
 .EXAMPLE
     ./build.ps1                       # run the tests
@@ -46,6 +48,11 @@ param(
     # Release: also commit, tag vX.Y.Z, push, and create the GitHub release. Without it, Release
     # only stamps the manifests locally so you can review the bump before publishing.
     [switch]$Publish,
+    # Publish: by DEFAULT, after a successful Gallery publish, unlist every previously-published
+    # version so only the just-published one is listed (hidden from search and from un-versioned
+    # Install-Module; still installable by explicit -RequiredVersion - the Gallery never hard-deletes).
+    # Pass -KeepOldVersions to skip the unlisting and leave the full version history listed.
+    [switch]$KeepOldVersions,
     # Test: split the test files into -ShardCount slices and run only the -ShardIndex'th (1-based).
     # Used by CI to run the suite as parallel jobs (separate processes - the tests share process-
     # global state, so they cannot be parallelized in-process). The default runs the whole suite.
@@ -373,8 +380,44 @@ function Invoke-PublishTask {
             Write-Host 'No -ApiKey given: staged + validated only (dry run). Re-run with -ApiKey to publish.' -ForegroundColor Yellow
             return
         }
+
+        # Capture the versions already listed on the Gallery BEFORE publishing, so we know exactly
+        # which ones to unlist afterward (everything that existed before this publish). Captured up
+        # front to avoid any post-publish indexing lag on the new version.
+        $priorVersions = @()
+        if (-not $KeepOldVersions) {
+            $priorVersions = @(Find-Module -Name Netscoot -AllVersions -Repository PSGallery -ErrorAction SilentlyContinue |
+                    ForEach-Object { "$($_.Version)" })
+        }
+
         Publish-Module -Path $pkg -NuGetApiKey $ApiKey -Repository PSGallery
         Write-Host 'Published netscoot to the PowerShell Gallery.' -ForegroundColor Green
+
+        # Unlist every prior version (default; -KeepOldVersions opts out) so only the just-published
+        # one is listed. Unlist != delete: the Gallery never hard-deletes, so an existing dependent
+        # pinned to an old version still resolves it by explicit -RequiredVersion; the version just
+        # stops appearing in search and in an un-versioned Install-Module. Done via the NuGet v2
+        # DELETE-is-unlist endpoint (Publish-Module has no unlist verb). Per-version and tolerant:
+        # one failure warns and the rest proceed, so a transient error never aborts the release.
+        if (-not $KeepOldVersions) {
+            $toUnlist = @($priorVersions | Where-Object { $_ -and $_ -ne $Version })
+            if ($toUnlist.Count) {
+                Write-Host "Unlisting $($toUnlist.Count) prior version(s) so only $Version is listed..." -ForegroundColor Cyan
+                foreach ($v in $toUnlist) {
+                    $uri = "https://www.powershellgallery.com/api/v2/package/Netscoot/$v"
+                    try {
+                        Invoke-RestMethod -Method Delete -Uri $uri -Headers @{ 'X-NuGet-ApiKey' = $ApiKey } -ErrorAction Stop | Out-Null
+                        Write-Host "  unlisted Netscoot $v" -ForegroundColor DarkGray
+                    } catch {
+                        Write-Warning "Could not unlist Netscoot ${v}: $($_.Exception.Message). Unlist it by hand on the Gallery if needed."
+                    }
+                }
+            } else {
+                Write-Host 'No prior listed versions to unlist.' -ForegroundColor DarkGray
+            }
+        } else {
+            Write-Host 'Kept all prior versions listed (-KeepOldVersions).' -ForegroundColor DarkGray
+        }
     } finally {
         if (Test-Path -LiteralPath $stage) {
             Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue
