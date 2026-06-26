@@ -53,6 +53,11 @@ param(
     # Install-Module; still installable by explicit -RequiredVersion - the Gallery never hard-deletes).
     # Pass -KeepOldVersions to skip the unlisting and leave the full version history listed.
     [switch]$KeepOldVersions,
+    # Release: override the "no src/ change since the last tag" guard. A module release only makes
+    # sense when src/ (the Gallery-packaged code) changed; doc/skill/tooling changes ship via the
+    # plugin instead (see CONTRIBUTING "Two release cadences"). Use this only for a deliberate
+    # module-identical bump (e.g. version parity).
+    [switch]$AllowEmptyModuleRelease,
     # Test: split the test files into -ShardCount slices and run only the -ShardIndex'th (1-based).
     # Used by CI to run the suite as parallel jobs (separate processes - the tests share process-
     # global state, so they cannot be parallelized in-process). The default runs the whole suite.
@@ -340,6 +345,22 @@ function Invoke-ReleaseTask {
     if (-not $Publish) {
         # PREPARE on develop: stamp, gate locally, commit the bump, push so CI runs on that commit.
         if (& git -C $root status --porcelain) { throw 'Working tree is not clean; commit or stash first so the release commit is only the version bump.' }
+
+        # Gate: a module release must actually change src/ (the only thing the Gallery package ships).
+        # Doc/skill/tooling changes since the last tag are NOT a module release - they reach users via
+        # the plugin (bump .claude-plugin/plugin.json + /plugin update) or just by fast-forwarding
+        # master. This guard stops accidental module-identical bumps (see CONTRIBUTING). Skipped when
+        # there is no prior tag (first release) or when overridden with -AllowEmptyModuleRelease.
+        $lastTag = "$(& git -C $root describe --tags --abbrev=0 --match 'v*' 2>$null)".Trim()
+        if ($lastTag -and -not $AllowEmptyModuleRelease) {
+            & git -C $root diff --quiet "$lastTag" HEAD -- src/
+            if ($LASTEXITCODE -eq 0) {
+                throw "No src/ changes since $lastTag, so a module release would be byte-identical to it. " +
+                "Skill/doc/tooling changes ship via the plugin (bump .claude-plugin/plugin.json, then users " +
+                "/plugin update) - see CONTRIBUTING 'Two release cadences'. To force a module-identical bump " +
+                "anyway (e.g. version parity), re-run with -AllowEmptyModuleRelease."
+            }
+        }
 
         # Gate: docs must not be stale (README reference current; README + skills reference no removed
         # brand/cmdlets). Run while the tree is clean, before stamping.
