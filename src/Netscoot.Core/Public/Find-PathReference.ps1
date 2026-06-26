@@ -53,8 +53,12 @@ function Find-PathReference {
     process {
         $target = Resolve-FullPath $Path
         if (-not $RepositoryRoot) {
-            $start = if (Test-Path -LiteralPath $target -PathType Container) { $target } else { Split-Path -Parent $target }
-            $RepositoryRoot = Get-RepositoryRoot -StartPath $start
+            # Derive the repository root from the CURRENT directory, never from -Path. The canonical
+            # use is sweeping the OLD identifier after a rename, where the needle no longer exists on
+            # disk - so walking up from it would fail (Get-RepositoryRoot does Get-Item on the start
+            # path). -Path is a string to search for, not a filesystem location. This matches every
+            # other cmdlet's default (e.g. Test-SolutionConsistency, Repair-SolutionReferences).
+            $RepositoryRoot = Get-RepositoryRoot -StartPath (Get-Location).Path
         }
         $root = (Resolve-FullPath $RepositoryRoot).TrimEnd('\', '/')
 
