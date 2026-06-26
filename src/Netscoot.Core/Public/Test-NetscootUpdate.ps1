@@ -67,7 +67,10 @@ function Test-NetscootUpdate {
     $installed = $MyInvocation.MyCommand.Module.Version
     if (-not $installed) { $installed = (Get-Module Netscoot.Core | Select-Object -First 1).Version }
 
-    $uri = "https://api.github.com/repositories/$Repository/releases/latest"
+    # /repos/<owner>/<name> - NOT /repositories/, which is the numeric-repo-id endpoint and 404s for
+    # an owner/name string (the 404 was swallowed and surfaced as a generic "could not get release",
+    # so every update check failed regardless of network state).
+    $uri = "https://api.github.com/repos/$Repository/releases/latest"
     $release = $null
     try {
         $release = Invoke-RestMethod -Uri $uri -Headers @{ 'User-Agent' = 'Netscoot'; 'Accept' = 'application/vnd.github+json' } -ErrorAction Stop
