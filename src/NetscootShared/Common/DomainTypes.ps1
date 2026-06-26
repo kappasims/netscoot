@@ -212,6 +212,13 @@ namespace Netscoot
         public string Source;
         public string Value;
     }
+
+    public class UpdateChannel
+    {
+        public string Channel;
+        public string Source;
+        public string Value;
+    }
 }
 '@
 }

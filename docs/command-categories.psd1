@@ -35,6 +35,7 @@
             Subcategories = @(
                 @{ Name = 'Stay current';  Commands = @('Test-NetscootUpdate', 'Update-Netscoot') }
                 @{ Name = 'Update policy'; Commands = @('Get-NetscootUpdatePolicy', 'Set-NetscootUpdatePolicy') }
+                @{ Name = 'Update channel'; Commands = @('Get-NetscootUpdateChannel', 'Set-NetscootUpdateChannel') }
                 @{ Name = 'Git verb';      Commands = @('Register-NetscootGitAlias', 'Unregister-NetscootGitAlias') }
             )
         }

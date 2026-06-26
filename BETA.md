@@ -31,6 +31,10 @@ Update-Module  Netscoot -AllowPrerelease        # later beta builds
 
 To go back to stable: `Install-Module Netscoot -Force` (installs the latest non-prerelease).
 
+Once you are on a 3.0 build, `Set-NetscootUpdateChannel Beta` keeps the in-product updater
+(`Update-Netscoot`) on the beta line, so later beta builds are offered as they ship.
+`Set-NetscootUpdateChannel Stable` returns you to stable updates.
+
 ### Claude Code plugin (skills, with the renamed cmdlets)
 
 ```text

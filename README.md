@@ -534,6 +534,13 @@ Manage the installation itself and wire up the git integration.
 | [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) | Report the effective auto-update policy and where it was resolved from. |
 | [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) | Set netscoot's auto-update policy to Enabled, Disabled, or Manual. |
 
+##### Update channel
+
+| Command | What it does |
+| :--- | :--- |
+| [Get-NetscootUpdateChannel](#get-netscootupdatechannel) | Report the effective update channel (Stable or Beta) and where it was resolved from. |
+| [Set-NetscootUpdateChannel](#set-netscootupdatechannel) | Set netscoot's update channel to Stable or Beta. |
+
 ##### Git verb
 
 | Command | What it does |
@@ -760,6 +767,44 @@ Get-NetscootSolutionInventory | Where-Object Kind -eq ([Netscoot.SolutionItemKin
 [ [Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) |
 [Sync-NetscootSolution](#sync-netscootsolution) |
 [Repair-NetscootSolutionReferences](#repair-netscootsolutionreferences) ]
+
+[Back to Command reference](#command-reference)
+
+---
+
+#### Get-NetscootUpdateChannel
+
+Report the effective update channel (Stable or Beta) and where it was resolved from.
+
+##### Syntax
+
+```powershell
+Get-NetscootUpdateChannel [<CommonParameters>]
+```
+
+netscoot ships a stable line and, alongside it, opt-in prerelease (beta) builds. The channel decides which the updater
+([Test-NetscootUpdate](#test-netscootupdate) / [Update-Netscoot](#update-netscoot)) tracks: Stable (default) only
+non-prerelease GitHub releases are offered. Beta prerelease releases (e.g. v3.0.0-beta1) are offered too. The channel is
+stored in the `NETSCOOT_CHANNEL` environment variable, so it can be set with
+[Set-NetscootUpdateChannel](#set-netscootupdatechannel) or pushed by an administrator (Group Policy / Intune / a
+profile). This resolves the value in precedence order: the current process, then (on Windows) the user environment, then
+the machine environment. A value of `beta`/`preview` is Beta; anything else or absent is Stable.
+
+##### Output
+
+Netscoot.UpdateChannel
+
+##### Examples
+
+```powershell
+# See the current channel and where it came from
+Get-NetscootUpdateChannel
+```
+
+##### Related
+
+[ [Set-NetscootUpdateChannel](#set-netscootupdatechannel) | [Test-NetscootUpdate](#test-netscootupdate) |
+[Update-Netscoot](#update-netscoot) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1763,6 +1808,58 @@ Set-NetscootJournal -Enabled $false -Global
 
 ---
 
+#### Set-NetscootUpdateChannel
+
+Set netscoot's update channel to Stable or Beta.
+
+##### Syntax
+
+```powershell
+Set-NetscootUpdateChannel [-Channel] <string> [[-Scope] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+Writes the `NETSCOOT_CHANNEL` environment variable that governs which releases the updater offers (see
+[Get-NetscootUpdateChannel](#get-netscootupdatechannel)). The change always takes effect in the current session; the
+scope controls how far it persists: `-Scope` Process (default) this session only; nothing is persisted. `-Scope` User
+persists for the current user (Windows). `-Scope` Machine persists for all users (Windows); needs an elevated session.
+On non-Windows, User/Machine cannot be persisted programmatically, so this sets the session value and prints the line to
+add to your shell profile. Stable is the neutral default, represented by clearing the variable; Beta sets it to `beta`.
+
+##### Parameters
+
+| Name | Type | Required | Pipeline | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `‑Channel` | String | true | false | Stable or Beta. Beta opts the updater into prerelease releases (e.g. v3.0.0-beta1). |
+| `‑Scope` | String | false | false | How far to persist: Process (default, this session only), User (Windows), or Machine (Windows, elevated). |
+| `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
+| `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
+
+##### Output
+
+Netscoot.UpdateChannel - the resulting effective channel.
+
+##### Examples
+
+```powershell
+# Opt into prerelease (beta) updates for this session
+Set-NetscootUpdateChannel -Channel Beta
+
+# Persist beta for the current user (Windows)
+Set-NetscootUpdateChannel -Channel Beta -Scope User
+
+# Back to the default stable line
+Set-NetscootUpdateChannel -Channel Stable
+```
+
+##### Related
+
+[ [Get-NetscootUpdateChannel](#get-netscootupdatechannel) | [Test-NetscootUpdate](#test-netscootupdate) |
+[Update-Netscoot](#update-netscoot) ]
+
+[Back to Command reference](#command-reference)
+
+---
+
 #### Set-NetscootUpdatePolicy
 
 Set netscoot's auto-update policy to Enabled, Disabled, or Manual.
@@ -2023,7 +2120,7 @@ it never updates anything itself.
 ##### Syntax
 
 ```powershell
-Test-NetscootUpdate [[-Repository] <string>] [-Auto] [<CommonParameters>]
+Test-NetscootUpdate [[-Repository] <string>] [[-Channel] <string>] [-Auto] [<CommonParameters>]
 ```
 
 netscoot does not update automatically, however it is installed (PowerShell Gallery, installer, or a clone). This is the
@@ -2042,6 +2139,7 @@ way it never updates - it only reports.
 | :--- | :--- | :--- | :--- | :--- |
 | `‑Repository` | String | false | false | The GitHub repository to check, in `owner/name` form. Defaults to the project repository. |
 | `‑Auto` | SwitchParameter | false | false | Run as the automatic check (for a SessionStart hook or other automation): proceed only when the update policy is Enabled, otherwise do nothing. Still read-only - it never updates. |
+| `‑Channel` | String | false | false | Which releases to consider: Stable (only non-prerelease releases) or Beta (prerelease releases too, e.g. v3.0.0-beta1). Defaults to the resolved channel ([Get-NetscootUpdateChannel](#get-netscootupdatechannel)). |
 
 ##### Output
 
@@ -2220,7 +2318,7 @@ update for non-clone installs.
 ##### Syntax
 
 ```powershell
-Update-Netscoot [[-Repository] <string>] [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
+Update-Netscoot [[-Repository] <string>] [[-Channel] <string>] [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 Checks GitHub for a newer release (via [Test-NetscootUpdate](#test-netscootupdate)) and, if the installed version is
@@ -2239,6 +2337,7 @@ overrides a Disabled you set for yourself (process or user scope), but NOT one a
 | :--- | :--- | :--- | :--- | :--- |
 | `‑Force` | SwitchParameter | false | false | Reinstall the latest release even if already current, and override a Disabled update policy that you set for yourself. A machine-scope (administrator) Disabled is never overridden. |
 | `‑Repository` | String | false | false | The GitHub repository to install from, in `owner/name` form. Defaults to the project repository. |
+| `‑Channel` | String | false | false | Which releases to consider: Stable or Beta (prerelease releases too). Defaults to the resolved channel ([Get-NetscootUpdateChannel](#get-netscootupdatechannel)); set Beta to track prerelease builds. |
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 

@@ -40,10 +40,70 @@ Describe 'Test-NetscootUpdate' {
         # slipped through. Assert the exact, correct request path here.
         InModuleScope Netscoot.Core {
             Mock Invoke-RestMethod { @{ tag_name = 'v1.0.0'; html_url = 'x' } }
-            Test-NetscootUpdate -Repository 'kappasims/netscoot' | Out-Null
+            Test-NetscootUpdate -Repository 'kappasims/netscoot' -Channel Stable | Out-Null
             Should -Invoke Invoke-RestMethod -Times 1 -Exactly -ParameterFilter {
                 $Uri -eq 'https://api.github.com/repos/kappasims/netscoot/releases/latest'
             }
+        }
+    }
+
+    It '-Channel Beta hits the /releases list endpoint (not /releases/latest)' {
+        InModuleScope Netscoot.Core {
+            # /releases returns an array newest-first; the newest by SemVer is picked.
+            Mock Invoke-RestMethod {
+                @(
+                    @{ tag_name = 'v99.0.0-beta2'; html_url = 'x2'; prerelease = $true },
+                    @{ tag_name = 'v99.0.0-beta1'; html_url = 'x1'; prerelease = $true }
+                )
+            }
+            $r = Test-NetscootUpdate -Channel Beta
+            $r.Tag | Should -Be 'v99.0.0-beta2'
+            $r.Channel | Should -Be 'Beta'
+            Should -Invoke Invoke-RestMethod -Times 1 -Exactly -ParameterFilter {
+                $Uri -eq 'https://api.github.com/repos/kappasims/netscoot/releases?per_page=20'
+            }
+        }
+    }
+
+    It 'Stable channel does not report an update for a prerelease of the installed core' {
+        InModuleScope Netscoot.Core {
+            # The umbrella module is not loaded in this Core-only test session, so the installed full
+            # identity is the plain ModuleVersion (a stable, e.g. 3.0.0). A returned prerelease of the
+            # same core (3.0.0-beta1) does NOT outrank a stable install, so no update is reported -
+            # even though /releases/latest would never actually surface a prerelease.
+            $installedCore = (Get-Module Netscoot.Core | Select-Object -First 1).Version
+            Mock Invoke-RestMethod { @{ tag_name = "v$installedCore-beta1"; html_url = 'x' } }
+            $r = Test-NetscootUpdate -Channel Stable
+            $r.Channel | Should -Be 'Stable'
+            $r.UpdateAvailable | Should -BeFalse
+        }
+    }
+}
+
+Describe 'Compare-NetscootSemVer' {
+    It 'ranks a prerelease of a higher core above a lower stable' {
+        InModuleScope Netscoot.Core {
+            (Compare-NetscootSemVer -Reference '3.0.0-beta1' -Difference '2.6.3') | Should -Be 1
+        }
+    }
+    It 'ranks beta2 above beta1' {
+        InModuleScope Netscoot.Core {
+            (Compare-NetscootSemVer -Reference '3.0.0-beta2' -Difference '3.0.0-beta1') | Should -Be 1
+        }
+    }
+    It 'ranks stable above a prerelease of the same core' {
+        InModuleScope Netscoot.Core {
+            (Compare-NetscootSemVer -Reference '3.0.0' -Difference '3.0.0-beta2') | Should -Be 1
+        }
+    }
+    It 'ranks a prerelease below the stable of the same core' {
+        InModuleScope Netscoot.Core {
+            (Compare-NetscootSemVer -Reference '3.0.0-beta1' -Difference '3.0.0') | Should -Be -1
+        }
+    }
+    It 'reports equal versions as equal' {
+        InModuleScope Netscoot.Core {
+            (Compare-NetscootSemVer -Reference '2.6.3' -Difference '2.6.3') | Should -Be 0
         }
     }
 }

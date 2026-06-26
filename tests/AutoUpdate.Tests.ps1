@@ -4,11 +4,14 @@ BeforeAll {
     . (Join-Path $PSScriptRoot TestHelpers.ps1)
     Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Core' ('Netscoot.Core.psd1'))))) -Force
     $script:PrevAutoUpdate = $env:NETSCOOT_AUTOUPDATE
+    $script:PrevChannel = $env:NETSCOOT_CHANNEL
 }
 
 AfterAll {
     if ($null -eq $script:PrevAutoUpdate) { Remove-Item Env:\NETSCOOT_AUTOUPDATE -ErrorAction SilentlyContinue }
     else { $env:NETSCOOT_AUTOUPDATE = $script:PrevAutoUpdate }
+    if ($null -eq $script:PrevChannel) { Remove-Item Env:\NETSCOOT_CHANNEL -ErrorAction SilentlyContinue }
+    else { $env:NETSCOOT_CHANNEL = $script:PrevChannel }
 }
 
 Describe 'Update policy' {
@@ -65,5 +68,37 @@ Describe 'Update policy' {
         Mock -ModuleName Netscoot.Core Test-NetscootUpdate { $null }
         Update-Netscoot -Force -WarningAction SilentlyContinue | Out-Null
         Should -Invoke -ModuleName Netscoot.Core Test-NetscootUpdate -Times 1
+    }
+}
+
+Describe 'Update channel' {
+    BeforeEach { Remove-Item Env:\NETSCOOT_CHANNEL -ErrorAction SilentlyContinue }
+
+    It 'Get-NetscootUpdateChannel maps unset to Stable' {
+        $c = Get-NetscootUpdateChannel
+        $c.Channel | Should -Be 'Stable'
+        $c.Source | Should -Be 'Default'
+    }
+
+    It 'Get-NetscootUpdateChannel maps beta to Beta' {
+        $env:NETSCOOT_CHANNEL = 'beta'
+        (Get-NetscootUpdateChannel).Channel | Should -Be 'Beta'
+    }
+
+    It 'Get-NetscootUpdateChannel maps an unrecognized value to Stable' {
+        $env:NETSCOOT_CHANNEL = 'banana'
+        (Get-NetscootUpdateChannel).Channel | Should -Be 'Stable'
+    }
+
+    It 'Set-NetscootUpdateChannel -Scope Process round-trips Beta' {
+        (Set-NetscootUpdateChannel -Channel Beta -Scope Process -Confirm:$false).Channel | Should -Be 'Beta'
+        (Get-NetscootUpdateChannel).Channel | Should -Be 'Beta'
+        $env:NETSCOOT_CHANNEL | Should -Be 'beta'
+    }
+
+    It 'Set-NetscootUpdateChannel Stable removes the env var' {
+        $env:NETSCOOT_CHANNEL = 'beta'
+        (Set-NetscootUpdateChannel -Channel Stable -Scope Process -Confirm:$false).Channel | Should -Be 'Stable'
+        $env:NETSCOOT_CHANNEL | Should -BeNullOrEmpty
     }
 }

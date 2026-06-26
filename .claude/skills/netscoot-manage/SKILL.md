@@ -20,6 +20,7 @@ read-only analysis use `netscoot-analyze`.
 | Wipe my undo history for this repository | `Clear-NetscootJournal` |
 | Remove the `git netscoot` alias I registered earlier | `Unregister-NetscootGitAlias [-Scope Local\|Global\|System]` |
 | Force-check or install a newer netscoot release from GitHub | `Test-NetscootUpdate` / `Update-Netscoot` |
+| Opt the updater into (or out of) prerelease beta builds | `Set-NetscootUpdateChannel -Channel Beta \| Stable` / `Get-NetscootUpdateChannel` |
 
 ## Update policy
 
@@ -33,6 +34,12 @@ read-only analysis use `netscoot-analyze`.
 self-updates and centrally pin the version. A Machine-scope `Disabled` set by GPO/Intune is
 authoritative: `Update-Netscoot -Force` will REFUSE to override it. A user-scope `Disabled` can
 be overridden by `-Force` if the user explicitly wants to install anyway.
+
+`Set-NetscootUpdateChannel -Channel Beta` opts the updater into prerelease (beta) builds; `Stable`
+(the default) tracks only non-prerelease releases. `Get-NetscootUpdateChannel` reports the resolved
+channel and its source (it reads `NETSCOOT_CHANNEL` with the same Process/User/Machine precedence as
+the update policy). The channel is orthogonal to the policy: the policy decides whether the updater
+runs, the channel decides which releases it offers.
 
 ## Journal (undo history)
 

@@ -26,6 +26,10 @@ function Update-Netscoot {
         The GitHub repository to install from, in `owner/name` form. Defaults to the project
         repository.
 
+    .PARAMETER Channel
+        Which releases to consider: Stable or Beta (prerelease releases too). Defaults to the resolved
+        channel (Get-NetscootUpdateChannel); set Beta to track prerelease builds.
+
     .OUTPUTS
         Netscoot.Update - the record from Test-NetscootUpdate, so the decision is inspectable. Nothing on a failed check.
 
@@ -51,7 +55,9 @@ function Update-Netscoot {
     param(
         [switch]$Force,
         [ValidatePattern('^[^/]+/[^/]+$')]
-        [string]$Repository = 'kappasims/netscoot'
+        [string]$Repository = 'kappasims/netscoot',
+        [ValidateSet('Stable', 'Beta')]
+        [string]$Channel = (Get-NetscootUpdateChannel).Channel
     )
 
     # Policy kill-switch (GPO/Intune-friendly): refuse when the update policy is Disabled, so a
@@ -71,7 +77,7 @@ function Update-Netscoot {
         }
     }
 
-    $check = Test-NetscootUpdate -Repository $Repository
+    $check = Test-NetscootUpdate -Repository $Repository -Channel $Channel
     if (-not $check) { return }   # connection error already surfaced by Test-NetscootUpdate
 
     if (-not $check.UpdateAvailable -and -not $Force) {

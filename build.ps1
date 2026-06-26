@@ -45,6 +45,11 @@ param(
     [string]$ApiKey,
     # Release: the semver to stamp into every module manifest (keeps ModuleVersion == the tag).
     [string]$Version,
+    # Release: an optional prerelease label (e.g. 'beta1') for a prerelease cut. Gallery-safe: letters
+    # and digits only, no dots/hyphens. When set, the tag becomes vX.Y.Z-<label>, the umbrella manifest
+    # PSData.Prerelease is stamped, the CHANGELOG gate looks for [X.Y.Z-<label>], the GitHub release is
+    # marked --prerelease, and a publish never unlists prior (stable) versions.
+    [string]$Prerelease,
     # Release: also commit, tag vX.Y.Z, push, and create the GitHub release. Without it, Release
     # only stamps the manifests locally so you can review the bump before publishing.
     [switch]$Publish,
@@ -337,10 +342,18 @@ function Invoke-ReleaseTask {
     # ModuleVersion in every manifest is kept equal to the tag, so installed version == released tag.
     if (-not $Version) { throw "Release needs -Version, e.g. ./build.ps1 -Task Release -Version 1.2.0" }
     if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw "Version must be semver (x.y.z): '$Version'" }
-    $tag = "v$Version"
+    if ($Prerelease -and $Prerelease -notmatch '^[a-zA-Z0-9]+$') {
+        throw "Prerelease label must be Gallery-safe (letters/digits only, no dots/hyphens): '$Prerelease'"
+    }
+    # A prerelease cut tags vX.Y.Z-<label> and documents [X.Y.Z-<label>]; the ModuleVersion stamped
+    # into the manifests stays X.Y.Z (the Gallery composes the prerelease from PSData.Prerelease).
+    $versionLabel = if ($Prerelease) { "$Version-$Prerelease" } else { $Version }
+    $tag = "v$versionLabel"
 
     $branch = "$(& git -C $root rev-parse --abbrev-ref HEAD)".Trim()
-    if ($branch -ne 'develop') { throw "Run Release from develop (currently on '$branch'); master is fast-forwarded from develop." }
+    if (-not $Prerelease -and $branch -ne 'develop') {
+        throw "Run a stable Release from develop (currently on '$branch'); master is fast-forwarded from develop. A prerelease (-Prerelease) cuts from its own branch (e.g. 3.0-beta) and never touches master."
+    }
 
     if (-not $Publish) {
         # PREPARE on develop: stamp, gate locally, commit the bump, push so CI runs on that commit.
@@ -370,8 +383,8 @@ function Invoke-ReleaseTask {
         # release rather than an afterthought. Matches a "## [X.Y.Z]" heading (Keep a Changelog).
         $changelog = Join-Path $root 'CHANGELOG.md'
         if (-not (Test-Path $changelog)) { throw "CHANGELOG.md not found at $changelog; add it before releasing." }
-        if ([System.IO.File]::ReadAllText($changelog) -notmatch "(?m)^##\s*\[$([regex]::Escape($Version))\]") {
-            throw "CHANGELOG.md has no '## [$Version]' entry. Document $tag in CHANGELOG.md first."
+        if ([System.IO.File]::ReadAllText($changelog) -notmatch "(?m)^##\s*\[$([regex]::Escape($versionLabel))\]") {
+            throw "CHANGELOG.md has no '## [$versionLabel]' entry. Document $tag in CHANGELOG.md first."
         }
 
         $manifests = foreach ($m in ($modules + $umbrella)) { Join-Path $root (Join-Path 'src' (Join-Path $m "$m.psd1")) }
@@ -381,7 +394,23 @@ function Invoke-ReleaseTask {
             $new = [regex]::Replace($text, "(?m)^(\s*ModuleVersion\s*=\s*')[^']*(')", "`${1}$Version`$2")
             if ($new -cne $text) { [System.IO.File]::WriteAllText($mf, $new); $changed = $true; Write-Host "Stamped $Version into $(Split-Path -Leaf $mf)" -ForegroundColor Green }
         }
-        if (-not $changed) { throw "No manifest changed - already at $Version?" }
+
+        # For a prerelease cut, the umbrella manifest (only) carries the PSData.Prerelease label so the
+        # Gallery composes X.Y.Z-<label>. The engine manifests stay version-only. Update an existing
+        # Prerelease line if present; otherwise insert one inside the PSData block.
+        if ($Prerelease) {
+            $umbrellaManifest = Join-Path $root (Join-Path 'src' (Join-Path $umbrella "$umbrella.psd1"))
+            $text = [System.IO.File]::ReadAllText($umbrellaManifest)
+            if ($text -match "(?m)^(\s*Prerelease\s*=\s*')[^']*(')") {
+                $new = [regex]::Replace($text, "(?m)^(\s*Prerelease\s*=\s*')[^']*(')", "`${1}$Prerelease`$2")
+            } else {
+                # Insert a Prerelease entry right after the PSData hashtable opens.
+                $new = [regex]::Replace($text, "(?m)^(\s*PSData\s*=\s*@\{\s*)$", "`$1`r`n            Prerelease   = '$Prerelease'")
+            }
+            if ($new -cne $text) { [System.IO.File]::WriteAllText($umbrellaManifest, $new); $changed = $true; Write-Host "Stamped Prerelease '$Prerelease' into $(Split-Path -Leaf $umbrellaManifest)" -ForegroundColor Green }
+        }
+
+        if (-not $changed) { throw "No manifest changed - already at $versionLabel?" }
 
         # Static analysis is a hard gate here (must be installed AND clean), then the full suite.
         Write-Host 'Static analysis (release prerequisite)...' -ForegroundColor Cyan
@@ -393,20 +422,32 @@ function Invoke-ReleaseTask {
         & git -C $root add (($modules + $umbrella) | ForEach-Object { "src/$_/$_.psd1" })
         & git -C $root commit -m "release: $tag"
         if ($LASTEXITCODE -ne 0) { throw 'git commit failed' }
-        & git -C $root push origin develop
-        if ($LASTEXITCODE -ne 0) { throw 'git push develop failed' }
-        Write-Host "Prepared $tag on develop and pushed. Now wait for CI to pass on all platforms:" -ForegroundColor Yellow
+        & git -C $root push origin $branch
+        if ($LASTEXITCODE -ne 0) { throw "git push $branch failed" }
+        $finalizeArgs = "-Version $Version" + $(if ($Prerelease) { " -Prerelease $Prerelease" } else { '' })
+        Write-Host "Prepared $tag on $branch and pushed. Now wait for CI to pass on all platforms:" -ForegroundColor Yellow
         Write-Host '  - ci.yml (Windows, Windows PowerShell 5.1, PSScriptAnalyzer) runs on the push' -ForegroundColor Yellow
         Write-Host '  - run platforms.yml for Linux + macOS (tools/Invoke-PlatformCI.ps1)' -ForegroundColor Yellow
-        Write-Host "Then finalize:  ./build.ps1 -Task Release -Version $Version -Publish" -ForegroundColor Yellow
+        Write-Host "Then finalize:  ./build.ps1 -Task Release $finalizeArgs -Publish" -ForegroundColor Yellow
         return
     }
 
-    # FINALIZE: develop HEAD must be the prepared release commit; fast-forward master to it. The
-    # protected push to master is accepted only because the required CI checks passed on this commit.
+    # FINALIZE: the current branch's HEAD must be the prepared release commit.
     $headSubject = "$(& git -C $root log -1 --format=%s)".Trim()
-    if ($headSubject -ne "release: $tag") { throw "develop HEAD is '$headSubject', not 'release: $tag'. Run the prepare phase first (without -Publish)." }
+    if ($headSubject -ne "release: $tag") { throw "$branch HEAD is '$headSubject', not 'release: $tag'. Run the prepare phase first (without -Publish)." }
 
+    if ($Prerelease) {
+        # Prerelease: tag THIS branch's HEAD and cut a GitHub prerelease. No master fast-forward - a
+        # beta lives on its own branch (e.g. 3.0-beta) and must never reach the stable line.
+        & git -C $root tag -a $tag -m "netscoot $versionLabel"
+        & git -C $root push origin $tag
+        & gh release create $tag --title "netscoot $versionLabel" --generate-notes --prerelease
+        Write-Host "Cut prerelease $tag from $branch (master untouched). Publish to the Gallery with:  ./build.ps1 -Task Publish -ApiKey <key>" -ForegroundColor Green
+        return
+    }
+
+    # Stable: fast-forward master to the prepared develop commit. The protected push to master is
+    # accepted only because the required CI checks passed on this commit.
     & git -C $root fetch -q origin
     & git -C $root checkout master
     if ($LASTEXITCODE -ne 0) { throw 'git checkout master failed' }
@@ -414,9 +455,9 @@ function Invoke-ReleaseTask {
     if ($LASTEXITCODE -ne 0) { & git -C $root checkout develop; throw 'master could not fast-forward to develop (diverged?). Resolve, then re-run -Publish.' }
     & git -C $root push origin master
     if ($LASTEXITCODE -ne 0) { & git -C $root checkout develop; throw "Pushing master was rejected - the required CI checks are likely not green yet on $tag. Wait for CI, then re-run -Publish." }
-    & git -C $root tag -a $tag -m "netscoot $Version"
+    & git -C $root tag -a $tag -m "netscoot $versionLabel"
     & git -C $root push origin $tag
-    & gh release create $tag --title "netscoot $Version" --generate-notes
+    & gh release create $tag --title "netscoot $versionLabel" --generate-notes
     & git -C $root checkout develop
     Write-Host "Released $tag from master; back on develop." -ForegroundColor Green
 }
@@ -454,6 +495,17 @@ function Invoke-PublishTask {
         if (-not $ApiKey) {
             Write-Host 'No -ApiKey given: staged + validated only (dry run). Re-run with -ApiKey to publish.' -ForegroundColor Yellow
             return
+        }
+
+        # A prerelease publish must NEVER unlist the stable line: opting into a beta should not hide
+        # the stable versions everyone else installs. Detect a prerelease by the umbrella manifest's
+        # PSData.Prerelease and force keep-old-versions regardless of -KeepOldVersions.
+        $umbrellaText = [System.IO.File]::ReadAllText((Join-Path $pkg 'Netscoot.psd1'))
+        if ($umbrellaText -match "(?m)^\s*Prerelease\s*=\s*'[^']+'") {
+            if (-not $KeepOldVersions) {
+                Write-Host 'Prerelease publish: keeping all prior versions listed (a beta never unlists stable).' -ForegroundColor Cyan
+            }
+            $KeepOldVersions = $true
         }
 
         # Capture the versions already listed on the Gallery BEFORE publishing, so we know exactly

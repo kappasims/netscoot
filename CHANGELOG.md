@@ -6,10 +6,17 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [3.0.0-beta.1] - 2026-06-26
+## [3.0.0-beta1] - 2026-06-26
 
 Opt-in prerelease for stress-testing. `Install-Module Netscoot` stays on 2.6.x; opt in with
 `-AllowPrerelease` (module) or the `3.0-beta` plugin branch (see [BETA.md](BETA.md)).
+
+### Added
+
+- A **beta update channel**: `Set-NetscootUpdateChannel Beta` (and `Get-NetscootUpdateChannel`) opts
+  the in-product updater into prerelease releases. `Test-NetscootUpdate` and `Update-Netscoot` are now
+  prerelease-aware - on the Beta channel they track newer beta builds and the stable release by
+  SemVer precedence; the default Stable channel only ever offers non-prerelease releases.
 
 ### Changed
 

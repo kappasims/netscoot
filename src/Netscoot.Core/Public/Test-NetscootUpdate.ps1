@@ -27,6 +27,10 @@ function Test-NetscootUpdate {
         Run as the automatic check (for a SessionStart hook or other automation): proceed only when
         the update policy is Enabled, otherwise do nothing. Still read-only - it never updates.
 
+    .PARAMETER Channel
+        Which releases to consider: Stable (only non-prerelease releases) or Beta (prerelease releases
+        too, e.g. v3.0.0-beta1). Defaults to the resolved channel (Get-NetscootUpdateChannel).
+
     .OUTPUTS
         Netscoot.Update - none (writes a non-terminating error) when the release cannot be fetched,
         and nothing at all when -Auto is set but the update policy is not Enabled.
@@ -53,7 +57,9 @@ function Test-NetscootUpdate {
     param(
         [ValidatePattern('^[^/]+/[^/]+$')]
         [string]$Repository = 'kappasims/netscoot',
-        [switch]$Auto
+        [switch]$Auto,
+        [ValidateSet('Stable', 'Beta')]
+        [string]$Channel = (Get-NetscootUpdateChannel).Channel
     )
 
     # Automatic check: do nothing unless the update policy is Enabled. Manual is the default, so a
@@ -67,16 +73,49 @@ function Test-NetscootUpdate {
     $installed = $MyInvocation.MyCommand.Module.Version
     if (-not $installed) { $installed = (Get-Module Netscoot.Core | Select-Object -First 1).Version }
 
-    # /repos/<owner>/<name> - NOT /repositories/, which is the numeric-repo-id endpoint and 404s for
-    # an owner/name string (the 404 was swallowed and surfaced as a generic "could not get release",
-    # so every update check failed regardless of network state).
-    $uri = "https://api.github.com/repos/$Repository/releases/latest"
-    $release = $null
-    try {
-        $release = Invoke-RestMethod -Uri $uri -Headers @{ 'User-Agent' = 'Netscoot'; 'Accept' = 'application/vnd.github+json' } -ErrorAction Stop
-    } catch {
-        Write-Verbose "Release check request failed: $($_.Exception.Message)"   # reported by the null-check below
+    # The full installed identity is ModuleVersion + any umbrella PSData.Prerelease (e.g. 3.0.0 +
+    # 'beta1' -> 3.0.0-beta1), so a beta install correctly compares against newer betas / the stable.
+    # Guarded member access: the umbrella module may not be loaded (Core-only sessions), and StrictMode
+    # turns a missing PrivateData/PSData property into a terminating error otherwise.
+    $installedPre = $null
+    $umbrella = Get-Module Netscoot -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($umbrella -and $umbrella.PrivateData -is [hashtable] -and $umbrella.PrivateData.ContainsKey('PSData')) {
+        $psData = $umbrella.PrivateData['PSData']
+        if ($psData -is [hashtable] -and $psData.ContainsKey('Prerelease')) { $installedPre = $psData['Prerelease'] }
     }
+    $installedFull = "$installed"
+    if (-not [string]::IsNullOrWhiteSpace("$installedPre")) { $installedFull = "$installed-$installedPre" }
+
+    $release = $null
+    if ($Channel -eq 'Beta') {
+        # Beta tracks prereleases too. /releases returns an array (newest-first by publish date); pick
+        # the newest by SemVer precedence (Compare-NetscootSemVer), which correctly ranks prereleases.
+        $uri = "https://api.github.com/repos/$Repository/releases?per_page=20"
+        $list = $null
+        try {
+            $list = Invoke-RestMethod -Uri $uri -Headers @{ 'User-Agent' = 'Netscoot'; 'Accept' = 'application/vnd.github+json' } -ErrorAction Stop
+        } catch {
+            Write-Verbose "Release check request failed: $($_.Exception.Message)"   # reported by the null-check below
+        }
+        foreach ($r in @($list)) {
+            if ([string]::IsNullOrWhiteSpace("$($r.tag_name)")) { continue }
+            if ($null -eq $release -or (Compare-NetscootSemVer -Reference "$($r.tag_name)" -Difference "$($release.tag_name)") -gt 0) {
+                $release = $r
+            }
+        }
+    } else {
+        # Stable: /repos/<owner>/<name>/releases/latest - NOT /repositories/, which is the numeric-
+        # repo-id endpoint and 404s for an owner/name string (the 404 was swallowed and surfaced as a
+        # generic "could not get release", so every update check failed regardless of network state).
+        # /releases/latest never returns a prerelease, so Stable never sees beta tags.
+        $uri = "https://api.github.com/repos/$Repository/releases/latest"
+        try {
+            $release = Invoke-RestMethod -Uri $uri -Headers @{ 'User-Agent' = 'Netscoot'; 'Accept' = 'application/vnd.github+json' } -ErrorAction Stop
+        } catch {
+            Write-Verbose "Release check request failed: $($_.Exception.Message)"   # reported by the null-check below
+        }
+    }
+
     if ($null -eq $release -or [string]::IsNullOrWhiteSpace("$($release.tag_name)")) {
         $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
                 [System.Exception]::new("Could not get the latest release from $uri (offline, rate-limited, or no release yet)."),
@@ -88,13 +127,19 @@ function Test-NetscootUpdate {
     $latest = $null
     if ($tag -match '(\d+\.\d+\.\d+)') { $latest = [version]$Matches[1] }
 
-    $available = ($null -ne $latest -and $null -ne $installed -and $latest -gt $installed)
+    # SemVer-aware compare on the FULL identities (prerelease-inclusive), replacing the old core-only
+    # -gt. An update is available when the release outranks what's installed.
+    $available = $false
+    if ($null -ne $latest -and $null -ne $installed) {
+        $available = (Compare-NetscootSemVer -Reference $tag -Difference $installedFull) -gt 0
+    }
     $result = [pscustomobject]@{
         Installed       = $installed
         Latest          = $latest
         Tag             = $tag
         UpdateAvailable = $available
         Url             = "$($release.html_url)"
+        Channel         = $Channel
     }
 
     if ($available) {
