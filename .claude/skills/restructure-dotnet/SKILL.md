@@ -147,7 +147,11 @@ prerequisite is missing, tell the user the install command and let them run it.
 netscoot does not auto-update; cutting a release changes nothing on an installed machine until
 you update. Check with `Test-NetscootUpdate` (it compares the installed module to the latest
 GitHub release). Update in place with `Update-Netscoot` (no git); from a dev clone instead,
-`git pull` then `./build.ps1 -Task Install`. For automatic reminders, consider a
+`git pull` then `./build.ps1 -Task Install`. Updating from a release before 2.6.1 needs a one-time
+manual step: those versions shipped a broken release-lookup endpoint, so their own
+`Test-NetscootUpdate`/`Update-Netscoot` cannot reach the fix. Use `Update-Module Netscoot` (Gallery),
+the `git pull` clone path above, or re-run the installer; the in-box updater works again from 2.6.1
+on. For automatic reminders, consider a
 Claude Code SessionStart hook that runs `Test-NetscootUpdate -Auto` (gated: it checks only when
 the update policy is Enabled, and never updates); ask the user before adding it,
 since it edits their settings.json.
