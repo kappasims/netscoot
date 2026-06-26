@@ -1,6 +1,10 @@
 # Hoisted once: Test-PathBearingFile runs these per file across a whole-repository recursive scan,
 # so the patterns are built here rather than re-resolved on every call.
 $script:PbExcludeRegex = [regex]'(^|/)(\.git|bin|obj|\.vs|node_modules|test-subjects)/'
+# Binary / non-text file extensions skipped under -AllFiles, so the broad scan does not read (and
+# spuriously match inside) compiled output, archives, images, fonts, media, or key material. The
+# default (classified) scan never reaches these because none are path-bearing file kinds.
+$script:PbBinaryExtRegex = [regex]'(?i)\.(dll|exe|pdb|so|dylib|a|lib|o|obj|nupkg|snk|pfx|cer|crt|p12|key|png|jpe?g|gif|bmp|ico|webp|tiff?|pdf|zip|gz|tgz|tar|7z|rar|bz2|xz|mp[34]|wav|ogg|flac|avi|mov|mkv|ttf|otf|woff2?|eot|bin|dat|class|jar|wasm)$'
 $script:PbCiWorkflowRegex = [regex]'^\.github/workflows/.*\.ya?ml$'
 $script:PbCircleCiRegex = [regex]'^\.circleci/'
 $script:PbGitHooksRegex = [regex]'^\.githooks/'
@@ -38,11 +42,16 @@ function Test-PathBearingFile {
 }
 
 function Get-PathBearingFile {
-    # Discover the class of path-hardcoding files in a repository (see Test-PathBearingFile).
+    # Discover the candidate files for a path-reference scan. By default this is the CLASS of
+    # non-canonical path-hardcoding files (build/CI/hook/container - see Test-PathBearingFile). With
+    # -AllFiles it is EVERY text file under the repository (minus the excluded caches/vendor dirs and
+    # known binary kinds), for the "search literally everywhere" case where a hardcoded path may live
+    # in an ordinary source file the classifier deliberately skips.
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$RepositoryRoot,
-        [string[]]$AdditionalGlob = @()
+        [string[]]$AdditionalGlob = @(),
+        [switch]$AllFiles
     )
     $root = (Resolve-FullPath $RepositoryRoot).TrimEnd('\', '/')
     $rootLen = $root.Length
@@ -52,7 +61,14 @@ function Get-PathBearingFile {
     # -Force so dot-prefixed dirs (.github, .githooks) are traversed; on Unix they are
     # "hidden" and Get-ChildItem -Recurse skips them without it.
     $files = @(Get-ChildItem -LiteralPath $root -Recurse -File -Force -ErrorAction SilentlyContinue |
-            Where-Object { (Test-PathBearingFile -File $_ -RootLen $rootLen) -and -not (Test-PathUnderAny -Path $_.FullName -Dirs $nested) })
+            Where-Object {
+                if (Test-PathUnderAny -Path $_.FullName -Dirs $nested) { return $false }
+                if ($AllFiles) {
+                    $rel = $_.FullName.Substring($rootLen).TrimStart('\', '/').Replace('\', '/')
+                    return (-not $script:PbExcludeRegex.IsMatch($rel)) -and (-not $script:PbBinaryExtRegex.IsMatch($_.Name))
+                }
+                return (Test-PathBearingFile -File $_ -RootLen $rootLen)
+            })
 
     # .git/hooks/* active hooks live inside the excluded .git dir - add them explicitly.
     $gitHooks = Join-Path $root '.git/hooks'

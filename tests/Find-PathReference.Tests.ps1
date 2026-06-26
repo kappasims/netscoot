@@ -42,6 +42,34 @@ Describe 'Find-PathReference' {
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
+    It '-AllFiles scans ordinary source files the default classifier skips (e.g. src/Other.ps1)' {
+        $root = New-RefFixture
+        try {
+            $default = Find-PathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -WarningAction SilentlyContinue
+            ($default.File | ForEach-Object { Split-Path -Leaf $_ }) | Should -Not -Contain 'Other.ps1'
+
+            $all = Find-PathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -AllFiles -WarningAction SilentlyContinue
+            ($all.File | ForEach-Object { Split-Path -Leaf $_ }) | Should -Contain 'Other.ps1' -Because '-AllFiles searches every text file, including source the default scan skips'
+            # The original build/CI/hook hits are still present under -AllFiles.
+            ($all.File | ForEach-Object { Split-Path -Leaf $_ }) | Should -Contain 'build.ps1'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It '-AllFiles still excludes binary files and cache/vendor directories' {
+        $root = New-RefFixture
+        try {
+            # A binary file and a cached file under bin/, both containing the search path.
+            Set-Content -LiteralPath (Join-Path $root 'lib\Foo.dll') -Value 'lib/Foo.csproj inside a fake binary' -Encoding UTF8
+            New-Item -ItemType Directory -Path (Join-Path $root 'bin') -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $root (Join-Path 'bin' 'cached.txt')) -Value 'lib/Foo.csproj' -Encoding UTF8
+
+            $all = Find-PathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -AllFiles -WarningAction SilentlyContinue
+            $leaves = @($all.File | ForEach-Object { Split-Path -Leaf $_ })
+            $leaves | Should -Not -Contain 'Foo.dll'     -Because 'binary extensions are skipped even under -AllFiles'
+            $leaves | Should -Not -Contain 'cached.txt'  -Because 'cache/vendor dirs (bin/) are excluded even under -AllFiles'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
     It 'warns and emits objects with the common reference shape' {
         $root = New-RefFixture
         try {
