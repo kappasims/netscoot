@@ -330,15 +330,11 @@ re-running the installer) applies it in place. The Claude Code skills update sep
 plugin: `/plugin update netscoot` (after `/plugin marketplace add kappasims/netscoot` and
 `/plugin install netscoot@netscoot`). In a clone, `git pull` refreshes them in place.
 
-> Updating from a release before 2.6.1: the in-box `Test-NetscootUpdate` / `Update-Netscoot`
-> cannot fetch the fix, because the broken release endpoint they shipped with is exactly what 2.6.1
-> repairs. Update once by the path you installed from, then the in-box updater works again:
->
-> ```powershell
-> Update-Module Netscoot                       # PowerShell Gallery install (uses PowerShellGet, unaffected)
-> # clone:     git pull;  ./build.ps1 -Task Install
-> # installer: re-run install.ps1 from the latest release
-> ```
+> Updating from a release before 2.6.1: the in-box `Test-NetscootUpdate` / `Update-Netscoot` cannot
+> fetch the fix, since the broken endpoint they shipped with is exactly what 2.6.1 repairs. Update
+> once by the path you installed from - `Update-Module Netscoot` (Gallery), `git pull` then
+> `./build.ps1 -Task Install` (clone), or re-run `install.ps1` (installer) - then the in-box updater
+> works again.
 
 A single policy governs automatic behavior, set with `Set-NetscootUpdatePolicy` (or read with
 `Get-NetscootUpdatePolicy`):
@@ -420,12 +416,10 @@ Everything netscoot writes, and where:
   zip to the system temp dir and are the only actions that touch the network (`github.com` /
   `api.github.com`).
 - **A move** edits the target repository's solution/project files to reconcile it, through first-party
-  tooling (see [Guarantees](#netscoot)). It writes a per-repository undo journal to the per-user
-  data directory (`%LOCALAPPDATA%\netscoot`, `~/Library/Application Support/netscoot`, or
-  `~/.local/share/netscoot`), kept out of the working tree so `git status` stays clean, and snapshots
-  the files it edits to the system temp dir for rollback, removed when the move finishes. On by
-  default; see [Undoing](#undoing) to opt out, or [How the journal works](#how-the-journal-works)
-  to relocate it.
+  tooling (see [Guarantees](#netscoot)). It writes a per-repository undo journal to the per-user data
+  directory (out of the working tree, so `git status` stays clean; see
+  [How the journal works](#how-the-journal-works)) and snapshots the files it edits to the system temp
+  dir for rollback, removed when the move finishes. See [Undoing](#undoing) to opt out.
 - **Only when you ask:** `Register-NetscootGitAlias` adds one `alias.netscoot` line to your git
   config; `install.ps1 -NoJournal` or `Set-NetscootJournal` turns the journal off, and
   `Clear-NetscootJournal` deletes a repository's journal.
@@ -453,14 +447,11 @@ The full journaling precedence and how to turn it off live under
 [How the journal works](#how-the-journal-works).
 
 > [!NOTE]
-> **For sysadmins.** The update policy is Manual by default, so nothing checks or
-> updates on its own; set `NETSCOOT_AUTOUPDATE` (Group Policy / Intune) to `false` to force Disabled
-> fleet-wide or `true` for Enabled. A machine-scope Disabled blocks `Update-Netscoot` and `-Force`
-> cannot override it. See [Updating](#updating). Journaling
-> is controllable per repository or globally
-> (`git config [--global] netscoot.journal`), and the `NETSCOOT_JOURNAL` env var trumps that setting
-> so you can force the choice fleet-wide; the journal sits in the standard per-user data dir,
-> relocatable via `NETSCOOT_JOURNAL_HOME`.
+> **For sysadmins.** Both controls are fleet-settable. Set `NETSCOOT_AUTOUPDATE` via Group Policy /
+> Intune to force the update policy (`false` = Disabled, which blocks `Update-Netscoot` machine-wide
+> and `-Force` cannot override; `true` = Enabled); see [Updating](#updating). Journaling is a git
+> setting (`git config [--global] netscoot.journal`) that the `NETSCOOT_JOURNAL` env var overrides
+> fleet-wide; see [Turning the journal off](#turning-the-journal-off).
 
 Contributing / building from source: see [CONTRIBUTING.md](CONTRIBUTING.md).
 
