@@ -318,6 +318,16 @@ Otherwise `Test-NetscootUpdate` checks GitHub for a newer release and `Update-Ne
 re-running the installer) applies it in place. The Claude Code skills are separate files: Refresh
 them with `git pull` in a clone, or re-sync `.claude/skills` if installed globally.
 
+> Updating from a release before 2.6.1: the in-box `Test-NetscootUpdate` / `Update-Netscoot`
+> cannot fetch the fix, because the broken release endpoint they shipped with is exactly what 2.6.1
+> repairs. Update once by the path you installed from, then the in-box updater works again:
+>
+> ```powershell
+> Update-Module Netscoot                       # PowerShell Gallery install (uses PowerShellGet, unaffected)
+> # clone:     git pull;  ./build.ps1 -Task Install
+> # installer: re-run install.ps1 from the latest release
+> ```
+
 A single policy governs automatic behavior, set with `Set-NetscootUpdatePolicy` (or read with
 `Get-NetscootUpdatePolicy`):
 

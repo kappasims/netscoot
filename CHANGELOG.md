@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.6.1] - 2026-06-26
+
 ### Fixed
 
 - `Test-NetscootUpdate`, `Update-Netscoot`, and `install.ps1` now reach the correct GitHub release
@@ -258,7 +260,8 @@ See the release notes for the full pull-request list.
 
 DotnetMove 1.x history predates the rename; see the legacy DotnetMove releases.
 
-[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.6.0...HEAD
+[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.6.1...HEAD
+[2.6.1]: https://github.com/kappasims/netscoot/compare/v2.6.0...v2.6.1
 [2.6.0]: https://github.com/kappasims/netscoot/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/kappasims/netscoot/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/kappasims/netscoot/compare/v2.3.2...v2.4.0
