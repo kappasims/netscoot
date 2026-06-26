@@ -57,12 +57,15 @@ loads Shared first, then each available engine, with `-Global` so all their comm
 together.
 
 - `NetscootShared`: cross-platform path/git/MSBuild/solution helpers used by the engines. Not
-  imported directly. **Naming asymmetry on purpose**: the public engines all use `Netscoot.<X>`,
-  while the internal helpers module is `NetscootShared` (no dot), so `Get-Command -Module Netscoot.*`
-  returns just the public engine surface (30 cmdlets) and never the 54 internal helpers. The
-  alternative would be `Get-Command -Module <explicit-list>` every time, since `-Module Netscoot*`
-  (no literal dot) still matches `NetscootShared` because the wildcard `*` matches the missing dot.
-  Pick the right query: `Netscoot.*` for the public surface, `NetscootShared` to opt-in to plumbing.
+  imported directly. The umbrella owns and re-exports its cmdlets, so the canonical public-surface
+  query is the natural one: `Get-Command -Module Netscoot` returns exactly the 31 public cmdlets.
+  **Naming asymmetry, still on purpose**: the public engines all use `Netscoot.<X>` while the
+  internal helpers module is `NetscootShared` (no dot), so the literal-dot wildcard
+  `Get-Command -Module Netscoot.*` also returns just the public surface and never the 58 internal
+  helpers. Avoid the trailing-star `Get-Command -Module Netscoot*` (no literal dot): the `*` matches
+  the missing dot, so it over-matches `NetscootShared` and the per-engine duplicates. Pick the right
+  query: `-Module Netscoot` (or `Netscoot.*`) for the public surface, `-Module NetscootShared` to
+  opt in to plumbing.
 - `Netscoot.Core`: cross-platform (PowerShell 7 and Windows PowerShell 5.1). The .NET and
   PowerShell engines, the `Invoke-Netscoot` dispatcher, and the utilities.
 - `Netscoot.Unity`: cross-platform Unity engine.
