@@ -6,6 +6,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [3.0.0-beta.1] - 2026-06-26
+
+Opt-in prerelease for stress-testing. `Install-Module Netscoot` stays on 2.6.x; opt in with
+`-AllowPrerelease` (module) or the `3.0-beta` plugin branch (see [BETA.md](BETA.md)).
+
 ### Changed
 
 - **BREAKING (3.0):** five public cmdlets gained the `Netscoot` brand noun so their names no longer

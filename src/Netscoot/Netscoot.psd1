@@ -1,6 +1,6 @@
 @{
     RootModule           = 'Netscoot.psm1'
-    ModuleVersion        = '2.6.3'
+    ModuleVersion        = '3.0.0'
     GUID                 = '917ef9d9-9117-4ee4-a07f-eb1c1902b9d6'
     Author               = 'kappasims'
     Description          = 'Move/restructure .NET projects (and PowerShell, Unity, native C++) from the command line without breaking references. A single bundled package: Import-Module Netscoot loads the .NET/PowerShell and Unity engines everywhere, and the native C++ (.vcxproj) engine on Windows. Independent community project; not affiliated with or endorsed by Microsoft.'
@@ -66,6 +66,10 @@
             ProjectUri   = 'https://github.com/kappasims/netscoot'
             LicenseUri   = 'https://github.com/kappasims/netscoot/blob/master/LICENSE'
             ReleaseNotes = 'See https://github.com/kappasims/netscoot/releases'
+            # 3.0 ships as an opt-in PRERELEASE while it is stress-tested: `Install-Module Netscoot`
+            # stays on 2.6.x stable; `-AllowPrerelease` opts into this build. Remove this line to
+            # promote 3.0.0 to stable. (ModuleVersion stays 3.0.0; the Gallery shows 3.0.0-beta1.)
+            Prerelease   = 'beta1'
         }
     }
 }
