@@ -34,18 +34,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run PSScriptAnalyzer
-        uses: microsoft/psscriptanalyzer-action@6b2948b1944407914a58661c49941824d149734f
-        with:
-          # Check https://github.com/microsoft/action-psscriptanalyzer for more info about the options.
-          # The below set up runs PSScriptAnalyzer to your entire repository and runs some basic security rules.
-          # Use a POSIX path: this runs on ubuntu-latest, where the starter's Windows-style ".\" matches
-          # nothing and the scan silently sees zero files.
-          path: .
-          recurse: true
-          # Include your own basic security rules. Removing this option will run all the rules
-          includeRule: '"PSAvoidGlobalAliases", "PSAvoidUsingConvertToSecureStringWithPlainText"'
-          output: results.sarif
+      # Inline equivalent of microsoft/psscriptanalyzer-action: install PSScriptAnalyzer +
+      # ConvertToSARIF, run the security rules over the repo, emit SARIF. Done inline (not via the
+      # action) so the module installs can RETRY - a transient PowerShell Gallery hiccup on the
+      # ConvertToSARIF install used to fail the whole scheduled scan (and email a false alarm), and
+      # an install failure means the scan silently does not run. The rules and output match what the
+      # action produced. Use a POSIX path ('.'): the repo root on ubuntu-latest.
+      - name: Run PSScriptAnalyzer (security rules) -> SARIF
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          function Install-ModuleWithRetry([string]$Name) {
+            for ($i = 1; $i -le 5; $i++) {
+              try {
+                Install-Module -Name $Name -Scope CurrentUser -Force -AllowClobber -Repository PSGallery -ErrorAction Stop
+                return
+              } catch {
+                Write-Host "::warning::Install of $Name failed (attempt $i/5): $($_.Exception.Message)"
+                if ($i -eq 5) { throw }
+                Start-Sleep -Seconds (5 * $i)
+              }
+            }
+          }
+          Install-ModuleWithRetry -Name PSScriptAnalyzer
+          Install-ModuleWithRetry -Name ConvertToSARIF
+          Import-Module PSScriptAnalyzer
+          Import-Module ConvertToSARIF
+          $rules = @('PSAvoidGlobalAliases', 'PSAvoidUsingConvertToSecureStringWithPlainText')
+          Invoke-ScriptAnalyzer -Path . -Recurse -IncludeRule $rules |
+            ConvertTo-SARIF -FilePath results.sarif
 
       # Upload the SARIF file generated in the previous step
       - name: Upload SARIF results file
