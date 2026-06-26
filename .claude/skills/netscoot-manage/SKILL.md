@@ -40,8 +40,9 @@ The move journal is a per-user, per-repository file. `Set-NetscootJournal -Enabl
 journaling off for the current repository (subsequent moves are not undoable); use `-Global` to
 default-off across every repository unless re-enabled. `Clear-NetscootJournal` wipes the
 journal file for this repository (does NOT reverse any moves; just removes the undo record).
-The journal location is shown by `Get-MoveJournalPath` if exposed in the current netscoot version,
-or by inspecting `$env:NETSCOOT_JOURNAL_HOME`.
+The journal lives in a per-user data directory (`%LOCALAPPDATA%\netscoot` on Windows,
+`~/Library/Application Support/netscoot` on macOS, `~/.local/share/netscoot` on Linux), one file
+per repository; set `$env:NETSCOOT_JOURNAL_HOME` to relocate the store.
 
 ## Git verb
 

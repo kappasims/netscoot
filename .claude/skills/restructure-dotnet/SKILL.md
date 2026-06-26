@@ -36,6 +36,9 @@ To understand a repository before touching it, use these; do not parse solution/
 - `Find-PathReference` - build/CI/hook scripts that hardcode a path no move reconciles.
 - `Resolve-MoveEngine` - which engine a given path classifies to.
 - `Get-NetscootCapability` - whether git and dotnet are present, plus the platform.
+- `Test-EditorSolutionGuard` - after consolidating to a single `.slnx`, checks that VS Code's C#
+  Dev Kit will not silently re-mint a legacy `.sln` next to it (inspects `.vscode/settings.json`
+  and `.gitignore`; `-Strict` makes it CI-failing). Run it whenever you migrate `.sln` -> `.slnx`.
 
 To resolve a divergence that `Test-SolutionConsistency` reports, run `Sync-Solution` (it adds each
 project to the solutions missing it; preview with `-WhatIf`), or add it by hand with
