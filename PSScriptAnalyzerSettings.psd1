@@ -13,7 +13,7 @@
         'PSUseShouldProcessForStateChangingFunctions'
 
         # Several internal helpers legitimately return collections (Find-Solutions,
-        # Get-ImportPaths, Get-AsmdefReferencers, ...) and Repair-SolutionReferences is an
+        # Get-ImportPaths, Get-AsmdefReferencers, ...) and Repair-NetscootSolutionReferences is an
         # established plural name. Pluralization here is intentional.
         'PSUseSingularNouns'
 

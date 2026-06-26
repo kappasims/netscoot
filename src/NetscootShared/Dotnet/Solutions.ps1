@@ -3,8 +3,8 @@
 $script:SlnProjectEntryRegex = [regex]'^\s*Project\("\{[^}]+\}"\)\s*=\s*"[^"]*",\s*"([^"]+)",\s*"\{[^}]+\}"'
 $script:SlnProjectFullRegex = [regex]'^\s*Project\("\{([^}]+)\}"\)\s*=\s*"([^"]*)",\s*"([^"]+)",\s*"\{([^}]+)\}"'
 # Project-file extensions that count as a "project" for membership comparison and sync. Includes
-# managed (cs/fs/vb), native (vcx), and PowerShell (pss). Get-SolutionInventory shows pssproj rows;
-# Test-SolutionConsistency / Sync-Solution must compare them too, otherwise the inventory and the
+# managed (cs/fs/vb), native (vcx), and PowerShell (pss). Get-NetscootSolutionInventory shows pssproj rows;
+# Test-NetscootSolutionConsistency / Sync-NetscootSolution must compare them too, otherwise the inventory and the
 # consistency check disagree (a pssproj in slnx but not sln reads as "all solutions agree").
 $script:ProjectFileExtRegex = [regex]'\.(cs|fs|vb|vcx|pss)proj$'
 
@@ -218,7 +218,7 @@ function Get-Workspace {
     #
     # Solutions are parsed eagerly (cheap, and every read path needs them). The project glob and the
     # reference index are built LAZILY on first access (Get-WorkspaceProjectFiles / *Refs /
-    # *ConsumingProjects), so a solution-only cmdlet (Test-SolutionConsistency, Sync-Solution) never
+    # *ConsumingProjects), so a solution-only cmdlet (Test-NetscootSolutionConsistency, Sync-NetscootSolution) never
     # pays to glob projects or parse their references, while a cmdlet that needs them pays once.
     #
     #   Root        - resolved repository root.

@@ -167,8 +167,8 @@ try {
     $r4 = New-AppLibRepo; $sandboxes.Add($r4)
     Add-Scenario -Title 'Inspect: solution consistency' `
         -Narrative 'Read-only check across solutions.' `
-        -CommandText 'Test-SolutionConsistency -RepositoryRoot .' `
-        -Command { Test-SolutionConsistency -RepositoryRoot $r4 }
+        -CommandText 'Test-NetscootSolutionConsistency -RepositoryRoot .' `
+        -Command { Test-NetscootSolutionConsistency -RepositoryRoot $r4 }
 
     # 7. Repair: report-only on a hand-moved project
     $r5 = New-AppLibRepo; $sandboxes.Add($r5)
@@ -176,13 +176,13 @@ try {
     Move-Item -LiteralPath (Join-Path $r5 (Join-Path 'src' 'Lib')) -Destination (Join-Path $r5 (Join-Path 'libs' 'Lib'))
     Add-Scenario -Title 'Repair: report dangling entries' `
         -Narrative 'Someone moved Lib by hand; this shows what netscoot found, read-only.' `
-        -CommandText 'Repair-SolutionReferences -RepositoryRoot .' `
-        -Command { Repair-SolutionReferences -RepositoryRoot $r5 }
+        -CommandText 'Repair-NetscootSolutionReferences -RepositoryRoot .' `
+        -Command { Repair-NetscootSolutionReferences -RepositoryRoot $r5 }
 
     Add-Scenario -Title 'Repair: fix them' `
         -Narrative 'The same repo, now repaired with -Fix.' `
-        -CommandText 'Repair-SolutionReferences -RepositoryRoot . -Fix' `
-        -Command { Repair-SolutionReferences -RepositoryRoot $r5 -Fix -Confirm:$false }
+        -CommandText 'Repair-NetscootSolutionReferences -RepositoryRoot . -Fix' `
+        -Command { Repair-NetscootSolutionReferences -RepositoryRoot $r5 -Fix -Confirm:$false }
 
     $rendered = $script:sb.ToString()
     Set-Content -LiteralPath $OutFile -Value $rendered -Encoding UTF8

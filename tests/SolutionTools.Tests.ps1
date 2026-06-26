@@ -8,7 +8,7 @@ BeforeAll {
     # canonical /private/var/... form on macOS. Without that, dotnet sln add cannot compute a
     # relative path (cwd canonical, arg in /var/... symlink form) and stores an ABSOLUTE /var/...
     # path inside .slnx; that absolute path then survives the copy to a canonical per-test root and
-    # Sync-Solution fails with a path-mismatch on `dotnet sln add`.
+    # Sync-NetscootSolution fails with a path-mismatch on `dotnet sln add`.
     function New-TempDir { New-TempRoot -Prefix 'netscoot_st' }
 
     function New-InventoryFixture {
@@ -57,11 +57,11 @@ BeforeAll {
     }
 }
 
-Describe 'Get-SolutionInventory' {
+Describe 'Get-NetscootSolutionInventory' {
     It 'surfaces non-CLI projects, folders, items, and unreferenced projects' {
         $root = New-InventoryFixture
         try {
-            $inv = Get-SolutionInventory -RepositoryRoot $root
+            $inv = Get-NetscootSolutionInventory -RepositoryRoot $root
             ($inv | Where-Object { $_.Kind -eq 'Project' -and $_.Type -eq 'pssproj' }).Name | Should -Be 'Tools.pssproj'
             ($inv | Where-Object { $_.Kind -eq 'SolutionFolder' }).Name | Should -Match 'Solution Items'
             ($inv | Where-Object { $_.Kind -eq 'SolutionItem' }).Name | Should -Be 'README.md'
@@ -72,11 +72,11 @@ Describe 'Get-SolutionInventory' {
     }
 }
 
-Describe 'Sync-Solution' {
+Describe 'Sync-NetscootSolution' {
     It 'previews additions with -WhatIf and changes nothing' {
         $root = New-DivergentFixture
         try {
-            Sync-Solution -RepositoryRoot $root -WhatIf | Out-Null
+            Sync-NetscootSolution -RepositoryRoot $root -WhatIf | Out-Null
             (& dotnet sln (Join-Path $root 'Partial.slnx') list) -join "`n" | Should -Not -Match 'Lib[\\/]Lib\.csproj'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -84,11 +84,11 @@ Describe 'Sync-Solution' {
     It 'adds the missing project so membership becomes uniform' {
         $root = New-DivergentFixture
         try {
-            $added = Sync-Solution -RepositoryRoot $root -Confirm:$false
+            $added = Sync-NetscootSolution -RepositoryRoot $root -Confirm:$false
             ($added.Added -join ';') | Should -Match 'Lib[\\/]Lib\.csproj'
             (& dotnet sln (Join-Path $root 'Partial.slnx') list) -join "`n" | Should -Match 'Lib[\\/]Lib\.csproj'
             # Now consistent.
-            Test-SolutionConsistency -RepositoryRoot $root -WarningVariable w -WarningAction SilentlyContinue | Should -BeNullOrEmpty
+            Test-NetscootSolutionConsistency -RepositoryRoot $root -WarningVariable w -WarningAction SilentlyContinue | Should -BeNullOrEmpty
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 }

@@ -40,7 +40,7 @@ Describe 'Netscoot umbrella' {
         # engines are imported nested and their functions are re-exported, so Netscoot owns them.
         @(Get-Command -Module Netscoot -CommandType Function).Count | Should -BeGreaterThan 0
         (Get-Module Netscoot).ExportedCommands.Count | Should -BeGreaterThan 0
-        (Get-Command Get-SolutionInventory).Source | Should -Be 'Netscoot'
+        (Get-Command Get-NetscootSolutionInventory).Source | Should -Be 'Netscoot'
         (Get-Command Move-DotnetProject).Source | Should -Be 'Netscoot'
     }
 

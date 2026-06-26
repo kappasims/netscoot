@@ -101,8 +101,8 @@ Move-PowerShell        -Path ./tools/Mayo -Destination ./modules/Mayo
 Move-NativeProject     -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo   # Windows
 
 # Validate without moving:
-Repair-SolutionReferences -RepositoryRoot . -Fix -WhatIf
-Test-SolutionConsistency  -RepositoryRoot .
+Repair-NetscootSolutionReferences -RepositoryRoot . -Fix -WhatIf
+Test-NetscootSolutionConsistency  -RepositoryRoot .
 ```
 
 An opt-in alias gives `git netscoot`, a single verb that forwards to `Invoke-Netscoot`. It sets one
@@ -188,7 +188,7 @@ Every move supports `-WhatIf`/`-Confirm`; `-Force` enables the no-git fallback.
 ### Repairing
 
 It can also fix a repository whose solution entries or `<ProjectReference>`s were left dangling by a
-move done outside netscoot, without moving anything itself. `Repair-SolutionReferences` finds
+move done outside netscoot, without moving anything itself. `Repair-NetscootSolutionReferences` finds
 entries pointing at a project that no longer exists at the recorded path and reports each as
 relocatable, missing, or ambiguous (read-only by default).
 
@@ -198,7 +198,7 @@ relocatable, missing, or ambiguous (read-only by default).
 | `-Fix` | re-point each relocatable entry at the project's new location |
 | `-Prune` | remove entries whose project is gone for good |
 
-To resolve the membership divergence that `Test-SolutionConsistency` reports, `Sync-Solution` adds
+To resolve the membership divergence that `Test-NetscootSolutionConsistency` reports, `Sync-NetscootSolution` adds
 each project to the solutions missing it (via `dotnet sln add`), making membership uniform. It only
 adds, never removes; preview with `-WhatIf` first.
 
@@ -208,9 +208,9 @@ netscoot can be used purely to inspect a repository. These commands are read-onl
 
 | Command | Reports |
 | :--- | :--- |
-| `Test-SolutionConsistency` | projects with divergent solution membership across solutions |
-| `Get-SolutionInventory` | full solution contents beyond `dotnet sln list` (non-CLI types like `.pssproj`, folders, items) + projects in no solution |
-| `Find-PathReference` | path references in build/CI/hook scripts that no move reconciles |
+| `Test-NetscootSolutionConsistency` | projects with divergent solution membership across solutions |
+| `Get-NetscootSolutionInventory` | full solution contents beyond `dotnet sln list` (non-CLI types like `.pssproj`, folders, items) + projects in no solution |
+| `Find-NetscootPathReference` | path references in build/CI/hook scripts that no move reconciles |
 | `Test-UnityMetaIntegrity` | missing or orphan Unity `.meta` |
 | `Resolve-MoveEngine` | which engine a given path classifies to |
 | `Get-NetscootCapability` | whether git and dotnet are present, plus the platform |
@@ -223,7 +223,7 @@ Each returns objects, so results are filterable and scriptable, and print as a t
 When a refactor, rename, or move appears done, run
 
 ```powershell
-Find-PathReference -Path <old identifier or path>
+Find-NetscootPathReference -Path <old identifier or path>
 ```
 
 over the OLD identifier (the moved file's old path, a renamed type, an old DLL name in build
@@ -236,26 +236,26 @@ with no warning is the all-clear.
 
 This is the idiomatic "did I miss anything" pattern. It is what `netscoot-analyze` routes to when
 an AI agent is asked "is the rename done" / "any stragglers" / "where else does X appear" / "what
-would break." Prefer it over an ad-hoc `Grep`: `Find-PathReference` knows which file kinds are
+would break." Prefer it over an ad-hoc `Grep`: `Find-NetscootPathReference` knows which file kinds are
 candidates, applies a confidence rating, and excludes paths the move machinery already reconciled.
 
 <details>
 <summary>Sample output</summary>
 
 ```text
-PS> Test-SolutionConsistency
+PS> Test-NetscootSolutionConsistency
 Project            PresentIn         AbsentFrom
 -------            ---------         ----------
 src/Lib/Lib.csproj App.sln, Api.sln  Tools.sln
 
-PS> Get-SolutionInventory
+PS> Get-NetscootSolutionInventory
 Name          Kind                Type   Solution Path
 ----          ----                ----   -------- ----
 Lib.csproj    Project             csproj App.sln  src/Lib/Lib.csproj
 build         SolutionFolder             App.sln
 Legacy.csproj UnreferencedProject csproj (none)   tools/Legacy/Legacy.csproj
 
-PS> Find-PathReference -Path ./src/Lib/Lib.csproj
+PS> Find-NetscootPathReference -Path ./src/Lib/Lib.csproj
 File                     Line Confidence Text
 ----                     ---- ---------- ----
 .github/workflows/ci.yml   31 High       dotnet build src/Lib/Lib.csproj
@@ -283,7 +283,7 @@ A successful undo removes that entry from the journal, and the reversing move is
 so repeated `-Last` calls walk the history backwards rather than toggling one move on and off. The
 bulk modes reverse newest-first, so each step re-reconciles after the moves that followed it are gone.
 
-Undo applies to the move commands. `Sync-Solution` and `Repair-SolutionReferences` are not journaled;
+Undo applies to the move commands. `Sync-NetscootSolution` and `Repair-NetscootSolutionReferences` are not journaled;
 preview either with `-WhatIf` first if you want to (as with any command here, it is optional).
 
 ```powershell
@@ -487,9 +487,9 @@ Read-only audits. These change nothing.
 | :--- | :--- |
 | [Resolve-MoveEngine](#resolve-moveengine) | Classify a path to the reconciliation engine that should move it: dotnet, native, unity, ps-script, ps-module, or unknown. |
 | [Get-NetscootCapability](#get-netscootcapability) | Resolve Netscoot's external-tool capabilities (git, dotnet) and platform. |
-| [Test-SolutionConsistency](#test-solutionconsistency) | Report projects whose membership diverges across the solution files in a repository (present in some solutions but absent from others). |
-| [Get-SolutionInventory](#get-solutioninventory) | List the full contents of every solution in a repository (projects of any type, solution folders, and solution items), plus on-disk projects that no solution references. |
-| [Find-PathReference](#find-pathreference) | Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party tool reconciles. |
+| [Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) | Report projects whose membership diverges across the solution files in a repository (present in some solutions but absent from others). |
+| [Get-NetscootSolutionInventory](#get-netscootsolutioninventory) | List the full contents of every solution in a repository (projects of any type, solution folders, and solution items), plus on-disk projects that no solution references. |
+| [Find-NetscootPathReference](#find-netscootpathreference) | Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party tool reconciles. |
 | [Test-UnityMetaIntegrity](#test-unitymetaintegrity) | Report Unity `.meta` integrity problems under a root: Assets missing a `.meta`, and orphan `.meta` files whose asset is gone. |
 | [Test-EditorSolutionGuard](#test-editorsolutionguard) | Check that a repository's editor configuration will keep a `.slnx` consolidation durable - i.e. |
 
@@ -501,8 +501,8 @@ Reconcile a repository, undo moves, and control the journal.
 
 | Command | What it does |
 | :--- | :--- |
-| [Repair-SolutionReferences](#repair-solutionreferences) | Scan a repository for broken solution membership and dangling ProjectReferences and repair them by re-pointing each entry at the project's new location. |
-| [Sync-Solution](#sync-solution) | Resolve solution-membership divergence by adding each project to the solutions that are missing it, so every solution in the repository lists the same projects. |
+| [Repair-NetscootSolutionReferences](#repair-netscootsolutionreferences) | Scan a repository for broken solution membership and dangling ProjectReferences and repair them by re-pointing each entry at the project's new location. |
+| [Sync-NetscootSolution](#sync-netscootsolution) | Resolve solution-membership divergence by adding each project to the solutions that are missing it, so every solution in the repository lists the same projects. |
 
 ##### Undo & journal
 
@@ -587,7 +587,7 @@ Clear-NetscootJournal -WhatIf
 
 ---
 
-#### Find-PathReference
+#### Find-NetscootPathReference
 
 Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party
 tool reconciles. Report-only.
@@ -595,7 +595,7 @@ tool reconciles. Report-only.
 ##### Syntax
 
 ```powershell
-Find-PathReference [-Path] <string> [-RepositoryRoot <string>] [-AdditionalGlob <string[]>] [-AllFiles] [<CommonParameters>]
+Find-NetscootPathReference [-Path] <string> [-RepositoryRoot <string>] [-AdditionalGlob <string[]>] [-AllFiles] [<CommonParameters>]
 ```
 
 Moving a project/folder breaks any path hardcoded in `build.ps1`, CI YAML, git hooks, tools scripts,
@@ -637,16 +637,16 @@ Netscoot.PathReference
 
 ```powershell
 # Build/CI/hook lines that hardcode the path (report-only)
-Find-PathReference -Path ./lib/Tarragon.csproj
+Find-NetscootPathReference -Path ./lib/Tarragon.csproj
 
 # Scan the old path after a move to find what still points at it
-Find-PathReference -Path ./libs/Tarragon/Tarragon.csproj
+Find-NetscootPathReference -Path ./libs/Tarragon/Tarragon.csproj
 
 # Widen the candidate set with extra repository-relative globs
-Find-PathReference -Path ./lib/Tarragon.csproj -AdditionalGlob 'deploy/*.sh','*.psake.ps1'
+Find-NetscootPathReference -Path ./lib/Tarragon.csproj -AdditionalGlob 'deploy/*.sh','*.psake.ps1'
 
 # Search EVERY text file (not just build/CI/hook files) for the reference
-Find-PathReference -Path ./lib/Tarragon.csproj -AllFiles
+Find-NetscootPathReference -Path ./lib/Tarragon.csproj -AllFiles
 ```
 
 [Back to Command reference](#command-reference)
@@ -698,6 +698,70 @@ Get-NetscootCapability
 
 ---
 
+#### Get-NetscootSolutionInventory
+
+List the full contents of every solution in a repository (projects of any type, solution folders, and solution items),
+plus on-disk projects that no solution references.
+
+##### Syntax
+
+```powershell
+Get-NetscootSolutionInventory [[-RepositoryRoot] <string>] [<CommonParameters>]
+```
+
+Where [Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) compares membership and
+[Repair-NetscootSolutionReferences](#repair-netscootsolutionreferences) finds dangling entries, this gives the complete
+picture without reading the files by hand. It parses each `.sln/.slnx` directly (not via `dotnet sln list`, which only
+returns CLI-buildable projects), so it also surfaces non-CLI project types (e.g. .pssproj), solution folders, and loose
+solution items. It then compares against the projects on disk and flags any that are in no solution at all. Read-only:
+One record per item, so you can group, filter, or format it however you like.
+
+##### Parameters
+
+| Name | Type | Required | Pipeline | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `‑RepositoryRoot` | String | false | true (ByValue) | Root to scan. Accepts pipeline input: a path string, or a file/directory item from Get-Item / Get-ChildItem. Defaults to the enclosing git repository root. Nested git worktrees are skipped. |
+
+##### Output
+
+Returns zero or more [Netscoot.SolutionItem](#netscootsolutionitem), collected as an array.
+One per item.
+
+```text
+Netscoot.SolutionItem
+  Solution  string                     # repository-relative, or '(none)' for an unreferenced project
+  Kind      Netscoot.SolutionItemKind  # enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
+  Type      string                     # project extension without the dot, else empty
+  Name      string
+  Path      string                     # as stored in the solution, or repository-relative
+```
+
+##### Examples
+
+```powershell
+# Everything across all solutions, plus projects in none
+Get-NetscootSolutionInventory -RepositoryRoot . | Format-Table -AutoSize
+
+# Only the projects on disk that no solution references
+Get-NetscootSolutionInventory | Where-Object Kind -eq 'UnreferencedProject'
+
+# Only loose solution items (e.g. a README in a solution folder)
+Get-NetscootSolutionInventory | Where-Object Kind -eq 'SolutionItem'
+
+# Kind is the [Netscoot.SolutionItemKind] enum, so this also works
+Get-NetscootSolutionInventory | Where-Object Kind -eq ([Netscoot.SolutionItemKind]::UnreferencedProject)
+```
+
+##### Related
+
+[ [Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) |
+[Sync-NetscootSolution](#sync-netscootsolution) |
+[Repair-NetscootSolutionReferences](#repair-netscootsolutionreferences) ]
+
+[Back to Command reference](#command-reference)
+
+---
+
 #### Get-NetscootUpdatePolicy
 
 Report the effective auto-update policy and where it was resolved from.
@@ -740,69 +804,6 @@ Get-NetscootUpdatePolicy
 
 [ [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) | [Test-NetscootUpdate](#test-netscootupdate) |
 [Update-Netscoot](#update-netscoot) ]
-
-[Back to Command reference](#command-reference)
-
----
-
-#### Get-SolutionInventory
-
-List the full contents of every solution in a repository (projects of any type, solution folders, and solution items),
-plus on-disk projects that no solution references.
-
-##### Syntax
-
-```powershell
-Get-SolutionInventory [[-RepositoryRoot] <string>] [<CommonParameters>]
-```
-
-Where [Test-SolutionConsistency](#test-solutionconsistency) compares membership and
-[Repair-SolutionReferences](#repair-solutionreferences) finds dangling entries, this gives the complete picture without
-reading the files by hand. It parses each `.sln/.slnx` directly (not via `dotnet sln list`, which only returns
-CLI-buildable projects), so it also surfaces non-CLI project types (e.g. .pssproj), solution folders, and loose solution
-items. It then compares against the projects on disk and flags any that are in no solution at all. Read-only: One record
-per item, so you can group, filter, or format it however you like.
-
-##### Parameters
-
-| Name | Type | Required | Pipeline | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `‑RepositoryRoot` | String | false | true (ByValue) | Root to scan. Accepts pipeline input: a path string, or a file/directory item from Get-Item / Get-ChildItem. Defaults to the enclosing git repository root. Nested git worktrees are skipped. |
-
-##### Output
-
-Returns zero or more [Netscoot.SolutionItem](#netscootsolutionitem), collected as an array.
-One per item.
-
-```text
-Netscoot.SolutionItem
-  Solution  string                     # repository-relative, or '(none)' for an unreferenced project
-  Kind      Netscoot.SolutionItemKind  # enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
-  Type      string                     # project extension without the dot, else empty
-  Name      string
-  Path      string                     # as stored in the solution, or repository-relative
-```
-
-##### Examples
-
-```powershell
-# Everything across all solutions, plus projects in none
-Get-SolutionInventory -RepositoryRoot . | Format-Table -AutoSize
-
-# Only the projects on disk that no solution references
-Get-SolutionInventory | Where-Object Kind -eq 'UnreferencedProject'
-
-# Only loose solution items (e.g. a README in a solution folder)
-Get-SolutionInventory | Where-Object Kind -eq 'SolutionItem'
-
-# Kind is the [Netscoot.SolutionItemKind] enum, so this also works
-Get-SolutionInventory | Where-Object Kind -eq ([Netscoot.SolutionItemKind]::UnreferencedProject)
-```
-
-##### Related
-
-[ [Test-SolutionConsistency](#test-solutionconsistency) | [Sync-Solution](#sync-solution) |
-[Repair-SolutionReferences](#repair-solutionreferences) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1582,7 +1583,7 @@ Repair-NetscootJournal -ClearOrphanSnapshots
 
 ---
 
-#### Repair-SolutionReferences
+#### Repair-NetscootSolutionReferences
 
 Scan a repository for broken solution membership and dangling ProjectReferences and repair them by re-pointing each
 entry at the project's new location.
@@ -1590,7 +1591,7 @@ entry at the project's new location.
 ##### Syntax
 
 ```powershell
-Repair-SolutionReferences [[-RepositoryRoot] <string>] [-Fix] [-Prune] [-WhatIf] [-Confirm] [<CommonParameters>]
+Repair-NetscootSolutionReferences [[-RepositoryRoot] <string>] [-Fix] [-Prune] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 Finds solution entries and `<ProjectReference>`s that point at a project file which no longer exists at the recorded
@@ -1634,19 +1635,20 @@ Netscoot.RepairResult
 
 ```powershell
 # Report dangling entries only - read-only (each tagged Relocatable, Missing, or Ambiguous)
-Repair-SolutionReferences -RepositoryRoot .
+Repair-NetscootSolutionReferences -RepositoryRoot .
 
 # Re-point relocatable entries at the project's new location (relocates; never deletes)
-Repair-SolutionReferences -RepositoryRoot . -Fix
+Repair-NetscootSolutionReferences -RepositoryRoot . -Fix
 
 # Also remove entries whose project is gone for good - preview the whole thing first
-Repair-SolutionReferences -RepositoryRoot . -Fix -Prune -WhatIf
+Repair-NetscootSolutionReferences -RepositoryRoot . -Fix -Prune -WhatIf
 ```
 
 ##### Related
 
-[ [Get-SolutionInventory](#get-solutioninventory) | [Test-SolutionConsistency](#test-solutionconsistency) |
-[Sync-Solution](#sync-solution) | [Find-PathReference](#find-pathreference) ]
+[ [Get-NetscootSolutionInventory](#get-netscootsolutioninventory) |
+[Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) | [Sync-NetscootSolution](#sync-netscootsolution)
+| [Find-NetscootPathReference](#find-netscootpathreference) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1819,7 +1821,7 @@ Set-NetscootUpdatePolicy -State Manual
 
 ---
 
-#### Sync-Solution
+#### Sync-NetscootSolution
 
 Resolve solution-membership divergence by adding each project to the solutions that are missing it, so every solution in
 the repository lists the same projects.
@@ -1827,15 +1829,16 @@ the repository lists the same projects.
 ##### Syntax
 
 ```powershell
-Sync-Solution [[-RepositoryRoot] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+Sync-NetscootSolution [[-RepositoryRoot] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-The companion to [Test-SolutionConsistency](#test-solutionconsistency), which only reports divergence. This makes
-membership uniform: For every project present in at least one solution but absent from others, it adds the project to
-the solutions missing it, delegating to `dotnet sln add` (never hand-editing the `.sln/.slnx`). It only adds; it never
-removes, so a project in no solution is left alone (use [Get-SolutionInventory](#get-solutioninventory) to find those).
-Uniform membership is the assumption. If a solution is intentionally a subset, do not run this against the whole
-repository; preview with `-WhatIf` first and add specific projects by hand.
+The companion to [Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency), which only reports divergence.
+This makes membership uniform: For every project present in at least one solution but absent from others, it adds the
+project to the solutions missing it, delegating to `dotnet sln add` (never hand-editing the `.sln/.slnx`). It only adds;
+it never removes, so a project in no solution is left alone (use
+[Get-NetscootSolutionInventory](#get-netscootsolutioninventory) to find those). Uniform membership is the assumption. If
+a solution is intentionally a subset, do not run this against the whole repository; preview with `-WhatIf` first and add
+specific projects by hand.
 
 ##### Parameters
 
@@ -1860,16 +1863,17 @@ Netscoot.SyncResult
 
 ```powershell
 # Preview which projects would be added to which solutions to make membership uniform
-Sync-Solution -RepositoryRoot . -WhatIf
+Sync-NetscootSolution -RepositoryRoot . -WhatIf
 
 # Add each divergent project to the solutions missing it (only adds, never removes)
-Sync-Solution -RepositoryRoot .
+Sync-NetscootSolution -RepositoryRoot .
 ```
 
 ##### Related
 
-[ [Get-SolutionInventory](#get-solutioninventory) | [Test-SolutionConsistency](#test-solutionconsistency) |
-[Repair-SolutionReferences](#repair-solutionreferences) ]
+[ [Get-NetscootSolutionInventory](#get-netscootsolutioninventory) |
+[Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) |
+[Repair-NetscootSolutionReferences](#repair-netscootsolutionreferences) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1888,10 +1892,11 @@ Test-EditorSolutionGuard [[-RepositoryRoot] <string>] [-Strict] [<CommonParamete
 
 Consolidating to a single `.slnx` is not durable on its own. VS Code's C# Dev Kit AUTO-GENERATES a legacy `.sln` next to
 a `.slnx` on folder open unless 'dotnet.automaticallyCreateSolutionInWorkspace' is false, so a regenerated `.sln`
-reappears and drifts (the exact stale-duplicate that [Test-SolutionConsistency](#test-solutionconsistency) detects after
-the fact). When at least one `.slnx` exists in the repository, this inspects the repository-root editor config and
-reports whether the guards that keep the consolidation durable are in place: AutoCreateGuard .vscode/settings.json must
-set 'dotnet.automaticallyCreateSolutionInWorkspace' to false (else Dev Kit re-mints the `.sln`). DefaultSolution
+reappears and drifts (the exact stale-duplicate that
+[Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) detects after the fact). When at least one `.slnx`
+exists in the repository, this inspects the repository-root editor config and reports whether the guards that keep the
+consolidation durable are in place: AutoCreateGuard .vscode/settings.json must set
+'dotnet.automaticallyCreateSolutionInWorkspace' to false (else Dev Kit re-mints the `.sln`). DefaultSolution
 'dotnet.defaultSolution' should point at a real, existing solution (ideally the `.slnx`). Missing, or pointing at a
 deleted/nonexistent file, means Dev Kit chooses which solution loads - possibly a stray `.sln`. GitignoreGuard
 .gitignore should ignore *`.sln` so a regenerated one cannot be committed. Read-only: it never edits settings,
@@ -1936,7 +1941,72 @@ Get-Item ./repo | Test-EditorSolutionGuard
 
 ##### Related
 
-[ [Test-SolutionConsistency](#test-solutionconsistency) | [Get-SolutionInventory](#get-solutioninventory) ]
+[ [Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) |
+[Get-NetscootSolutionInventory](#get-netscootsolutioninventory) ]
+
+[Back to Command reference](#command-reference)
+
+---
+
+#### Test-NetscootSolutionConsistency
+
+Report projects whose membership diverges across the solution files in a repository (present in some solutions but
+absent from others).
+
+##### Syntax
+
+```powershell
+Test-NetscootSolutionConsistency [[-RepositoryRoot] <string>] [-Strict] [<CommonParameters>]
+```
+
+When a repository carries more than one solution (e.g. a classic `.sln` alongside a `.slnx`), they can drift out of sync
+so the same project is listed in one but not the other. Only solutions that already share at least one project are
+compared with each other: a repository may carry intentionally-separate solutions (a standalone client, a submodule's
+own solution) that were never meant to list the same projects, and those are not flagged against one another. This emits
+one object per divergent project and surfaces it through the standard streams so behavior follows invocation: By default
+it writes a Warning per divergent project; `-Strict` escalates each to a non-terminating error (honoring
+`-ErrorAction`); `-Debug` adds the full membership matrix of every solution and its projects.
+
+##### Parameters
+
+| Name | Type | Required | Pipeline | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `‑RepositoryRoot` | String | false | true (ByValue) | Root to scan. Accepts pipeline input: a path string, or a file/directory item from Get-Item / Get-ChildItem. Defaults to the enclosing git repository root. |
+| `‑Strict` | SwitchParameter | false | false | Escalate divergences from warnings to non-terminating errors. |
+
+##### Output
+
+Returns zero or more [Netscoot.ConsistencyResult](#netscootconsistencyresult), collected as an array (`$null` when
+none).
+One per divergent project.
+
+```text
+Netscoot.ConsistencyResult
+  Project     string
+  PresentIn   string[]  # solution paths that list it
+  AbsentFrom  string[]  # solution paths that do not
+```
+
+##### Examples
+
+```powershell
+# Report projects whose membership diverges across solutions (warnings)
+Test-NetscootSolutionConsistency -RepositoryRoot .
+
+# Add the full solution/project membership matrix
+Test-NetscootSolutionConsistency -RepositoryRoot . -Debug
+
+# Escalate divergence to non-terminating errors (e.g. to gate CI)
+Test-NetscootSolutionConsistency -RepositoryRoot . -Strict
+
+# Check several repositories from the pipeline
+Get-Item ./repoA, ./repoB | Test-NetscootSolutionConsistency -Strict
+```
+
+##### Related
+
+[ [Get-NetscootSolutionInventory](#get-netscootsolutioninventory) | [Sync-NetscootSolution](#sync-netscootsolution) |
+[Repair-NetscootSolutionReferences](#repair-netscootsolutionreferences) ]
 
 [Back to Command reference](#command-reference)
 
@@ -2002,70 +2072,6 @@ Test-NetscootUpdate -Auto
 
 [ [Update-Netscoot](#update-netscoot) | [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) |
 [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) ]
-
-[Back to Command reference](#command-reference)
-
----
-
-#### Test-SolutionConsistency
-
-Report projects whose membership diverges across the solution files in a repository (present in some solutions but
-absent from others).
-
-##### Syntax
-
-```powershell
-Test-SolutionConsistency [[-RepositoryRoot] <string>] [-Strict] [<CommonParameters>]
-```
-
-When a repository carries more than one solution (e.g. a classic `.sln` alongside a `.slnx`), they can drift out of sync
-so the same project is listed in one but not the other. Only solutions that already share at least one project are
-compared with each other: a repository may carry intentionally-separate solutions (a standalone client, a submodule's
-own solution) that were never meant to list the same projects, and those are not flagged against one another. This emits
-one object per divergent project and surfaces it through the standard streams so behavior follows invocation: By default
-it writes a Warning per divergent project; `-Strict` escalates each to a non-terminating error (honoring
-`-ErrorAction`); `-Debug` adds the full membership matrix of every solution and its projects.
-
-##### Parameters
-
-| Name | Type | Required | Pipeline | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `‑RepositoryRoot` | String | false | true (ByValue) | Root to scan. Accepts pipeline input: a path string, or a file/directory item from Get-Item / Get-ChildItem. Defaults to the enclosing git repository root. |
-| `‑Strict` | SwitchParameter | false | false | Escalate divergences from warnings to non-terminating errors. |
-
-##### Output
-
-Returns zero or more [Netscoot.ConsistencyResult](#netscootconsistencyresult), collected as an array (`$null` when
-none).
-One per divergent project.
-
-```text
-Netscoot.ConsistencyResult
-  Project     string
-  PresentIn   string[]  # solution paths that list it
-  AbsentFrom  string[]  # solution paths that do not
-```
-
-##### Examples
-
-```powershell
-# Report projects whose membership diverges across solutions (warnings)
-Test-SolutionConsistency -RepositoryRoot .
-
-# Add the full solution/project membership matrix
-Test-SolutionConsistency -RepositoryRoot . -Debug
-
-# Escalate divergence to non-terminating errors (e.g. to gate CI)
-Test-SolutionConsistency -RepositoryRoot . -Strict
-
-# Check several repositories from the pipeline
-Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
-```
-
-##### Related
-
-[ [Get-SolutionInventory](#get-solutioninventory) | [Sync-Solution](#sync-solution) |
-[Repair-SolutionReferences](#repair-solutionreferences) ]
 
 [Back to Command reference](#command-reference)
 
@@ -2514,7 +2520,7 @@ Netscoot.Capability
 
 #### Netscoot.ConsistencyResult
 
-[ [Test-SolutionConsistency](#test-solutionconsistency) ]
+[ [Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) ]
 
 One project whose solution membership diverges across the repository.
 
@@ -2690,7 +2696,7 @@ Netscoot.NativeSetting
 
 #### Netscoot.PathReference
 
-[ [Find-PathReference](#find-pathreference) ]
+[ [Find-NetscootPathReference](#find-netscootpathreference) ]
 
 One build/CI/hook/container line that hardcodes a moved path and that no first-party tool reconciles.
 
@@ -2729,7 +2735,7 @@ Netscoot.PSModuleMoveResult
 
 #### Netscoot.RepairResult
 
-[ [Repair-SolutionReferences](#repair-solutionreferences) ]
+[ [Repair-NetscootSolutionReferences](#repair-netscootsolutionreferences) ]
 
 One dangling solution-membership or ProjectReference entry that was (or would be) repaired.
 
@@ -2773,7 +2779,7 @@ Netscoot.ScriptMoveResult
 
 #### Netscoot.SolutionItem
 
-[ [Get-SolutionInventory](#get-solutioninventory) ]
+[ [Get-NetscootSolutionInventory](#get-netscootsolutioninventory) ]
 
 One entry in the full contents of a solution (or a project on disk that no solution references).
 
@@ -2813,7 +2819,7 @@ Netscoot.SolutionMoveResult
 
 #### Netscoot.SyncResult
 
-[ [Sync-Solution](#sync-solution) ]
+[ [Sync-NetscootSolution](#sync-netscootsolution) ]
 
 One project added to a solution that was missing it, to resolve membership divergence.
 

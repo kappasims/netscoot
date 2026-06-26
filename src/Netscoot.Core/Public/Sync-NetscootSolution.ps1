@@ -1,15 +1,15 @@
-function Sync-Solution {
+function Sync-NetscootSolution {
     <#
     .SYNOPSIS
         Resolve solution-membership divergence by adding each project to the solutions that are
         missing it, so every solution in the repository lists the same projects.
 
     .DESCRIPTION
-        The companion to Test-SolutionConsistency, which only reports divergence. This makes
+        The companion to Test-NetscootSolutionConsistency, which only reports divergence. This makes
         membership uniform: For every project present in at least one solution but absent from
         others, it adds the project to the solutions missing it, delegating to `dotnet sln add`
         (never hand-editing the .sln/.slnx). It only adds; it never removes, so a project in no
-        solution is left alone (use Get-SolutionInventory to find those).
+        solution is left alone (use Get-NetscootSolutionInventory to find those).
 
         Uniform membership is the assumption. If a solution is intentionally a subset, do not run
         this against the whole repository; preview with -WhatIf first and add specific projects by hand.
@@ -24,18 +24,18 @@ function Sync-Solution {
 
     .EXAMPLE
         # Preview which projects would be added to which solutions to make membership uniform
-        Sync-Solution -RepositoryRoot . -WhatIf
+        Sync-NetscootSolution -RepositoryRoot . -WhatIf
         # Add each divergent project to the solutions missing it (only adds, never removes)
-        Sync-Solution -RepositoryRoot .
+        Sync-NetscootSolution -RepositoryRoot .
 
     .LINK
-        Get-SolutionInventory
+        Get-NetscootSolutionInventory
 
     .LINK
-        Test-SolutionConsistency
+        Test-NetscootSolutionConsistency
 
     .LINK
-        Repair-SolutionReferences
+        Repair-NetscootSolutionReferences
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('Netscoot.SyncResult')]
@@ -44,6 +44,12 @@ function Sync-Solution {
         [Netscoot.PathInputTransform()]
         [string]$RepositoryRoot
     )
+
+    begin {
+        if ($MyInvocation.InvocationName -eq 'Sync-Solution') {
+            Write-Warning "'Sync-Solution' is a deprecated alias for 'Sync-NetscootSolution' and will be removed in a future release. Update to 'Sync-NetscootSolution'."
+        }
+    }
 
     process {
         if (-not (Assert-DotnetAvailable -Cmdlet $PSCmdlet)) { return }
@@ -78,3 +84,5 @@ function Sync-Solution {
         }
     }
 }
+
+Set-Alias -Name Sync-Solution -Value Sync-NetscootSolution

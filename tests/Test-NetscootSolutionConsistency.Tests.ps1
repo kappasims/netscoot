@@ -23,11 +23,11 @@ BeforeAll {
     }
 }
 
-Describe 'Test-SolutionConsistency' {
+Describe 'Test-NetscootSolutionConsistency' {
     It 'warns about and emits the divergent project' {
         $root = New-DivergentRepo
         try {
-            $result = Test-SolutionConsistency -RepositoryRoot $root -WarningVariable warns -WarningAction SilentlyContinue
+            $result = Test-NetscootSolutionConsistency -RepositoryRoot $root -WarningVariable warns -WarningAction SilentlyContinue
             $result.Project | Should -Match 'Lib\.csproj'
             ($result.AbsentFrom -join ',') | Should -Match 'Partial\.slnx'
             $warns | Should -Not -BeNullOrEmpty
@@ -37,7 +37,7 @@ Describe 'Test-SolutionConsistency' {
     It 'escalates to a non-terminating error under -Strict' {
         $root = New-DivergentRepo
         try {
-            Test-SolutionConsistency -RepositoryRoot $root -Strict -ErrorVariable errs -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
+            Test-NetscootSolutionConsistency -RepositoryRoot $root -Strict -ErrorVariable errs -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
             $errs | Should -Not -BeNullOrEmpty
             $errs[0].FullyQualifiedErrorId | Should -Match 'SolutionDivergence'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
@@ -46,7 +46,7 @@ Describe 'Test-SolutionConsistency' {
     It 'accepts RepositoryRoot from the pipeline (Get-Item)' {
         $root = New-DivergentRepo
         try {
-            $result = Get-Item $root | Test-SolutionConsistency -WarningAction SilentlyContinue
+            $result = Get-Item $root | Test-NetscootSolutionConsistency -WarningAction SilentlyContinue
             $result.Project | Should -Match 'Lib\.csproj'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -77,7 +77,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "App", "App\App.csproj", "{11111111-1111-1111-1111-111111111111}"
 EndProject
 "@
-            $result = @(Test-SolutionConsistency -RepositoryRoot $root -WarningAction SilentlyContinue)
+            $result = @(Test-NetscootSolutionConsistency -RepositoryRoot $root -WarningAction SilentlyContinue)
             $pss = $result | Where-Object { $_.Project -match 'Tools\.pssproj' }
             $pss | Should -Not -BeNullOrEmpty -Because 'a pssproj that diverges across solutions must show up in the consistency report'
             ($pss.AbsentFrom -join ',') | Should -Match 'Partial\.sln'
@@ -100,7 +100,7 @@ EndProject
 </Solution>
 "@
             }
-            $result = @(Test-SolutionConsistency -RepositoryRoot $root -WarningVariable warns -WarningAction SilentlyContinue)
+            $result = @(Test-NetscootSolutionConsistency -RepositoryRoot $root -WarningVariable warns -WarningAction SilentlyContinue)
             $result | Should -BeNullOrEmpty -Because 'solutions that share no projects were never meant to agree'
             $warns | Should -BeNullOrEmpty
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
@@ -133,7 +133,7 @@ EndProject
   <Project Path="Widget/Widget.csproj" />
 </Solution>
 "@
-            $result = @(Test-SolutionConsistency -RepositoryRoot $root -WarningAction SilentlyContinue)
+            $result = @(Test-NetscootSolutionConsistency -RepositoryRoot $root -WarningAction SilentlyContinue)
             ($result | Where-Object { $_.Project -match 'Lib\.csproj' }) | Should -Not -BeNullOrEmpty -Because 'drift within the overlapping mirror pair must still be caught'
             ($result | Where-Object { $_.Project -match 'Widget\.csproj' }) | Should -BeNullOrEmpty -Because 'an independent solution must not be compared against the pair'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

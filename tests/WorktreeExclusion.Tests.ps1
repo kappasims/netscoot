@@ -49,10 +49,10 @@ Describe 'Nested worktrees are excluded from repo scans' {
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
-    It 'Test-SolutionConsistency does not invent a divergence from worktree duplicates' {
+    It 'Test-NetscootSolutionConsistency does not invent a divergence from worktree duplicates' {
         $root = New-RepoWithNestedWorktree
         try {
-            $probs = Test-SolutionConsistency -RepositoryRoot $root -WarningVariable w -WarningAction SilentlyContinue
+            $probs = Test-NetscootSolutionConsistency -RepositoryRoot $root -WarningVariable w -WarningAction SilentlyContinue
             $probs | Should -BeNullOrEmpty                 # both root solutions list Lib: consistent
             ($w -join "`n") | Should -Not -Match 'diverges'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

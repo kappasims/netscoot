@@ -1,4 +1,4 @@
-function Repair-SolutionReferences {
+function Repair-NetscootSolutionReferences {
     <#
     .SYNOPSIS
         Scan a repository for broken solution membership and dangling ProjectReferences and repair them
@@ -35,23 +35,23 @@ function Repair-SolutionReferences {
 
     .EXAMPLE
         # Report dangling entries only - read-only (each tagged Relocatable, Missing, or Ambiguous)
-        Repair-SolutionReferences -RepositoryRoot .
+        Repair-NetscootSolutionReferences -RepositoryRoot .
         # Re-point relocatable entries at the project's new location (relocates; never deletes)
-        Repair-SolutionReferences -RepositoryRoot . -Fix
+        Repair-NetscootSolutionReferences -RepositoryRoot . -Fix
         # Also remove entries whose project is gone for good - preview the whole thing first
-        Repair-SolutionReferences -RepositoryRoot . -Fix -Prune -WhatIf
+        Repair-NetscootSolutionReferences -RepositoryRoot . -Fix -Prune -WhatIf
 
     .LINK
-        Get-SolutionInventory
+        Get-NetscootSolutionInventory
 
     .LINK
-        Test-SolutionConsistency
+        Test-NetscootSolutionConsistency
 
     .LINK
-        Sync-Solution
+        Sync-NetscootSolution
 
     .LINK
-        Find-PathReference
+        Find-NetscootPathReference
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('Netscoot.RepairResult')]
@@ -62,6 +62,12 @@ function Repair-SolutionReferences {
         [switch]$Fix,
         [switch]$Prune
     )
+
+    begin {
+        if ($MyInvocation.InvocationName -eq 'Repair-SolutionReferences') {
+            Write-Warning "'Repair-SolutionReferences' is a deprecated alias for 'Repair-NetscootSolutionReferences' and will be removed in a future release. Update to 'Repair-NetscootSolutionReferences'."
+        }
+    }
 
     process {
         if (-not (Assert-DotnetAvailable -Cmdlet $PSCmdlet)) { return }
@@ -178,3 +184,5 @@ function Repair-SolutionReferences {
         return $problems
     }
 }
+
+Set-Alias -Name Repair-SolutionReferences -Value Repair-NetscootSolutionReferences

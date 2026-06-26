@@ -31,11 +31,11 @@ nothing here can process it. Passing a `.vcproj` is rejected with a clear error;
 ## Analyze/audit first (read-only)
 
 Before moving, inspect with the read-only surface instead of parsing `.sln`/`.vcxproj` by hand:
-`Test-SolutionConsistency` (membership divergence across solutions, `-Debug` for the full matrix),
-`Get-SolutionInventory` (full solution contents - it surfaces `.vcxproj` and other non-CLI project
-types that `dotnet sln list` omits, plus projects in no solution), `Repair-SolutionReferences` (no
-flags, to report dangling entries), `Find-PathReference`, and `Get-NetscootCapability`. To resolve
-a reported divergence, run `Sync-Solution` (or `dotnet sln <solution> add <project>` by hand). These
+`Test-NetscootSolutionConsistency` (membership divergence across solutions, `-Debug` for the full matrix),
+`Get-NetscootSolutionInventory` (full solution contents - it surfaces `.vcxproj` and other non-CLI project
+types that `dotnet sln list` omits, plus projects in no solution), `Repair-NetscootSolutionReferences` (no
+flags, to report dangling entries), `Find-NetscootPathReference`, and `Get-NetscootCapability`. To resolve
+a reported divergence, run `Sync-NetscootSolution` (or `dotnet sln <solution> add <project>` by hand). These
 cover solution membership for `.vcxproj` too; the native link settings are what `Move-NativeProject`
 reports separately.
 

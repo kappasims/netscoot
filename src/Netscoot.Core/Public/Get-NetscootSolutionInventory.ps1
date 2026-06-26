@@ -1,11 +1,11 @@
-function Get-SolutionInventory {
+function Get-NetscootSolutionInventory {
     <#
     .SYNOPSIS
         List the full contents of every solution in a repository (projects of any type, solution
         folders, and solution items), plus on-disk projects that no solution references.
 
     .DESCRIPTION
-        Where Test-SolutionConsistency compares membership and Repair-SolutionReferences finds
+        Where Test-NetscootSolutionConsistency compares membership and Repair-NetscootSolutionReferences finds
         dangling entries, this gives the complete picture without reading the files by hand. It
         parses each .sln/.slnx directly (not via `dotnet sln list`, which only returns
         CLI-buildable projects), so it also surfaces non-CLI project types (e.g. .pssproj),
@@ -24,22 +24,22 @@ function Get-SolutionInventory {
 
     .EXAMPLE
         # Everything across all solutions, plus projects in none
-        Get-SolutionInventory -RepositoryRoot . | Format-Table -AutoSize
+        Get-NetscootSolutionInventory -RepositoryRoot . | Format-Table -AutoSize
         # Only the projects on disk that no solution references
-        Get-SolutionInventory | Where-Object Kind -eq 'UnreferencedProject'
+        Get-NetscootSolutionInventory | Where-Object Kind -eq 'UnreferencedProject'
         # Only loose solution items (e.g. a README in a solution folder)
-        Get-SolutionInventory | Where-Object Kind -eq 'SolutionItem'
+        Get-NetscootSolutionInventory | Where-Object Kind -eq 'SolutionItem'
         # Kind is the [Netscoot.SolutionItemKind] enum, so this also works
-        Get-SolutionInventory | Where-Object Kind -eq ([Netscoot.SolutionItemKind]::UnreferencedProject)
+        Get-NetscootSolutionInventory | Where-Object Kind -eq ([Netscoot.SolutionItemKind]::UnreferencedProject)
 
     .LINK
-        Test-SolutionConsistency
+        Test-NetscootSolutionConsistency
 
     .LINK
-        Sync-Solution
+        Sync-NetscootSolution
 
     .LINK
-        Repair-SolutionReferences
+        Repair-NetscootSolutionReferences
     #>
     [CmdletBinding()]
     [OutputType('Netscoot.SolutionItem')]
@@ -48,6 +48,12 @@ function Get-SolutionInventory {
         [Netscoot.PathInputTransform()]
         [string]$RepositoryRoot
     )
+
+    begin {
+        if ($MyInvocation.InvocationName -eq 'Get-SolutionInventory') {
+            Write-Warning "'Get-SolutionInventory' is a deprecated alias for 'Get-NetscootSolutionInventory' and will be removed in a future release. Update to 'Get-NetscootSolutionInventory'."
+        }
+    }
 
     process {
         if (-not $RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath (Get-Location).Path }
@@ -100,3 +106,5 @@ function Get-SolutionInventory {
         }
     }
 }
+
+Set-Alias -Name Get-SolutionInventory -Value Get-NetscootSolutionInventory

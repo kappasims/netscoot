@@ -66,7 +66,7 @@ Describe 'Move-DotnetProject with a non-literal reference' {
     }
 }
 
-Describe 'Repair-SolutionReferences and non-literal references' {
+Describe 'Repair-NetscootSolutionReferences and non-literal references' {
     It 'does not report a non-literal reference as dangling' {
         $root = New-TempDir
         Push-Location $root
@@ -74,7 +74,7 @@ Describe 'Repair-SolutionReferences and non-literal references' {
             & git init -q
             New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
             Add-ProjectReference -ProjectFile (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) -Include '$(PluginDir)\Plugin.csproj'
-            $probs = Repair-SolutionReferences -RepositoryRoot $root
+            $probs = Repair-NetscootSolutionReferences -RepositoryRoot $root
             # The only csproj has just a non-literal reference, so there is nothing dangling.
             ($probs | Where-Object { $_.Kind -eq 'Reference' }) | Should -BeNullOrEmpty
         } finally { Pop-Location; Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

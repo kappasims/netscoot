@@ -1,4 +1,4 @@
-# The Kind of a Get-SolutionInventory item, surfaced as a real .NET enum so callers get
+# The Kind of a Get-NetscootSolutionInventory item, surfaced as a real .NET enum so callers get
 # tab-completion ([Netscoot.SolutionItemKind]::<Tab>) and a discoverable, type-safe sum type
 # instead of bare strings. It still compares equal to its name (e.g. -eq 'UnreferencedProject'),
 # so existing string filters keep working.

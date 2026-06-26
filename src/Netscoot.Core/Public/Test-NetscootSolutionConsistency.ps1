@@ -1,4 +1,4 @@
-function Test-SolutionConsistency {
+function Test-NetscootSolutionConsistency {
     <#
     .SYNOPSIS
         Report projects whose membership diverges across the solution files in a repository
@@ -27,22 +27,22 @@ function Test-SolutionConsistency {
 
     .EXAMPLE
         # Report projects whose membership diverges across solutions (warnings)
-        Test-SolutionConsistency -RepositoryRoot .
+        Test-NetscootSolutionConsistency -RepositoryRoot .
         # Add the full solution/project membership matrix
-        Test-SolutionConsistency -RepositoryRoot . -Debug
+        Test-NetscootSolutionConsistency -RepositoryRoot . -Debug
         # Escalate divergence to non-terminating errors (e.g. to gate CI)
-        Test-SolutionConsistency -RepositoryRoot . -Strict
+        Test-NetscootSolutionConsistency -RepositoryRoot . -Strict
         # Check several repositories from the pipeline
-        Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
+        Get-Item ./repoA, ./repoB | Test-NetscootSolutionConsistency -Strict
 
     .LINK
-        Get-SolutionInventory
+        Get-NetscootSolutionInventory
 
     .LINK
-        Sync-Solution
+        Sync-NetscootSolution
 
     .LINK
-        Repair-SolutionReferences
+        Repair-NetscootSolutionReferences
     #>
     [CmdletBinding()]
     [OutputType('Netscoot.ConsistencyResult')]
@@ -52,6 +52,12 @@ function Test-SolutionConsistency {
         [string]$RepositoryRoot,
         [switch]$Strict
     )
+
+    begin {
+        if ($MyInvocation.InvocationName -eq 'Test-SolutionConsistency') {
+            Write-Warning "'Test-SolutionConsistency' is a deprecated alias for 'Test-NetscootSolutionConsistency' and will be removed in a future release. Update to 'Test-NetscootSolutionConsistency'."
+        }
+    }
 
     process {
         if (-not (Assert-DotnetAvailable -Cmdlet $PSCmdlet)) { return }
@@ -121,3 +127,5 @@ function Test-SolutionConsistency {
         }
     }
 }
+
+Set-Alias -Name Test-SolutionConsistency -Value Test-NetscootSolutionConsistency

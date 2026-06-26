@@ -26,8 +26,8 @@ So the rule: **never move a Unity asset/folder without its `.meta`.** A folder's
 Before moving, audit with the read-only surface rather than scanning `.meta`/asmdef files by hand:
 `Test-UnityMetaIntegrity -Root ./Assets` (assets missing a `.meta`, orphan `.meta` whose asset is
 gone; see "Validate integrity" below) and `Resolve-MoveEngine` / `Get-NetscootCapability`. If the
-project also has a managed side (`.csproj`/`.sln`), `Test-SolutionConsistency`,
-`Get-SolutionInventory`, `Repair-SolutionReferences` (report mode), and `Sync-Solution` cover that.
+project also has a managed side (`.csproj`/`.sln`), `Test-NetscootSolutionConsistency`,
+`Get-NetscootSolutionInventory`, `Repair-NetscootSolutionReferences` (report mode), and `Sync-NetscootSolution` cover that.
 
 ## Use Move-UnityAsset
 

@@ -6,6 +6,16 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING (3.0):** five public cmdlets gained the `Netscoot` brand noun so their names no longer
+  collide with generic verbs in a shared session: `Get-SolutionInventory` ->
+  `Get-NetscootSolutionInventory`, `Sync-Solution` -> `Sync-NetscootSolution`, `Find-PathReference`
+  -> `Find-NetscootPathReference`, `Test-SolutionConsistency` -> `Test-NetscootSolutionConsistency`,
+  `Repair-SolutionReferences` -> `Repair-NetscootSolutionReferences`. The old names continue to work
+  as deprecated aliases that emit a warning on use and will be removed in a later release; update
+  scripts to the new names.
+
 ## [2.6.2] - 2026-06-26
 
 ### Changed

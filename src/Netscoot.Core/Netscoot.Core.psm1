@@ -12,4 +12,13 @@ foreach ($f in $public) { . $f.FullName }
 # `Scoot` is the cheeky shorthand for the umbrella mover (aliases skip the approved-verb rule, so
 # this gives `scoot <src> -Destination <dst>` while Invoke-Netscoot stays the convention-clean cmdlet).
 Set-Alias -Name Scoot -Value Invoke-Netscoot
-Export-ModuleMember -Function $public.BaseName -Alias Scoot
+# Deprecated aliases for the pre-3.0 cmdlet names (the Set-Alias definitions live in each Public
+# file beside the function). Exported here so the old names keep working for one more major.
+$deprecatedAliases = @(
+    'Find-PathReference',
+    'Get-SolutionInventory',
+    'Repair-SolutionReferences',
+    'Sync-Solution',
+    'Test-SolutionConsistency'
+)
+Export-ModuleMember -Function $public.BaseName -Alias (@('Scoot') + $deprecatedAliases)

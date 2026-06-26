@@ -1,4 +1,4 @@
-function Find-PathReference {
+function Find-NetscootPathReference {
     <#
     .SYNOPSIS
         Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/
@@ -46,13 +46,13 @@ function Find-PathReference {
 
     .EXAMPLE
         # Build/CI/hook lines that hardcode the path (report-only)
-        Find-PathReference -Path ./lib/Tarragon.csproj
+        Find-NetscootPathReference -Path ./lib/Tarragon.csproj
         # Scan the old path after a move to find what still points at it
-        Find-PathReference -Path ./libs/Tarragon/Tarragon.csproj
+        Find-NetscootPathReference -Path ./libs/Tarragon/Tarragon.csproj
         # Widen the candidate set with extra repository-relative globs
-        Find-PathReference -Path ./lib/Tarragon.csproj -AdditionalGlob 'deploy/*.sh','*.psake.ps1'
+        Find-NetscootPathReference -Path ./lib/Tarragon.csproj -AdditionalGlob 'deploy/*.sh','*.psake.ps1'
         # Search EVERY text file (not just build/CI/hook files) for the reference
-        Find-PathReference -Path ./lib/Tarragon.csproj -AllFiles
+        Find-NetscootPathReference -Path ./lib/Tarragon.csproj -AllFiles
     #>
     [CmdletBinding()]
     [OutputType('Netscoot.PathReference')]
@@ -66,6 +66,12 @@ function Find-PathReference {
         [switch]$AllFiles
     )
 
+    begin {
+        if ($MyInvocation.InvocationName -eq 'Find-PathReference') {
+            Write-Warning "'Find-PathReference' is a deprecated alias for 'Find-NetscootPathReference' and will be removed in a future release. Update to 'Find-NetscootPathReference'."
+        }
+    }
+
     process {
         $target = Resolve-FullPath $Path
         if (-not $RepositoryRoot) {
@@ -73,7 +79,7 @@ function Find-PathReference {
             # use is sweeping the OLD identifier after a rename, where the needle no longer exists on
             # disk - so walking up from it would fail (Get-RepositoryRoot does Get-Item on the start
             # path). -Path is a string to search for, not a filesystem location. This matches every
-            # other cmdlet's default (e.g. Test-SolutionConsistency, Repair-SolutionReferences).
+            # other cmdlet's default (e.g. Test-NetscootSolutionConsistency, Repair-NetscootSolutionReferences).
             $RepositoryRoot = Get-RepositoryRoot -StartPath (Get-Location).Path
         }
         $root = (Resolve-FullPath $RepositoryRoot).TrimEnd('\', '/')
@@ -118,3 +124,5 @@ function Find-PathReference {
         }
     }
 }
+
+Set-Alias -Name Find-PathReference -Value Find-NetscootPathReference

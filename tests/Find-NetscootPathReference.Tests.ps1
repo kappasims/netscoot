@@ -21,11 +21,11 @@ BeforeAll {
     }
 }
 
-Describe 'Find-PathReference' {
+Describe 'Find-NetscootPathReference' {
     It 'flags build/CI/hook references (High) and bare-leaf references (Low)' {
         $root = New-RefFixture
         try {
-            $r = Find-PathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -WarningAction SilentlyContinue
+            $r = Find-NetscootPathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -WarningAction SilentlyContinue
             $highFiles = ($r | Where-Object Confidence -eq 'High').File
             ($highFiles | ForEach-Object { Split-Path -Leaf $_ }) | Should -Contain 'build.ps1'
             ($highFiles | ForEach-Object { Split-Path -Leaf $_ }) | Should -Contain 'ci.yml'
@@ -37,7 +37,7 @@ Describe 'Find-PathReference' {
     It 'does NOT scan ordinary source scripts (only automation dirs/roots)' {
         $root = New-RefFixture
         try {
-            $r = Find-PathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -WarningAction SilentlyContinue
+            $r = Find-NetscootPathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -WarningAction SilentlyContinue
             ($r.File | ForEach-Object { Split-Path -Leaf $_ }) | Should -Not -Contain 'Other.ps1'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -45,10 +45,10 @@ Describe 'Find-PathReference' {
     It '-AllFiles scans ordinary source files the default classifier skips (e.g. src/Other.ps1)' {
         $root = New-RefFixture
         try {
-            $default = Find-PathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -WarningAction SilentlyContinue
+            $default = Find-NetscootPathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -WarningAction SilentlyContinue
             ($default.File | ForEach-Object { Split-Path -Leaf $_ }) | Should -Not -Contain 'Other.ps1'
 
-            $all = Find-PathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -AllFiles -WarningAction SilentlyContinue
+            $all = Find-NetscootPathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -AllFiles -WarningAction SilentlyContinue
             ($all.File | ForEach-Object { Split-Path -Leaf $_ }) | Should -Contain 'Other.ps1' -Because '-AllFiles searches every text file, including source the default scan skips'
             # The original build/CI/hook hits are still present under -AllFiles.
             ($all.File | ForEach-Object { Split-Path -Leaf $_ }) | Should -Contain 'build.ps1'
@@ -63,7 +63,7 @@ Describe 'Find-PathReference' {
             New-Item -ItemType Directory -Path (Join-Path $root 'bin') -Force | Out-Null
             Set-Content -LiteralPath (Join-Path $root (Join-Path 'bin' 'cached.txt')) -Value 'lib/Foo.csproj' -Encoding UTF8
 
-            $all = Find-PathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -AllFiles -WarningAction SilentlyContinue
+            $all = Find-NetscootPathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -AllFiles -WarningAction SilentlyContinue
             $leaves = @($all.File | ForEach-Object { Split-Path -Leaf $_ })
             $leaves | Should -Not -Contain 'Foo.dll'     -Because 'binary extensions are skipped even under -AllFiles'
             $leaves | Should -Not -Contain 'cached.txt'  -Because 'cache/vendor dirs (bin/) are excluded even under -AllFiles'
@@ -73,7 +73,7 @@ Describe 'Find-PathReference' {
     It 'warns and emits objects with the common reference shape' {
         $root = New-RefFixture
         try {
-            $r = Find-PathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -WarningVariable w -WarningAction SilentlyContinue
+            $r = Find-NetscootPathReference -Path (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -RepositoryRoot $root -WarningVariable w -WarningAction SilentlyContinue
             ($w -join "`n") | Should -Match 'NOT auto-reconciled'
             foreach ($f in 'File', 'Line', 'Confidence', 'Text') { $r[0].PSObject.Properties.Name | Should -Contain $f }
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
@@ -95,7 +95,7 @@ Describe 'Find-PathReference' {
             # Pre-fix this threw at Get-RepositoryRoot (Get-Item on the missing -Path needle); a throw
             # here fails the test, which is the regression guard. Then confirm it still finds the
             # lingering references in the build/CI/hook files (the whole point of the sweep).
-            $r = Find-PathReference -Path 'lib\Foo.csproj' -WarningAction SilentlyContinue
+            $r = Find-NetscootPathReference -Path 'lib\Foo.csproj' -WarningAction SilentlyContinue
             ($r | Where-Object Confidence -eq 'High' | ForEach-Object { Split-Path -Leaf $_.File }) |
                 Should -Contain 'build.ps1' -Because 'the old path is exactly what we are sweeping for'
         } finally {

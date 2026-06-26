@@ -27,17 +27,17 @@ the user to the project's install steps and let them run them; never auto-instal
 
 To understand a repository before touching it, use these; do not parse solution/project files by hand:
 
-- `Test-SolutionConsistency` - projects whose membership diverges across solutions (`-Debug` for
+- `Test-NetscootSolutionConsistency` - projects whose membership diverges across solutions (`-Debug` for
   the full solution/project matrix).
-- `Get-SolutionInventory` - the full contents of every solution: projects of any type (including
+- `Get-NetscootSolutionInventory` - the full contents of every solution: projects of any type (including
   non-CLI ones like `.pssproj`), solution folders, and solution items, plus projects on disk that
   no solution references. Goes beyond `dotnet sln list`, which only lists CLI-buildable projects.
-- `Repair-SolutionReferences` (no flags) - report dangling solution entries / `<ProjectReference>`s.
-- `Find-PathReference` - build/CI/hook scripts that hardcode a path no move reconciles.
+- `Repair-NetscootSolutionReferences` (no flags) - report dangling solution entries / `<ProjectReference>`s.
+- `Find-NetscootPathReference` - build/CI/hook scripts that hardcode a path no move reconciles.
 - `Resolve-MoveEngine` - which engine a given path classifies to.
 - `Get-NetscootCapability` - whether git and dotnet are present, plus the platform.
 
-To resolve a divergence that `Test-SolutionConsistency` reports, run `Sync-Solution` (it adds each
+To resolve a divergence that `Test-NetscootSolutionConsistency` reports, run `Sync-NetscootSolution` (it adds each
 project to the solutions missing it; preview with `-WhatIf`), or add it by hand with
 `dotnet sln <solution> add <project>`. These are the right tools when the task is "audit" or
 "sync the solutions," not only when moving.
@@ -89,17 +89,17 @@ non-trivial.
 These work on an existing repository without moving anything. Inspect first, then repair if needed.
 
 ```powershell
-Get-SolutionInventory     -RepositoryRoot .          # full contents of every solution + projects in none
-Test-SolutionConsistency  -RepositoryRoot .          # projects whose solution membership diverges
-Sync-Solution             -RepositoryRoot . -WhatIf  # resolve divergence: add each project where it is missing
-Repair-SolutionReferences -RepositoryRoot .          # report dangling entries (relocatable / missing / ambiguous)
-Repair-SolutionReferences -RepositoryRoot . -Fix     # re-point dangling entries at the project's new location
-Repair-SolutionReferences -RepositoryRoot . -Prune   # remove entries whose project is gone for good
-Find-PathReference -Path ./src/Tarragon/Tarragon.csproj  # build/CI/hook scripts that hardcode the path (report-only)
+Get-NetscootSolutionInventory     -RepositoryRoot .          # full contents of every solution + projects in none
+Test-NetscootSolutionConsistency  -RepositoryRoot .          # projects whose solution membership diverges
+Sync-NetscootSolution             -RepositoryRoot . -WhatIf  # resolve divergence: add each project where it is missing
+Repair-NetscootSolutionReferences -RepositoryRoot .          # report dangling entries (relocatable / missing / ambiguous)
+Repair-NetscootSolutionReferences -RepositoryRoot . -Fix     # re-point dangling entries at the project's new location
+Repair-NetscootSolutionReferences -RepositoryRoot . -Prune   # remove entries whose project is gone for good
+Find-NetscootPathReference -Path ./src/Tarragon/Tarragon.csproj  # build/CI/hook scripts that hardcode the path (report-only)
 ```
 
 `-Fix` relocates; it does not delete. Removal is only `-Prune`, and only for entries whose
-project cannot be found anywhere. `Sync-Solution` only adds membership, never removes. All honor
+project cannot be found anywhere. `Sync-NetscootSolution` only adds membership, never removes. All honor
 `-WhatIf`.
 
 ## If you must do it without the module

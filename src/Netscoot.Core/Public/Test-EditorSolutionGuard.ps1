@@ -8,7 +8,7 @@ function Test-EditorSolutionGuard {
         Consolidating to a single .slnx is not durable on its own. VS Code's C# Dev Kit
         AUTO-GENERATES a legacy .sln next to a .slnx on folder open unless
         'dotnet.automaticallyCreateSolutionInWorkspace' is false, so a regenerated .sln reappears and
-        drifts (the exact stale-duplicate that Test-SolutionConsistency detects after the fact).
+        drifts (the exact stale-duplicate that Test-NetscootSolutionConsistency detects after the fact).
         When at least one .slnx exists in the repository, this inspects the repository-root editor
         config and reports whether the guards that keep the consolidation durable are in place:
 
@@ -48,10 +48,10 @@ function Test-EditorSolutionGuard {
         Get-Item ./repo | Test-EditorSolutionGuard
 
     .LINK
-        Test-SolutionConsistency
+        Test-NetscootSolutionConsistency
 
     .LINK
-        Get-SolutionInventory
+        Get-NetscootSolutionInventory
     #>
     [CmdletBinding()]
     [OutputType('Netscoot.EditorSolutionGuard')]

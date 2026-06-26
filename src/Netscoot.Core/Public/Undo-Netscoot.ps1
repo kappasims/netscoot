@@ -251,23 +251,23 @@ function Invoke-MoveJournalUndo {
 function Test-PostUndoConsistency {
     # Best-effort read-only sweep after an out-of-order reversal, to surface references the reversal
     # may have left dangling. Reconciliation by engine differs; today this covers the .NET case
-    # (solution membership and ProjectReferences) via Repair-SolutionReferences in its read-only mode.
+    # (solution membership and ProjectReferences) via Repair-NetscootSolutionReferences in its read-only mode.
     # Findings are aggregated into a single warning with the one-line repair command; a clean sweep
     # is noted quietly. Never throws - a missing tool or probe failure must not mask the undo itself.
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$RepositoryRoot)
-    if (-not (Get-Command Repair-SolutionReferences -ErrorAction SilentlyContinue)) { return }
+    if (-not (Get-Command Repair-NetscootSolutionReferences -ErrorAction SilentlyContinue)) { return }
     try {
         # Read-only (no -Fix/-Prune): returns one object per dangling entry. Suppress its progress
         # (info stream 6) and any "dotnet unavailable" error (stream 2) - this is a courtesy check.
-        $problems = @(Repair-SolutionReferences -RepositoryRoot $RepositoryRoot -ErrorAction SilentlyContinue 6>$null 2>$null)
+        $problems = @(Repair-NetscootSolutionReferences -RepositoryRoot $RepositoryRoot -ErrorAction SilentlyContinue 6>$null 2>$null)
     } catch {
         Write-Verbose "Post-undo consistency probe failed: $_"
         return
     }
     if ($problems.Count) {
         $byKind = ($problems | Group-Object Resolution | Sort-Object Name | ForEach-Object { "$($_.Count) $($_.Name)" }) -join ', '
-        Write-Warning "Post-undo consistency: $($problems.Count) reference(s) are now dangling ($byKind). Repair with: Repair-SolutionReferences -RepositoryRoot '$RepositoryRoot' -Fix"
+        Write-Warning "Post-undo consistency: $($problems.Count) reference(s) are now dangling ($byKind). Repair with: Repair-NetscootSolutionReferences -RepositoryRoot '$RepositoryRoot' -Fix"
     } else {
         Write-Host 'Post-undo consistency: no dangling references detected.' -ForegroundColor DarkGray
     }

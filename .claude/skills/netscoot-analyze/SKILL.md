@@ -17,11 +17,11 @@ the project-type-specific skills (`restructure-dotnet`, `restructure-powershell`
 
 | Question | Cmdlet |
 | --- | --- |
-| What projects are in this solution? Any orphans? Solution folders or solution items? | `Get-SolutionInventory` |
-| Are `.sln` and `.slnx` in sync? Do solutions agree on membership? | `Test-SolutionConsistency` |
-| Any dangling solution entries or broken `<ProjectReference>`s? | `Repair-SolutionReferences` (no flags is report-only) |
-| Where else does this path/file appear in build scripts, CI, hooks, container files? | `Find-PathReference -Path <old-id-or-path>` |
-| Did I miss any references after the rename? Is the refactor complete? | `Find-PathReference -Path <old-id-or-path>` (see the canonical pattern below) |
+| What projects are in this solution? Any orphans? Solution folders or solution items? | `Get-NetscootSolutionInventory` |
+| Are `.sln` and `.slnx` in sync? Do solutions agree on membership? | `Test-NetscootSolutionConsistency` |
+| Any dangling solution entries or broken `<ProjectReference>`s? | `Repair-NetscootSolutionReferences` (no flags is report-only) |
+| Where else does this path/file appear in build scripts, CI, hooks, container files? | `Find-NetscootPathReference -Path <old-id-or-path>` |
+| Did I miss any references after the rename? Is the refactor complete? | `Find-NetscootPathReference -Path <old-id-or-path>` (see the canonical pattern below) |
 | What engine would move this file? Can netscoot handle it? | `Resolve-MoveEngine -Path <file>` |
 | Does this environment have what netscoot needs? | `Get-NetscootCapability` |
 | Will my `.slnx` consolidation stay durable, or will VS Code re-create a `.sln`? | `Test-EditorSolutionGuard` |
@@ -35,7 +35,7 @@ for the common columns; the full record is always there for `Select-Object`.
 When a refactor, rename, or move appears done, run
 
 ```powershell
-Find-PathReference -Path <old identifier or path>
+Find-NetscootPathReference -Path <old identifier or path>
 ```
 
 over the OLD identifier (a moved file's old path, a renamed type, a removed namespace, an old DLL
@@ -50,7 +50,7 @@ snippets. Use this BEFORE declaring a rename "complete." If it returns rows, fix
 and re-run; treat a zero-row result with no warning as the all-clear.
 
 This is the canonical pattern for "did I miss anything." Do not substitute ad-hoc `Grep` over
-the repository: `Find-PathReference` already knows which file kinds are candidates, applies a
+the repository: `Find-NetscootPathReference` already knows which file kinds are candidates, applies a
 confidence rating, and excludes paths the move machinery already reconciled.
 
 By default it scans only the non-canonical automation file class (build/CI/hooks/containers). If

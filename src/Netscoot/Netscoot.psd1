@@ -17,10 +17,10 @@
     # Move-NativeProject is Windows-only at runtime but part of the package.
     FunctionsToExport    = @(
         'Clear-NetscootJournal',
-        'Find-PathReference',
+        'Find-NetscootPathReference',
         'Get-NetscootCapability',
+        'Get-NetscootSolutionInventory',
         'Get-NetscootUpdatePolicy',
-        'Get-SolutionInventory',
         'Invoke-Netscoot',
         'Move-DotnetFile',
         'Move-DotnetFolder',
@@ -35,14 +35,14 @@
         'Move-UnityAsset',
         'Register-NetscootGitAlias',
         'Repair-NetscootJournal',
-        'Repair-SolutionReferences',
+        'Repair-NetscootSolutionReferences',
         'Resolve-MoveEngine',
         'Set-NetscootJournal',
         'Set-NetscootUpdatePolicy',
-        'Sync-Solution',
+        'Sync-NetscootSolution',
         'Test-EditorSolutionGuard',
+        'Test-NetscootSolutionConsistency',
         'Test-NetscootUpdate',
-        'Test-SolutionConsistency',
         'Test-UnityMetaIntegrity',
         'Undo-Netscoot',
         'Unregister-NetscootGitAlias',
@@ -50,7 +50,14 @@
     )
     CmdletsToExport      = @()
     VariablesToExport    = @()
-    AliasesToExport      = @('Scoot')
+    AliasesToExport      = @(
+        'Find-PathReference',
+        'Get-SolutionInventory',
+        'Repair-SolutionReferences',
+        'Scoot',
+        'Sync-Solution',
+        'Test-SolutionConsistency'
+    )
     PrivateData          = @{
         PSData = @{
             # OS tags (Windows/Linux/macOS) surface the platform badges on the Gallery; PowerShellGet

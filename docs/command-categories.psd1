@@ -16,8 +16,8 @@
             Name  = 'Inspect'
             Blurb = 'Read-only audits. These change nothing.'
             Commands = @(
-                'Resolve-MoveEngine', 'Get-NetscootCapability', 'Test-SolutionConsistency',
-                'Get-SolutionInventory', 'Find-PathReference', 'Test-UnityMetaIntegrity',
+                'Resolve-MoveEngine', 'Get-NetscootCapability', 'Test-NetscootSolutionConsistency',
+                'Get-NetscootSolutionInventory', 'Find-NetscootPathReference', 'Test-UnityMetaIntegrity',
                 'Test-EditorSolutionGuard'
             )
         },
@@ -25,7 +25,7 @@
             Name  = 'Manage'
             Blurb = 'Reconcile a repository, undo moves, and control the journal.'
             Subcategories = @(
-                @{ Name = 'Reconcile';      Commands = @('Repair-SolutionReferences', 'Sync-Solution') }
+                @{ Name = 'Reconcile';      Commands = @('Repair-NetscootSolutionReferences', 'Sync-NetscootSolution') }
                 @{ Name = 'Undo & journal'; Commands = @('Undo-Netscoot', 'Repair-NetscootJournal', 'Set-NetscootJournal', 'Clear-NetscootJournal') }
             )
         },

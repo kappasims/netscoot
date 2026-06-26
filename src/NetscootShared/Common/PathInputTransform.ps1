@@ -1,6 +1,6 @@
 # Pipeline-input gate for every cmdlet that takes a path/root from the pipeline - the MUTATING movers
-# and reconcilers (Move-*, Repair-SolutionReferences, Sync-Solution) and the read-only analysis
-# cmdlets (Test-SolutionConsistency, Get-SolutionInventory, Test-UnityMetaIntegrity, Find-PathReference,
+# and reconcilers (Move-*, Repair-NetscootSolutionReferences, Sync-NetscootSolution) and the read-only analysis
+# cmdlets (Test-NetscootSolutionConsistency, Get-NetscootSolutionInventory, Test-UnityMetaIntegrity, Find-NetscootPathReference,
 # Resolve-MoveEngine), so the whole module shares ONE pipeline contract.
 #
 # Each accepts its target as a [string] path bound ByValue from the pipeline. We also want to accept a
@@ -49,7 +49,7 @@ namespace Netscoot
                 "Unsupported pipeline input: expected a path string or a file/directory item " +
                 "(System.IO.FileSystemInfo from Get-ChildItem/Get-Item), but got [" + actual + "]. " +
                 "Pipe a path string or a Get-Item result - not a report/result object such as the " +
-                "output of Test-SolutionConsistency, Get-SolutionInventory, or Test-UnityMetaIntegrity.");
+                "output of Test-NetscootSolutionConsistency, Get-NetscootSolutionInventory, or Test-UnityMetaIntegrity.");
         }
     }
 }

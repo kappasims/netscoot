@@ -25,11 +25,11 @@ folder to the module mover. Always dry-run with `-WhatIf` first.
 
 ## Analyze/audit first (read-only)
 
-Before moving, use the read-only surface rather than grepping by hand: `Find-PathReference` (the
+Before moving, use the read-only surface rather than grepping by hand: `Find-NetscootPathReference` (the
 build/CI/hook scripts that hardcode a path), `Resolve-MoveEngine` (how a path classifies), and
-`Get-NetscootCapability` (git present? platform?). `Test-SolutionConsistency`,
-`Get-SolutionInventory`, `Repair-SolutionReferences`, and `Sync-Solution` are .NET-solution tools;
-reach for them when a PowerShell repository also carries `.csproj`/`.sln`. `Get-SolutionInventory` in
+`Get-NetscootCapability` (git present? platform?). `Test-NetscootSolutionConsistency`,
+`Get-NetscootSolutionInventory`, `Repair-NetscootSolutionReferences`, and `Sync-NetscootSolution` are .NET-solution tools;
+reach for them when a PowerShell repository also carries `.csproj`/`.sln`. `Get-NetscootSolutionInventory` in
 particular lists non-CLI project types a PowerShell solution may include, such as a `.pssproj`,
 which `dotnet sln list` does not surface.
 
