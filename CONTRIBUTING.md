@@ -61,15 +61,15 @@ what it touches - never both unless it changes both:
   doc and skill edits.
 - **The plugin** (`.claude-plugin/` + the skills in `.claude/skills/`) - the AI-agent skills. They
   reach users via `/plugin update`, gated on the `version` in `.claude-plugin/plugin.json`, which is
-  versioned independently of the module. To ship a skill or doc fix with no module release:
+  versioned independently of the module. The marketplace tracks the repository's default branch
+  (`develop`), so a skill or plugin fix ships with **no module release and no `master` involvement**:
 
   1. Make the change and bump `version` in `.claude-plugin/plugin.json`.
-  2. Commit and push `develop`; let CI go green on that commit.
-  3. Fast-forward `master` (the marketplace tracks it): `git checkout master`,
-     `git merge --ff-only develop`, `git push origin master`, `git checkout develop`.
+  2. Commit and push `develop`. Once it is on `develop`, `/plugin update netscoot` picks it up.
 
-  No manifest stamp, no Gallery publish, no full module gate. Build/CI tooling and standalone docs
-  follow the same path - they reach users by landing on `master`, not by a module version bump.
+  No manifest stamp, no Gallery publish, no `master` fast-forward, no full module gate. (`master` is
+  only for module releases - the Gallery package and its tag.) Build/CI tooling and standalone docs
+  ride along the same way: they land on `develop` and need no module version bump.
 
 ## Modules
 
