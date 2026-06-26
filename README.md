@@ -1533,7 +1533,7 @@ snapshot. `-Id` limits the action to one entry (by its journal id). `-ClearOrpha
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑RepositoryRoot` | String | false | false | Repository whose journal to inspect, and the boundary every recovery is confined to. Defaults to the enclosing git repository root of the current directory. |
+| `‑RepositoryRoot` | String | false | false | Repository whose journal to inspect, and the boundary every recovery is confined to. Defaults to the enclosing git repository root. |
 | `‑Rollback` | SwitchParameter | true | false | Roll each interrupted move back to its pre-move state (high-impact: prompts unless `-Force`). |
 | `‑Discard` | SwitchParameter | true | false | Forget each interrupted move without touching the working tree (removes its snapshot). |
 | `‑Id` | String | false | false | Act on only the interrupted move with this journal id. |
@@ -1609,7 +1609,7 @@ be combined.
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑RepositoryRoot` | String | false | true (ByValue) | Root to scan. Defaults to the enclosing git repository root of the current directory. |
+| `‑RepositoryRoot` | String | false | true (ByValue) | Root to scan. Defaults to the enclosing git repository root. |
 | `‑Fix` | SwitchParameter | false | false | Re-point each dangling entry at the moved project when its new location is unambiguous. Honors `-WhatIf`. |
 | `‑Prune` | SwitchParameter | false | false | Remove entries whose project cannot be found anywhere in the repository. Honors `-WhatIf`. |
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
@@ -2111,7 +2111,7 @@ moves ran (it is by default; opt out with `$env:NETSCOOT_JOURNAL` or git config 
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑RepositoryRoot` | String | false | false | Repository whose journal to use, and the boundary every reversal is confined to. Defaults to the enclosing git repository root of the current directory. |
+| `‑RepositoryRoot` | String | false | false | Repository whose journal to use, and the boundary every reversal is confined to. Defaults to the enclosing git repository root. |
 | `‑Last` | SwitchParameter | false | false | Reverse only the most recent move (the default). |
 | `‑Id` | String | true | false | Reverse one specific move, identified by its journal id (the 8-character id from `-List`). If it is not the most recent move, a read-only sweep afterward reports any references the out-of-order reversal left dangling. |
 | `‑After` | DateTime | true | false | Reverse every move recorded strictly after this time, newest first. The time need not match any recorded entry. |

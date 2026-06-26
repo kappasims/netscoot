@@ -30,7 +30,7 @@ function Undo-Netscoot {
 
     .PARAMETER RepositoryRoot
         Repository whose journal to use, and the boundary every reversal is confined to. Defaults to
-        the enclosing git repository root of the current directory.
+        the enclosing git repository root.
 
     .PARAMETER Last
         Reverse only the most recent move (the default).

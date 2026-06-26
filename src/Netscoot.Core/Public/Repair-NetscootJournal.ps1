@@ -20,7 +20,7 @@ function Repair-NetscootJournal {
 
     .PARAMETER RepositoryRoot
         Repository whose journal to inspect, and the boundary every recovery is confined to. Defaults
-        to the enclosing git repository root of the current directory.
+        to the enclosing git repository root.
 
     .PARAMETER Rollback
         Roll each interrupted move back to its pre-move state (high-impact: prompts unless -Force).

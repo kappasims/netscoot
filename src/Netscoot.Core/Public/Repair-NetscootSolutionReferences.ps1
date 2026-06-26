@@ -21,7 +21,7 @@ function Repair-NetscootSolutionReferences {
         CLI. -Prune never touches Relocatable or Ambiguous entries. -Fix and -Prune can be combined.
 
     .PARAMETER RepositoryRoot
-        Root to scan. Defaults to the enclosing git repository root of the current directory.
+        Root to scan. Defaults to the enclosing git repository root.
 
     .PARAMETER Fix
         Re-point each dangling entry at the moved project when its new location is unambiguous.

@@ -31,7 +31,7 @@ function Clear-NetscootJournal {
     .LINK
         Repair-NetscootJournal
     #>
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType([void])]
     param([string]$RepositoryRoot)
 
