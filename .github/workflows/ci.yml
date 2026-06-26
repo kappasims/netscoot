@@ -75,6 +75,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Install a current PSScriptAnalyzer rather than relying on the runner image's bundled copy.
+      # Older bundled versions throw "more than one dynamic module in each dynamic assembly" from the
+      # per-file analyze loop (a reflection-emit limit), which is an analyzer-version artifact, not a
+      # finding. Pinning here keeps the gate deterministic and matched to the supported toolchain.
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          function Install-ModuleWithRetry([string]$Name) {
+            for ($i = 1; $i -le 5; $i++) {
+              try {
+                Install-Module -Name $Name -Scope CurrentUser -Force -AllowClobber -Repository PSGallery -ErrorAction Stop
+                return
+              } catch {
+                Write-Host "::warning::Install of $Name failed (attempt $i/5): $($_.Exception.Message)"
+                if ($i -eq 5) { throw }
+                Start-Sleep -Seconds (5 * $i)
+              }
+            }
+          }
+          Install-ModuleWithRetry -Name PSScriptAnalyzer
       - name: Analyze
         shell: pwsh
         run: ./build.ps1 -Task Analyze

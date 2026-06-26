@@ -14,6 +14,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   release" and the installer's latest-version path could not resolve a release. Now uses
   `/repos/<owner>/<name>`. (Note: the broken check shipped in earlier versions, so a self-update
   from one of those still needs a one-time manual `Install-Module Netscoot` to land this fix.)
+- The umbrella `Netscoot` module now owns its cmdlets. It loaded each engine globally, so the 31
+  public cmdlets were owned by the engine modules: `Get-Command -Module Netscoot` returned nothing
+  and `(Get-Module Netscoot).ExportedCommands` was empty (and `Test-ModuleManifest` warned that the
+  manifest exported functions the root module did not define) - even though every cmdlet resolved
+  and ran. The engines are now imported nested and their functions re-exported from the umbrella,
+  so `Get-Command -Module Netscoot` lists all 31, `ExportedCommands` is populated, and
+  `Get-Command <cmdlet>` reports `Netscoot` as the source. The Windows-only native engine stays
+  conditional and runtime behavior is unchanged.
 
 ## [2.6.0] - 2026-06-26
 
