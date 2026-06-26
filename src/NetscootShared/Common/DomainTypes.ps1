@@ -24,65 +24,99 @@ using System;
 
 namespace Netscoot
 {
-    // ---- Move results: a common base + one derived type per engine/operation -----------------
-    // Source/Destination are ABSOLUTE paths (the on-disk locations the move acted on).
-    public class MoveResultBase
+    // ---- Move results: FLAT classes, NOT a base + derived hierarchy. PowerShell enumerates a
+    // derived type's own fields before the inherited base fields, which would scramble the
+    // documented "uniform base shape (Engine/Source/Destination/Performed/SkippedCount) first, then
+    // engine-specific extras in written order" contract. Declaring all fields in one class fixes the
+    // enumeration order deterministically. Source/Destination are ABSOLUTE paths.
+    public class MoveResult                  // dotnet project
     {
         public string Engine;
         public string Source;
         public string Destination;
         public bool   Performed;
         public int    SkippedCount;
-    }
-
-    public class MoveResult : MoveResultBase          // dotnet project
-    {
-        public string[]    Solutions;
-        public int         ConsumerCount;
-        public int         OwnRefCount;
+        public string[]       Solutions;
+        public int            ConsumerCount;
+        public int            OwnRefCount;
         public Nullable<bool> Built;
     }
 
-    public class TreeMoveResult : MoveResultBase      // dotnet folder/tree
+    public class TreeMoveResult              // dotnet folder/tree
     {
-        public int         ProjectsMoved;
-        public int         ConsumerCount;
+        public string Engine;
+        public string Source;
+        public string Destination;
+        public bool   Performed;
+        public int    SkippedCount;
+        public int            ProjectsMoved;
+        public int            ConsumerCount;
         public Nullable<bool> Built;
     }
 
-    public class SolutionMoveResult : MoveResultBase  // .sln/.slnx file
+    public class SolutionMoveResult          // .sln/.slnx file
     {
+        public string Engine;
+        public string Source;
+        public string Destination;
+        public bool   Performed;
+        public int    SkippedCount;
         public int ProjectsRebased;
     }
 
-    public class ImportMoveResult : MoveResultBase    // .props/.targets
+    public class ImportMoveResult            // .props/.targets
     {
+        public string Engine;
+        public string Source;
+        public string Destination;
+        public bool   Performed;
+        public int    SkippedCount;
         public int  ImportersFixed;
         public int  OwnImportsFixed;
         public bool AutoImported;
     }
 
-    public class ScriptMoveResult : MoveResultBase    // .ps1 script
+    public class ScriptMoveResult            // .ps1 script
     {
+        public string Engine;
+        public string Source;
+        public string Destination;
+        public bool   Performed;
+        public int    SkippedCount;
         public int ReferencersFixed;
         public int OwnRefsFixed;
         public int UnresolvedRefs;
     }
 
-    public class PSModuleMoveResult : MoveResultBase  // PowerShell module
+    public class PSModuleMoveResult          // PowerShell module
     {
+        public string Engine;
+        public string Source;
+        public string Destination;
+        public bool   Performed;
+        public int    SkippedCount;
         public string Manifest;
     }
 
-    public class NativeMoveResult : MoveResultBase    // .vcxproj
+    public class NativeMoveResult            // .vcxproj
     {
-        public string[]      Solutions;
+        public string Engine;
+        public string Source;
+        public string Destination;
+        public bool   Performed;
+        public int    SkippedCount;
+        public string[]        Solutions;
         public NativeSetting[] UnreconciledSettings;
-        public bool          HadFilters;
+        public bool            HadFilters;
     }
 
-    public class UnityMoveResult : MoveResultBase     // Unity asset
+    public class UnityMoveResult             // Unity asset
     {
+        public string Engine;
+        public string Source;
+        public string Destination;
+        public bool   Performed;
+        public int    SkippedCount;
         public bool     MetaMoved;
         public bool     IsAsmdef;
         public string[] ReferencedBy;
