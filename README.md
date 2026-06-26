@@ -585,7 +585,7 @@ tool reconciles. Report-only.
 ##### Syntax
 
 ```powershell
-Find-PathReference [-Path] <string> [-RepositoryRoot <string>] [-AdditionalGlob <string[]>] [<CommonParameters>]
+Find-PathReference [-Path] <string> [-RepositoryRoot <string>] [-AdditionalGlob <string[]>] [-AllFiles] [<CommonParameters>]
 ```
 
 Moving a project/folder breaks any path hardcoded in `build.ps1`, CI YAML, git hooks, tools scripts,
@@ -594,8 +594,12 @@ cannot be safely auto-rewritten (a blind regex could corrupt logic). This detect
 name, not a hardcoded filename list) and reports lines that reference the given path, so you (or an agent) can fix them
 deliberately. It never edits anything. Two confidence tiers: High when the item's repository-relative path appears (e.g.
 '`lib/Tarragon.csproj`' or 'lib\\`Tarragon.csproj`'), Low when only the bare leaf name appears (e.g.
-'`Tarragon.csproj`'), which is likely but not certain. Run it before a move (to see what will break) or after (searching
-the old path).
+'`Tarragon.csproj`'), which is likely but not certain. By default it scans only the class of non-canonical,
+path-hardcoding files (the ones no first-party tool reconciles), which keeps the result focused and avoids flagging the
+project's own source. Pass `-AllFiles` to instead search EVERY text file under the repository (caches, vendored dirs,
+and binary files excluded) - the "look literally everywhere" mode for when a reference may live in an ordinary source
+file the default classifier skips (e.g. a build script in a non-standard directory). Both modes are report-only and
+never edit. Run it before a move (to see what will break) or after (searching the old path).
 
 ##### Parameters
 
@@ -604,6 +608,7 @@ the old path).
 | `‑Path` | String | true | true (ByValue) | The path whose references to find (typically a recently moved item). Accepts pipeline input: a path string, or a file/directory item from Get-Item / Get-ChildItem. |
 | `‑RepositoryRoot` | String | false | false | Root to scan. Defaults to the enclosing git repository root. |
 | `‑AdditionalGlob` | String[] | false | false | Extra repository-relative globs to include in the candidate set (e.g. 'deploy/*.sh'). |
+| `‑AllFiles` | SwitchParameter | false | false | Search every text file under the repository instead of only the build/CI/hook/container file class. Caches/vendored dirs (.git, bin, obj, node_modules, ...) and binary file kinds are still excluded. Broader and noisier, but catches references in ordinary source files the default scan deliberately skips. |
 
 ##### Output
 
@@ -629,6 +634,9 @@ Find-PathReference -Path ./libs/Tarragon/Tarragon.csproj
 
 # Widen the candidate set with extra repository-relative globs
 Find-PathReference -Path ./lib/Tarragon.csproj -AdditionalGlob 'deploy/*.sh','*.psake.ps1'
+
+# Search EVERY text file (not just build/CI/hook files) for the reference
+Find-PathReference -Path ./lib/Tarragon.csproj -AllFiles
 ```
 
 [Back to Command reference](#command-reference)

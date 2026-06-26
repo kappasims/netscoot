@@ -16,6 +16,13 @@ function Find-PathReference {
         'lib/Tarragon.csproj' or 'lib\Tarragon.csproj'), Low when only the bare leaf name appears (e.g.
         'Tarragon.csproj'), which is likely but not certain.
 
+        By default it scans only the class of non-canonical, path-hardcoding files (the ones no
+        first-party tool reconciles), which keeps the result focused and avoids flagging the
+        project's own source. Pass -AllFiles to instead search EVERY text file under the repository
+        (caches, vendored dirs, and binary files excluded) - the "look literally everywhere" mode for
+        when a reference may live in an ordinary source file the default classifier skips (e.g. a
+        build script in a non-standard directory). Both modes are report-only and never edit.
+
         Run it before a move (to see what will break) or after (searching the old path).
 
     .PARAMETER Path
@@ -28,6 +35,12 @@ function Find-PathReference {
     .PARAMETER AdditionalGlob
         Extra repository-relative globs to include in the candidate set (e.g. 'deploy/*.sh').
 
+    .PARAMETER AllFiles
+        Search every text file under the repository instead of only the build/CI/hook/container file
+        class. Caches/vendored dirs (.git, bin, obj, node_modules, ...) and binary file kinds are
+        still excluded. Broader and noisier, but catches references in ordinary source files the
+        default scan deliberately skips.
+
     .OUTPUTS
         Netscoot.PathReference - one per matching line.
 
@@ -38,6 +51,8 @@ function Find-PathReference {
         Find-PathReference -Path ./libs/Tarragon/Tarragon.csproj
         # Widen the candidate set with extra repository-relative globs
         Find-PathReference -Path ./lib/Tarragon.csproj -AdditionalGlob 'deploy/*.sh','*.psake.ps1'
+        # Search EVERY text file (not just build/CI/hook files) for the reference
+        Find-PathReference -Path ./lib/Tarragon.csproj -AllFiles
     #>
     [CmdletBinding()]
     [OutputType('Netscoot.PathReference')]
@@ -47,7 +62,8 @@ function Find-PathReference {
         [ValidateNotNullOrEmpty()]
         [string]$Path,
         [string]$RepositoryRoot,
-        [string[]]$AdditionalGlob = @()
+        [string[]]$AdditionalGlob = @(),
+        [switch]$AllFiles
     )
 
     process {
@@ -73,7 +89,7 @@ function Find-PathReference {
         $leafRegex = [regex]::new('(?<![\w.])' + [regex]::Escape($leaf) + '(?![\w])', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
         $hits = 0
-        foreach ($file in (Get-PathBearingFile -RepositoryRoot $root -AdditionalGlob $AdditionalGlob)) {
+        foreach ($file in (Get-PathBearingFile -RepositoryRoot $root -AdditionalGlob $AdditionalGlob -AllFiles:$AllFiles)) {
             $n = 0
             foreach ($line in (Get-Content -LiteralPath $file.FullName -ErrorAction SilentlyContinue)) {
                 $n++
@@ -97,7 +113,8 @@ function Find-PathReference {
         }
 
         if ($hits -gt 0) {
-            Write-Warning "$hits path-bearing reference(s) to '$leaf' found in non-canonical files (build/CI/hooks/etc.). These are not auto-reconciled - review and fix them by hand."
+            $scope = if ($AllFiles) { 'files across the repository' } else { 'non-canonical files (build/CI/hooks/etc.)' }
+            Write-Warning "$hits reference(s) to '$leaf' found in $scope. These are not auto-reconciled - review and fix them by hand."
         }
     }
 }

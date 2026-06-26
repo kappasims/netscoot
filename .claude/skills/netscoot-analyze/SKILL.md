@@ -53,6 +53,13 @@ This is the canonical pattern for "did I miss anything." Do not substitute ad-ho
 the repository: `Find-PathReference` already knows which file kinds are candidates, applies a
 confidence rating, and excludes paths the move machinery already reconciled.
 
+By default it scans only the non-canonical automation file class (build/CI/hooks/containers). If
+a reference might live in an ordinary source file in a non-standard directory - common mid-refactor
+when files were moved into new dirs - add `-AllFiles` to search every text file under the
+repository (caches/vendored dirs and binaries still excluded). Use `-AllFiles` for the thorough
+"search literally everywhere" pass when the default returns nothing but you suspect a reference
+survives.
+
 ## Use the installed module
 
 `Import-Module Netscoot` if available. If it is not installed, point the user at the
