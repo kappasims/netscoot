@@ -125,6 +125,34 @@ function Invoke-TestTask {
     Invoke-Pester -Configuration $cfg
 }
 
+$script:AnalyzerFields = @('RuleName', 'Severity', 'ScriptName', 'Line', 'Message')
+
+function script:Invoke-AnalyzerInChildProcess {
+    # Re-analyze ONE file in a fresh PowerShell process so PSScriptAnalyzer's reflection-emit state
+    # starts clean. This is the recovery path for an analyzer-engine crash in the shared in-process
+    # loop (see Invoke-AnalyzeTask). Paths go through the environment to dodge any quoting pitfalls.
+    # Returns the file's findings as plain objects; throws if even the isolated run crashes.
+    param([Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)][string]$Settings)
+    $exeName = if ($PSVersionTable.PSEdition -eq 'Core') { 'pwsh' } else { 'powershell' }
+    if (script:Test-IsWindowsBuild) { $exeName += '.exe' }
+    $psExe = Join-Path $PSHOME $exeName
+    $env:NS_ANALYZE_FILE = $Path
+    $env:NS_ANALYZE_SETTINGS = $Settings
+    try {
+        $cmd = 'Import-Module PSScriptAnalyzer; ' +
+        'Invoke-ScriptAnalyzer -Path $env:NS_ANALYZE_FILE -Settings $env:NS_ANALYZE_SETTINGS | ' +
+        'Select-Object ' + ($script:AnalyzerFields -join ',') + ' | ConvertTo-Json -Depth 4 -Compress'
+        $json = & $psExe -NoProfile -NonInteractive -Command $cmd
+        if ($LASTEXITCODE -ne 0) {
+            throw "PSScriptAnalyzer crashed analyzing $(Split-Path $Path -Leaf) even in an isolated process (exit $LASTEXITCODE)."
+        }
+        if ([string]::IsNullOrWhiteSpace(($json -join ''))) { return @() }
+        return @($json | ConvertFrom-Json)
+    } finally {
+        Remove-Item Env:\NS_ANALYZE_FILE, Env:\NS_ANALYZE_SETTINGS -ErrorAction SilentlyContinue
+    }
+}
+
 function Invoke-AnalyzeTask {
     if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) {
         Write-Warning 'PSScriptAnalyzer not installed; skipping. (Install-Module PSScriptAnalyzer -Scope CurrentUser)'
@@ -132,14 +160,28 @@ function Invoke-AnalyzeTask {
     }
     Import-Module PSScriptAnalyzer
     $settings = Join-Path $root 'PSScriptAnalyzerSettings.psd1'
-    # Enumerate the files ourselves and analyze each: Invoke-ScriptAnalyzer's own -Recurse
-    # directory walk throws a NullReferenceException on some runner PSSA versions, and per-file
-    # also isolates a crashing rule to the offending file instead of failing the whole run.
+    # Enumerate the files ourselves and analyze each in-process (the fast path). Two analyzer-engine
+    # crashes are NOT findings and must not fail the run: Invoke-ScriptAnalyzer's own -Recurse walk
+    # throws a NullReferenceException on some runner versions, and analyzing many files in one process
+    # intermittently hits "more than one dynamic module in each dynamic assembly" once the analyzer's
+    # accumulated reflection-emit state fills the dynamic assembly. So catch a crash per file and
+    # re-analyze just that file in a fresh child process (clean state); only fail on a real finding or
+    # if the isolated retry also crashes.
     $files = Get-ChildItem -Path (Join-Path $root 'src') -Recurse -File -Include '*.ps1', '*.psm1', '*.psd1'
-    $results = foreach ($f in $files) { Invoke-ScriptAnalyzer -Path $f.FullName -Settings $settings }
-    if ($results) {
+    $results = [System.Collections.Generic.List[object]]::new()
+    foreach ($f in $files) {
+        try {
+            $r = Invoke-ScriptAnalyzer -Path $f.FullName -Settings $settings -ErrorAction Stop
+            foreach ($d in @($r)) { $results.Add(($d | Select-Object $script:AnalyzerFields)) }
+        } catch {
+            $first = "$($_.Exception.Message)".Split([char]10)[0].Trim()
+            Write-Warning "PSScriptAnalyzer crashed on $($f.Name) in-process ($first); retrying in an isolated process."
+            foreach ($d in @(script:Invoke-AnalyzerInChildProcess -Path $f.FullName -Settings $settings)) { $results.Add($d) }
+        }
+    }
+    if ($results.Count) {
         $results | Format-Table -AutoSize | Out-String | Write-Host
-        throw "PSScriptAnalyzer reported $(@($results).Count) finding(s)."
+        throw "PSScriptAnalyzer reported $($results.Count) finding(s)."
     }
     Write-Host 'PSScriptAnalyzer: clean.' -ForegroundColor Green
 }
