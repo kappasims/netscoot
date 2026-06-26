@@ -31,6 +31,7 @@
         'Set-NetscootJournal',
         'Set-NetscootUpdatePolicy',
         'Sync-Solution',
+        'Test-EditorSolutionGuard',
         'Test-NetscootUpdate',
         'Test-SolutionConsistency',
         'Undo-Netscoot',

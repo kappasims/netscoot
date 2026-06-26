@@ -6,6 +6,25 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `Test-EditorSolutionGuard`: a read-only check that reports whether a repository's VS Code editor
+  configuration will keep a `.slnx` consolidation durable - that is, whether the C# Dev Kit will
+  silently regenerate a legacy `.sln` next to it (the source of a whole class of stale-duplicate
+  solution drift). It inspects `.vscode/settings.json`
+  (`dotnet.automaticallyCreateSolutionInWorkspace`, `dotnet.defaultSolution`) and `.gitignore`,
+  warning when a guard is missing or misconfigured. `-Strict` escalates findings to errors for CI.
+
+### Fixed
+
+- `Test-SolutionConsistency` no longer flags every project as "diverging" in a repository that holds
+  multiple intentionally-separate solutions (a standalone client, a submodule's own solution). Only
+  solutions that share at least one project are compared with each other; a `.sln`/`.slnx` mirror
+  pair that genuinely drifts is still reported.
+- `Find-PathReference` no longer throws when `-RepositoryRoot` is omitted and `-Path` points at an
+  already-moved (now nonexistent) path - the canonical "sweep the old identifier after a rename"
+  use case. The repository root is derived from the current directory, not from the search path.
+
 ## [2.5.0] - 2026-05-29
 
 Internal test infrastructure release. No user-visible API or behavior changes from 2.4.0; the

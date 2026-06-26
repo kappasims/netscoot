@@ -12,6 +12,7 @@
     FormatsToProcess     = @('Netscoot.Format.ps1xml')
     FunctionsToExport    = @(
         'Assert-DotnetAvailable',
+        'ConvertFrom-Jsonc',
         'Find-ProjectFiles',
         'Find-Solutions',
         'Get-ConsumingProjects',

@@ -481,6 +481,7 @@ Read-only audits. These change nothing.
 | [Get-SolutionInventory](#get-solutioninventory) | List the full contents of every solution in a repository (projects of any type, solution folders, and solution items), plus on-disk projects that no solution references. |
 | [Find-PathReference](#find-pathreference) | Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party tool reconciles. |
 | [Test-UnityMetaIntegrity](#test-unitymetaintegrity) | Report Unity `.meta` integrity problems under a root: Assets missing a `.meta`, and orphan `.meta` files whose asset is gone. |
+| [Test-EditorSolutionGuard](#test-editorsolutionguard) | Check that a repository's editor configuration will keep a `.slnx` consolidation durable - i.e. |
 
 #### Manage
 
@@ -1856,6 +1857,73 @@ Sync-Solution -RepositoryRoot .
 
 ---
 
+#### Test-EditorSolutionGuard
+
+Check that a repository's editor configuration will keep a `.slnx` consolidation durable - i.e. that VS Code's C# Dev
+Kit will not silently re-mint a legacy `.sln` next to it.
+
+##### Syntax
+
+```powershell
+Test-EditorSolutionGuard [[-RepositoryRoot] <string>] [-Strict] [<CommonParameters>]
+```
+
+Consolidating to a single `.slnx` is not durable on its own. VS Code's C# Dev Kit AUTO-GENERATES a legacy `.sln` next to
+a `.slnx` on folder open unless 'dotnet.automaticallyCreateSolutionInWorkspace' is false, so a regenerated `.sln`
+reappears and drifts (the exact stale-duplicate that [Test-SolutionConsistency](#test-solutionconsistency) detects after
+the fact). When at least one `.slnx` exists in the repository, this inspects the repository-root editor config and
+reports whether the guards that keep the consolidation durable are in place: AutoCreateGuard .vscode/settings.json must
+set 'dotnet.automaticallyCreateSolutionInWorkspace' to false (else Dev Kit re-mints the `.sln`). DefaultSolution
+'dotnet.defaultSolution' should point at a real, existing solution (ideally the `.slnx`). Missing, or pointing at a
+deleted/nonexistent file, means Dev Kit chooses which solution loads - possibly a stray `.sln`. GitignoreGuard
+.gitignore should ignore *`.sln` so a regenerated one cannot be committed. Read-only: it never edits settings,
+.gitignore, or any solution. It emits one result object per check and surfaces findings through the standard streams so
+behavior follows invocation: by default it writes a Warning for each failed guard; `-Strict` escalates each
+Warning-level finding to a non-terminating error (honoring `-ErrorAction`). Info-level findings (e.g. a missing
+.gitignore guard) are emitted as objects and shown under `-Verbose`, never as warnings. This is editor-specific (VS Code
+C# Dev Kit) because that is what governs solution drift in practice; the checks only run when the repository actually
+contains a `.slnx`.
+
+##### Parameters
+
+| Name | Type | Required | Pipeline | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `‑RepositoryRoot` | String | false | true (ByValue) | Root to inspect. Accepts pipeline input: a path string, or a file/directory item from Get-Item / Get-ChildItem. Defaults to the enclosing git repository root. |
+| `‑Strict` | SwitchParameter | false | false | Escalate each Warning-level guard finding to a non-terminating error (for CI gating). |
+
+##### Output
+
+Returns zero or more [Netscoot.EditorSolutionGuard](#netscooteditorsolutionguard), collected as an array.
+One per check performed.
+
+```text
+Netscoot.EditorSolutionGuard
+  Check     string  # AutoCreateGuard | DefaultSolution | GitignoreGuard
+  Severity  string  # OK | Info | Warning
+  Detail    string  # what was found and how to fix it
+```
+
+##### Examples
+
+```powershell
+# Check the current repository's editor guards
+Test-EditorSolutionGuard
+
+# Gate CI on the consolidation being durable
+Test-EditorSolutionGuard -RepositoryRoot . -Strict
+
+# Inspect a specific repository from the pipeline
+Get-Item ./repo | Test-EditorSolutionGuard
+```
+
+##### Related
+
+[ [Test-SolutionConsistency](#test-solutionconsistency) | [Get-SolutionInventory](#get-solutioninventory) ]
+
+[Back to Command reference](#command-reference)
+
+---
+
 #### Test-NetscootUpdate
 
 Check GitHub for a newer netscoot release and report whether the installed version is behind. On-demand and read-only:
@@ -2378,6 +2446,7 @@ of these types.
 | :--- | :--- |
 | [Netscoot.Capability](#netscootcapability) | Netscoot's resolved external-tool capabilities and platform - the 'what can I do here' probe. |
 | [Netscoot.ConsistencyResult](#netscootconsistencyresult) | One project whose solution membership diverges across the repository. |
+| [Netscoot.EditorSolutionGuard](#netscooteditorsolutionguard) | One editor-config check that governs whether a `.slnx` consolidation stays durable (VS Code C# Dev Kit). |
 | [Netscoot.GitAlias](#netscootgitalias) | The git netscoot alias registration (or what would be registered). |
 | [Netscoot.ImportMoveResult](#netscootimportmoveresult) | Result of moving a shared MSBuild `.props/.targets` file and fixing its importers. |
 | [Netscoot.JournalEntry](#netscootjournalentry) | One move in the undo journal: a completed (committed) move, or a pending one interrupted by a crash. |
@@ -2436,6 +2505,23 @@ Netscoot.ConsistencyResult
   Project     string
   PresentIn   string[]  # solution paths that list it
   AbsentFrom  string[]  # solution paths that do not
+```
+
+[Back to Output types](#output-types)
+
+---
+
+#### Netscoot.EditorSolutionGuard
+
+[ [Test-EditorSolutionGuard](#test-editorsolutionguard) ]
+
+One editor-config check that governs whether a `.slnx` consolidation stays durable (VS Code C# Dev Kit).
+
+```text
+Netscoot.EditorSolutionGuard
+  Check     string  # AutoCreateGuard | DefaultSolution | GitignoreGuard
+  Severity  string  # OK | Info | Warning
+  Detail    string  # what was found and how to fix it
 ```
 
 [Back to Output types](#output-types)

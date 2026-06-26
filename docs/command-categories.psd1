@@ -17,7 +17,8 @@
             Blurb = 'Read-only audits. These change nothing.'
             Commands = @(
                 'Resolve-MoveEngine', 'Get-NetscootCapability', 'Test-SolutionConsistency',
-                'Get-SolutionInventory', 'Find-PathReference', 'Test-UnityMetaIntegrity'
+                'Get-SolutionInventory', 'Find-PathReference', 'Test-UnityMetaIntegrity',
+                'Test-EditorSolutionGuard'
             )
         },
         @{
