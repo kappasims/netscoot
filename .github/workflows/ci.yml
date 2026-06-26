@@ -147,7 +147,7 @@ jobs:
   # dispatch + poll. (platforms.yml is still available for an ad-hoc on-demand run.)
   test-platforms:
     name: Test (${{ matrix.os }}) [${{ matrix.shard }}/3]
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release: '))
+    if: "github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release: '))"
     strategy:
       fail-fast: false
       matrix:
