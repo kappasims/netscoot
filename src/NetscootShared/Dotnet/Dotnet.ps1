@@ -14,7 +14,11 @@ function New-DotnetReferenceItems {
     # Per-edge scriptblocks (the un-batched fallback path: Invoke-MovePlan runs these one at a
     # time when an item carries no batch metadata).
     $slnRemove = { param($Sln, $Proj) Invoke-Dotnet sln $Sln remove $Proj }
-    $slnAdd = { param($Sln, $Proj) Invoke-Dotnet sln $Sln add $Proj }
+    # Folder-aware re-add: $FolderArgs is @('--in-root') for a root project, or @('--solution-folder',
+    # '<path>') to restore its original virtual folder. Without this the slnx `add` default re-folds the
+    # project to mirror its NEW physical path, littering deep moves with empty folders and losing the
+    # original grouping (see Get-ProjectSolutionFolder).
+    $slnAdd = { param($Sln, $Proj, $FolderArgs) $a = @('sln', $Sln, 'add') + @($FolderArgs) + @($Proj); Invoke-Dotnet @a }
     $refRemove = { param($Consumer, $Proj) Invoke-Dotnet remove $Consumer reference $Proj }
     $refAdd = { param($Consumer, $Proj) Invoke-Dotnet add $Consumer reference $Proj }
     $ownRemove = { param($Proj, $Target) Invoke-Dotnet remove $Proj reference $Target }
@@ -28,11 +32,17 @@ function New-DotnetReferenceItems {
     # Key embeds the verb so a remove and an add to the same file never merge.
     $items = @()
     foreach ($sln in $Solutions) {
+        # Capture the folder the OLD project sits in (it is still listed at build time, before detach)
+        # so the re-add restores it. A root project re-adds with --in-root; batching keeps projects that
+        # share a solution AND a target folder in one spawn (the folder is part of the batch Key).
+        $folder = Get-ProjectSolutionFolder -SolutionFile $sln.FullName -ProjectAbs $OldProj
+        if ([string]::IsNullOrEmpty($folder)) { $folderArgs = @('--in-root'); $folderTag = 'root' }
+        else { $folderArgs = @('--solution-folder', $folder); $folderTag = $folder }
         $items += New-MoveItem -Description "solution membership: $($sln.Name)$sfx" `
             -Detach $slnRemove -DetachArgs @($sln.FullName, $OldProj) `
-            -Reattach $slnAdd -ReattachArgs @($sln.FullName, $NewProj) `
+            -Reattach $slnAdd -ReattachArgs @($sln.FullName, $NewProj, $folderArgs) `
             -DetachBatch @{ Key = "sln|remove|$($sln.FullName)"; Prefix = @('sln', $sln.FullName, 'remove'); Item = $OldProj } `
-            -ReattachBatch @{ Key = "sln|add|$($sln.FullName)"; Prefix = @('sln', $sln.FullName, 'add'); Item = $NewProj }
+            -ReattachBatch @{ Key = "sln|add|$($sln.FullName)|$folderTag"; Prefix = @('sln', $sln.FullName, 'add') + $folderArgs; Item = $NewProj }
     }
     foreach ($c in $Consumers) {
         $items += New-MoveItem -Description "consumer reference: $(Split-Path -Leaf $c)$sfx" `
