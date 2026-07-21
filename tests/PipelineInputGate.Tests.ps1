@@ -51,7 +51,7 @@ Describe 'Pipeline-input gate (PathInputTransform)' {
             Push-Location $root
             try {
                 & git init -q
-                $lib = New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'src' 'Lib'))
+                $lib = New-ClassLibProject -Name Lib -Directory (Join-Path $root (Join-Path 'src' 'Lib'))
                 & dotnet new sln -n Demo --format slnx | Out-Null
                 $sln = (Get-ChildItem -LiteralPath $root -File -Include '*.slnx').FullName
                 & dotnet sln $sln add $lib | Out-Null

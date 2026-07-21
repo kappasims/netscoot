@@ -50,7 +50,7 @@ Describe 'Move-DotnetProject with a non-literal reference' {
         Push-Location $root
         try {
             & git init -q
-            New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'src' 'Lib')) | Out-Null
+            New-ClassLibProject -Name Lib -Directory (Join-Path $root (Join-Path 'src' 'Lib')) | Out-Null
             & dotnet new sln -n Demo --format slnx | Out-Null
             & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) | Out-Null
             Add-ProjectReference -ProjectFile (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) -Include '$(SharedDir)\Shared.csproj'
@@ -72,7 +72,7 @@ Describe 'Repair-NetscootSolutionReferences and non-literal references' {
         Push-Location $root
         try {
             & git init -q
-            New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
+            New-ClassLibProject -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
             Add-ProjectReference -ProjectFile (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) -Include '$(PluginDir)\Plugin.csproj'
             $probs = Repair-NetscootSolutionReferences -RepositoryRoot $root
             # The only csproj has just a non-literal reference, so there is nothing dangling.

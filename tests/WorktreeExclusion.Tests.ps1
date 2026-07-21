@@ -19,7 +19,7 @@ BeforeAll {
             try {
                 & git init -q
                 & git config user.email t@t.test; & git config user.name test
-                New-StubClassLib -Name Lib -Directory (Join-Path $r 'Lib') | Out-Null
+                New-ClassLibProject -Name Lib -Directory (Join-Path $r 'Lib') | Out-Null
                 & dotnet new sln -n Demo --format sln | Out-Null
                 & dotnet new sln -n Demo --format slnx | Out-Null
                 & dotnet sln Demo.sln add (Join-Path $r (Join-Path 'Lib' 'Lib.csproj')) | Out-Null

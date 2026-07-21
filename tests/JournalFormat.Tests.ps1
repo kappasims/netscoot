@@ -30,7 +30,7 @@ Describe 'Journal on-disk format (v2)' {
             Push-Location $r
             try {
                 & git init -q
-                New-StubClassLib -Name Lib -Directory (Join-Path $r (Join-Path 'src' 'Lib')) | Out-Null
+                New-ClassLibProject -Name Lib -Directory (Join-Path $r (Join-Path 'src' 'Lib')) | Out-Null
                 & dotnet new sln -n Demo | Out-Null
                 $sln = (Get-ChildItem -LiteralPath $r -File -Filter '*.sln').FullName
                 & dotnet sln $sln add (Join-Path $r (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) | Out-Null
