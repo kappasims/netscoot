@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.6.4] - 2026-06-26
+
 ### Fixed
 
 - `Move-DotnetProject`: a relative `-Destination` now resolves against the current location rather
