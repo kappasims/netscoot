@@ -71,7 +71,7 @@
             # 3.0 ships as an opt-in PRERELEASE while it is stress-tested: `Install-Module Netscoot`
             # stays on 2.6.x stable; `-AllowPrerelease` opts into this build. Remove this line to
             # promote 3.0.0 to stable. (ModuleVersion stays 3.0.0; the Gallery shows 3.0.0-beta1.)
-            Prerelease   = 'beta1'
+            Prerelease   = 'beta2'
         }
     }
 }
