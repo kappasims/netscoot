@@ -84,10 +84,12 @@ jobs:
       - name: Install PSScriptAnalyzer
         shell: pwsh
         run: |
-          function Install-ModuleWithRetry([string]$Name) {
+          function Install-ModuleWithRetry([string]$Name, [string]$RequiredVersion) {
             for ($i = 1; $i -le 5; $i++) {
               try {
-                Install-Module -Name $Name -Scope CurrentUser -Force -AllowClobber -Repository PSGallery -ErrorAction Stop
+                $p = @{ Name = $Name; Scope = 'CurrentUser'; Force = $true; AllowClobber = $true; Repository = 'PSGallery'; ErrorAction = 'Stop' }
+                if ($RequiredVersion) { $p['RequiredVersion'] = $RequiredVersion }
+                Install-Module @p
                 return
               } catch {
                 Write-Host "::warning::Install of $Name failed (attempt $i/5): $($_.Exception.Message)"
@@ -96,7 +98,11 @@ jobs:
               }
             }
           }
-          Install-ModuleWithRetry -Name PSScriptAnalyzer
+          # Pinned (like Pester 5.7.1) for a deterministic gate. 1.25.0 is the validated toolchain
+          # version: it has an intermittent reflection-emit NullReferenceException that build.ps1's
+          # Analyze retries in a fresh process, while older versions have a worse deterministic
+          # "more than one dynamic module in each dynamic assembly" failure. Bump deliberately.
+          Install-ModuleWithRetry -Name PSScriptAnalyzer -RequiredVersion '1.25.0'
       - name: Analyze
         shell: pwsh
         run: ./build.ps1 -Task Analyze
