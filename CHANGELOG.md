@@ -6,6 +6,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- `Move-DotnetProject`: a relative `-Destination` now resolves against the current location rather
+  than the process's original working directory, so a move run after `cd`-ing into a repository
+  lands where you expect. (`-Project` already resolved this way; the two now agree.)
+- `Move-DotnetProject` no longer leaks the post-move `dotnet build` output into its result stream, so
+  the returned move-result object is clean again (was an array of build lines plus the result).
+
 ## [2.6.3] - 2026-06-26
 
 ### Changed
