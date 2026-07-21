@@ -53,6 +53,11 @@ param(
     # Install-Module; still installable by explicit -RequiredVersion - the Gallery never hard-deletes).
     # Pass -KeepOldVersions to skip the unlisting and leave the full version history listed.
     [switch]$KeepOldVersions,
+    # Publish: pass -Force to Publish-Module. Needed to publish a version LOWER than the highest one
+    # already on the Gallery - e.g. a 2.6.x stable patch while a higher 3.0.0-beta prerelease is
+    # listed (PowerShellGet otherwise refuses with "version must exceed the current version"). Pair
+    # it with -KeepOldVersions so a stable patch does not unlist the coexisting prerelease.
+    [switch]$Force,
     # Release: override the "no src/ change since the last tag" guard. A module release only makes
     # sense when src/ (the Gallery-packaged code) changed; doc/skill/tooling changes ship via the
     # plugin instead (see CONTRIBUTING "Two release cadences"). Use this only for a deliberate
@@ -465,7 +470,7 @@ function Invoke-PublishTask {
                     ForEach-Object { "$($_.Version)" })
         }
 
-        Publish-Module -Path $pkg -NuGetApiKey $ApiKey -Repository PSGallery
+        Publish-Module -Path $pkg -NuGetApiKey $ApiKey -Repository PSGallery -Force:$Force
         Write-Host 'Published netscoot to the PowerShell Gallery.' -ForegroundColor Green
 
         # Unlist every prior version (default; -KeepOldVersions opts out) so only the just-published
