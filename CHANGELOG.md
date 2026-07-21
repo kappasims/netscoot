@@ -6,6 +6,16 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [3.0.0-beta2] - 2026-06-26
+
+### Fixed
+
+- `Move-DotnetProject`: a relative `-Destination` now resolves against the current location rather
+  than the process's original working directory, so a move run after `cd`-ing into a repository
+  lands where you expect (matching `-Project`).
+- `Move-DotnetProject` no longer leaks the post-move `dotnet build` output into its result, so the
+  returned `Netscoot.MoveResult` is a clean single object again.
+
 ## [3.0.0-beta1] - 2026-06-26
 
 Opt-in prerelease for stress-testing. `Install-Module Netscoot` stays on 2.6.x; opt in with
