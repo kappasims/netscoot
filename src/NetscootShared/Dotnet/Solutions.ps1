@@ -30,8 +30,9 @@ function Read-Solution {
     #   Path     - absolute path to the solution file
     #   Format   - 'sln' or 'slnx'
     #   Projects - every project entry (any type, incl. .pssproj/.vcxproj that `dotnet sln list`
-    #              may omit). Each: @{ Stored; Abs; Ext; TypeGuid }
-    #              (TypeGuid is $null for .slnx, which records no project-type GUIDs).
+    #              may omit). Each: @{ Stored; Abs; Ext; TypeGuid; Folder }
+    #              (TypeGuid is $null for .slnx; Folder is the containing solution-folder path, or
+    #              $null at the solution root).
     #   Folders  - solution-folder names (never reported as projects)
     #   Items    - solution items (loose files)
     [CmdletBinding()]
