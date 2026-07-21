@@ -1,8 +1,7 @@
-# Shared test fixtures. `dotnet new classlib/console` dominates suite time (template engine +
-# restore, ~1-2s each), so these write the equivalent minimal SDK projects as text instantly.
-# They build and behave identically for `dotnet sln add` / `dotnet add reference` / `dotnet build`.
-# Mirrors `dotnet new <tmpl> -n <Name> -o <Directory>`: creates <Directory>/<Name>.csproj and
-# returns that path.
+# Shared test fixtures. Project factories invoke real `dotnet new classlib/console` (pinned to
+# net10.0) so fixtures match what the SDK actually emits, not an idealized hand-written csproj.
+# Copy-FixtureTemplate builds each distinct shape once per session and hands out copies, so the
+# CLI cost is paid per shape, not per test.
 
 # The engine modules declare NetscootShared in RequiredModules; load it (by path) up front so a
 # test that imports an engine from src can resolve that dependency. Dot-source this helper before
@@ -63,35 +62,23 @@ foreach ($kv in @(
     if (-not [Environment]::GetEnvironmentVariable($kv[0])) { Set-Item -Path "Env:$($kv[0])" -Value $kv[1] }
 }
 
-function New-StubClassLib {
+function New-ClassLibProject {
+    # Real `dotnet new classlib` (net10.0). Strip the obj/ restore artifact the template leaves so the
+    # fixture is a pristine source tree, matching a fresh checkout, before git add/commit.
     param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$Directory)
-    New-Item -ItemType Directory -Path $Directory -Force | Out-Null
-    $csproj = Join-Path $Directory "$Name.csproj"
-    Set-Content -LiteralPath $csproj -Encoding UTF8 -Value @'
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-  </PropertyGroup>
-</Project>
-'@
-    Set-Content -LiteralPath (Join-Path $Directory 'Class1.cs') -Encoding UTF8 -Value "namespace $Name { public class Class1 { } }"
-    return $csproj
+    & dotnet new classlib -n $Name -o $Directory -f net10.0 | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "dotnet new classlib failed ($LASTEXITCODE) for $Name in $Directory" }
+    Remove-Item -LiteralPath (Join-Path $Directory 'obj') -Recurse -Force -ErrorAction SilentlyContinue
+    return (Join-Path $Directory "$Name.csproj")
 }
 
-function New-StubConsole {
+function New-ConsoleProject {
+    # Real `dotnet new console` (net10.0); obj/ stripped as in New-ClassLibProject.
     param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$Directory)
-    New-Item -ItemType Directory -Path $Directory -Force | Out-Null
-    $csproj = Join-Path $Directory "$Name.csproj"
-    Set-Content -LiteralPath $csproj -Encoding UTF8 -Value @'
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
-  </PropertyGroup>
-</Project>
-'@
-    Set-Content -LiteralPath (Join-Path $Directory 'Program.cs') -Encoding UTF8 -Value 'System.Console.WriteLine("ok");'
-    return $csproj
+    & dotnet new console -n $Name -o $Directory -f net10.0 | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "dotnet new console failed ($LASTEXITCODE) for $Name in $Directory" }
+    Remove-Item -LiteralPath (Join-Path $Directory 'obj') -Recurse -Force -ErrorAction SilentlyContinue
+    return (Join-Path $Directory "$Name.csproj")
 }
 
 # `dotnet new sln` + `dotnet sln add` + `dotnet add reference` cost ~1-2s of CLI startup EACH, and a

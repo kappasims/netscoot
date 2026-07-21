@@ -9,7 +9,7 @@ BeforeAll {
             $root = New-TempRoot -Prefix 'netscoot_cap'
             Push-Location $root
             try {
-                New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
+                New-ClassLibProject -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
                 & dotnet new sln -n Demo --format slnx | Out-Null
                 & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'Lib' ('Lib.csproj'))) | Out-Null
             } finally { Pop-Location }

@@ -11,8 +11,8 @@ BeforeAll {
             Push-Location $root
             try {
                 & git init -q
-                New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
-                New-StubConsole -Name App -Directory (Join-Path $root 'App') | Out-Null
+                New-ClassLibProject -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
+                New-ConsoleProject -Name App -Directory (Join-Path $root 'App') | Out-Null
                 & dotnet add (Join-Path $root (Join-Path 'App' 'App.csproj')) reference (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) | Out-Null
                 & dotnet new sln -n Demo --format slnx | Out-Null
                 & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) (Join-Path $root (Join-Path 'App' 'App.csproj')) | Out-Null
@@ -47,10 +47,10 @@ BeforeAll {
             Push-Location $root
             try {
                 & git init -q
-                New-StubClassLib -Name Widgets -Directory $srcWidgets | Out-Null
-                New-StubConsole -Name App -Directory (Join-Path $root 'App') | Out-Null
+                New-ClassLibProject -Name Widgets -Directory $srcWidgets | Out-Null
+                New-ConsoleProject -Name App -Directory (Join-Path $root 'App') | Out-Null
                 & dotnet add (Join-Path $root (Join-Path 'App' 'App.csproj')) reference (Join-Path $srcWidgets 'Widgets.csproj') | Out-Null
-                New-StubClassLib -Name Widgets -Directory (Join-Path $root $DecoyDir) | Out-Null   # decoy, same leaf
+                New-ClassLibProject -Name Widgets -Directory (Join-Path $root $DecoyDir) | Out-Null   # decoy, same leaf
                 & dotnet new sln -n Demo --format slnx | Out-Null
                 & dotnet sln Demo.slnx add (Join-Path $srcWidgets 'Widgets.csproj') (Join-Path $root (Join-Path 'App' 'App.csproj')) | Out-Null
             } finally { Pop-Location }

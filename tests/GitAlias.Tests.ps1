@@ -10,7 +10,7 @@ BeforeAll {
             Push-Location $root
             try {
                 & git init -q
-                New-StubClassLib -Name Lib -Directory (Join-Path $root (Join-Path 'src' ('Lib'))) | Out-Null
+                New-ClassLibProject -Name Lib -Directory (Join-Path $root (Join-Path 'src' ('Lib'))) | Out-Null
                 & dotnet new sln -n Demo --format slnx | Out-Null
                 & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
                 & git add -A; & git commit -qm fixture | Out-Null

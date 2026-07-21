@@ -11,8 +11,8 @@ BeforeAll {
             Push-Location $root
             try {
                 & git init -q
-                New-StubClassLib -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
-                New-StubConsole -Name App -Directory (Join-Path $root 'App') | Out-Null
+                New-ClassLibProject -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
+                New-ConsoleProject -Name App -Directory (Join-Path $root 'App') | Out-Null
                 & dotnet new sln -n Both --format sln | Out-Null
                 & dotnet sln Both.sln add (Join-Path $root (Join-Path 'Lib' ('Lib.csproj'))) (Join-Path $root (Join-Path 'App' ('App.csproj'))) | Out-Null
                 & dotnet new sln -n Partial --format slnx | Out-Null
