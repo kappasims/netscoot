@@ -114,7 +114,10 @@ function Move-PowerShellModule {
         $performed = $true
         $skippedCount = $planResult.Skipped
 
-        Write-Warning "Reminder: dot-sourced relative paths inside .psm1/.ps1 are not auto-fixed. Grep the module for '. \$PSScriptRoot' style references if depth changed."
+        # Single-quoted so $PSScriptRoot stays LITERAL in the example. It was double-quoted with a
+        # backslash ('\$') on the mistaken belief that \ escapes $ in PowerShell (the escape char is
+        # the backtick), so $PSScriptRoot interpolated to netscoot's own module path in the message.
+        Write-Warning 'Reminder: dot-sourced relative paths inside .psm1/.ps1 are not auto-fixed. Grep the module for ''. $PSScriptRoot'' style references if depth changed.'
     }
 
     New-MoveResult -TypeName 'Netscoot.PSModuleMoveResult' -Engine 'powershell' -Source $moduleDir -Destination $newDir `
