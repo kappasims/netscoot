@@ -202,7 +202,10 @@ function Move-DotnetProject {
             $skippedCount = $planResult.Skipped
 
             if (-not $NoBuild) {
-                & dotnet build $newProj
+                # Pipe to Out-Null so the dotnet build stdout does not leak into this cmdlet's output
+                # stream (it would otherwise turn the returned Netscoot.MoveResult into an Object[] of
+                # build lines + the result). Matches Move-DotnetProjectTree. $LASTEXITCODE survives.
+                & dotnet build $newProj | Out-Null
                 $built = ($LASTEXITCODE -eq 0)
                 if (-not $built) {
                     Write-Warning "Build failed after move. Review with 'git status'; revert with 'git restore .' if needed."
