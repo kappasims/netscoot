@@ -46,7 +46,11 @@ function Read-Solution {
             $p = $n.GetAttribute('Path')
             if ([string]::IsNullOrWhiteSpace($p)) { continue }
             $abs = [System.IO.Path]::GetFullPath((Join-Path $dir ($p.Replace('/', '\'))))
-            $projects += [pscustomobject]@{ Stored = $p; Abs = $abs; Ext = [System.IO.Path]::GetExtension($p); TypeGuid = $null }
+            # Containing solution folder: an slnx <Project> nests inside its <Folder>, whose Name is the
+            # full folder path (e.g. /src/); $null when the project sits at the solution root.
+            $parent = $n.ParentNode
+            $folder = if ($parent -and $parent.LocalName -eq 'Folder') { $parent.GetAttribute('Name').Trim('/') } else { $null }
+            $projects += [pscustomobject]@{ Stored = $p; Abs = $abs; Ext = [System.IO.Path]::GetExtension($p); TypeGuid = $null; Folder = $folder }
         }
         foreach ($n in $xml.SelectNodes('//*[local-name()="Folder"]')) {
             $name = $n.GetAttribute('Name'); if ($name) { $folders += $name }
@@ -58,20 +62,41 @@ function Read-Solution {
         $format = 'sln'
         $folderTypeGuid = '2150E333-8FDC-42A3-9474-1A3956D46DE8'   # solution-folder project type
         $inItems = $false
+        $inNested = $false
+        $folderNames = @{}     # folder GUID -> its name
+        $nestedParent = @{}    # child GUID -> parent (folder) GUID, from GlobalSection(NestedProjects)
+        $projRecords = @()     # deferred: folder maps must be complete before resolving each path
         foreach ($line in (Get-Content -LiteralPath $full)) {
             $m = $script:SlnProjectFullRegex.Match($line)
             if ($m.Success) {
                 $typeGuid = $m.Groups[1].Value; $name = $m.Groups[2].Value; $p = $m.Groups[3].Value
-                if ($typeGuid -ieq $folderTypeGuid) { $folders += $name; continue }
+                $guid = $m.Groups[4].Value.ToUpperInvariant()
+                if ($typeGuid -ieq $folderTypeGuid) { $folders += $name; $folderNames[$guid] = $name; continue }
                 $abs = [System.IO.Path]::GetFullPath((Join-Path $dir $p))
-                $projects += [pscustomobject]@{ Stored = $p; Abs = $abs; Ext = [System.IO.Path]::GetExtension($p); TypeGuid = $typeGuid }
+                $projRecords += [pscustomobject]@{ Stored = $p; Abs = $abs; Ext = [System.IO.Path]::GetExtension($p); TypeGuid = $typeGuid; Guid = $guid }
+            } elseif ($line -match '^\s*GlobalSection\(NestedProjects\)') {
+                $inNested = $true
             } elseif ($line -match '^\s*ProjectSection\(SolutionItems\)') {
                 $inItems = $true
-            } elseif ($line -match '^\s*EndProjectSection') {
-                $inItems = $false
+            } elseif ($line -match '^\s*(EndProjectSection|EndGlobalSection)') {
+                $inItems = $false; $inNested = $false
+            } elseif ($inNested -and $line -match '\{([0-9A-Fa-f\-]+)\}\s*=\s*\{([0-9A-Fa-f\-]+)\}') {
+                $nestedParent[$Matches[1].ToUpperInvariant()] = $Matches[2].ToUpperInvariant()
             } elseif ($inItems -and $line -match '^\s*(.+?)\s*=\s*(.+?)\s*$') {
                 $items += $Matches[1].Trim()
             }
+        }
+        # Resolve each project's containing solution-folder path by walking nested-parent links up
+        # through folder GUIDs (a solution folder can nest inside another), then joining root -> leaf.
+        foreach ($rec in $projRecords) {
+            $segments = [System.Collections.Generic.List[string]]::new()
+            $cur = $nestedParent[$rec.Guid]
+            while ($cur -and $folderNames.ContainsKey($cur)) {
+                $segments.Insert(0, $folderNames[$cur])
+                $cur = $nestedParent[$cur]
+            }
+            $folder = if ($segments.Count) { $segments -join '/' } else { $null }
+            $projects += [pscustomobject]@{ Stored = $rec.Stored; Abs = $rec.Abs; Ext = $rec.Ext; TypeGuid = $rec.TypeGuid; Folder = $folder }
         }
     }
     return [pscustomobject]@{
@@ -82,6 +107,23 @@ function Read-Solution {
         Folders    = $folders
         Items      = $items
     }
+}
+
+function Get-ProjectSolutionFolder {
+    # The solution-folder path a project currently sits in ('src', 'group/sub'), or $null at the
+    # solution root. A move re-adds the project via `dotnet sln add`, whose slnx default re-folders it
+    # to mirror the NEW physical path; capturing the original folder lets the re-add restore it.
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$SolutionFile,
+        [Parameter(Mandatory)][string]$ProjectAbs
+    )
+    $sln = Read-Solution -SolutionFile $SolutionFile
+    $target = Resolve-FullPath $ProjectAbs
+    foreach ($p in $sln.Projects) {
+        if (Test-PathEqual $p.Abs $target) { return $p.Folder }
+    }
+    return $null
 }
 
 function Get-SolutionProjectEntries {
