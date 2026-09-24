@@ -1,4 +1,4 @@
-# Code owners for dotnet-move.
+# Code owners for netscoot.
 #
 # The repository owner is the sole code owner: every path requires their review. This is enforced on
 # `develop` through branch protection (require_code_owner_reviews), so contributor branches off
