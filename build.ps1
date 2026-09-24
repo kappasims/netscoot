@@ -13,8 +13,9 @@
       Docs              - regenerate the "Command reference" section of README.md from the
                           cmdlets' comment-based help.
       CheckDocs         - gate the docs: fail if the README reference is stale (someone edited
-                          cmdlet help without regenerating) or if README/skills carry an old-brand
-                          token or name a cmdlet that no longer exists. Part of the Release gate.
+                          cmdlet help without regenerating), if any tracked file carries an
+                          old-brand token, or if README/skills name a cmdlet that no longer exists.
+                          Part of the Release gate.
       Release -Version  - run from develop. Without -Publish (prepare): stamp the semver into every
                           manifest, gate on static analysis (required + clean) and the tests, then
                           commit `release: vX.Y.Z` and push develop so CI runs on it. With -Publish
@@ -250,8 +251,8 @@ function Assert-DocsNotStale {
     # Release gate: fail if the docs have drifted from the code. Two checks (run with a clean tree):
     #   1. Stale README - regenerating the Command reference must be a no-op. If it changes, someone
     #      edited cmdlet help without running -Task Docs.
-    #   2. Stale README + skills - no leftover old-brand tokens, and every product cmdlet the docs name
-    #      must still be exported (catches a rename/removal the docs did not follow).
+    #   2. No leftover old-brand tokens in any tracked file, and every product cmdlet the README and
+    #      skills name must still be exported (catches a rename/removal the docs did not follow).
     Write-Host 'Checking docs are current (README reference + brand/command references)...' -ForegroundColor Cyan
 
     # (1) README reference drift. Save the current content, regenerate, compare (ignoring EOL), then
@@ -269,12 +270,17 @@ function Assert-DocsNotStale {
     $docFiles = @([System.IO.Path]::Combine($root, 'README.md'))
     $docFiles += @(Get-ChildItem -Path (Join-Path $root '.claude/skills') -Recurse -Filter '*.md' -ErrorAction SilentlyContinue | ForEach-Object FullName)
 
-    # (2a) Leftover old-brand tokens (an incomplete rebrand).
+    # (2a) Leftover old-brand tokens in any tracked file (legacy/ and CHANGELOG.md keep the old name).
+    $tracked = @(& git -C $root ls-files)
+    if ($LASTEXITCODE -ne 0) { throw 'git ls-files failed; CheckDocs must run inside the repository.' }
+    foreach ($rel in $tracked) {
+        if ($rel -like 'legacy/*' -or $rel -in 'CHANGELOG.md', 'build.ps1') { continue }
+        $text = [System.IO.File]::ReadAllText([System.IO.Path]::Combine($root, $rel))
+        $stale = [regex]::Match($text, 'dotnet-?move|dotnetmv', 'IgnoreCase')
+        if ($stale.Success) { throw "Stale brand token '$($stale.Value)' in $rel; update it to the current brand." }
+    }
     foreach ($f in $docFiles) {
         $text = [System.IO.File]::ReadAllText($f)
-        foreach ($bad in 'DotnetMove', 'dotnet-move', 'DOTNETMOVE', 'dotnetmv') {
-            if ($text.Contains($bad)) { throw "Stale brand token '$bad' in $(Split-Path -Leaf $f); update it to the current brand." }
-        }
         if ($text -cmatch '\bMove-Dotnet\b') { throw "Stale 'Move-Dotnet' (the umbrella is now Invoke-Netscoot) in $(Split-Path -Leaf $f)." }
     }
 
