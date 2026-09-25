@@ -154,8 +154,10 @@ function Move-MSBuildImport {
             }
             $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 
+            $backup = @($importers | ForEach-Object { $_.File }) + @($src)
             $planResult = Invoke-MovePlan -Caption "Move import $srcName" -Items $items -Move $move `
                 -MoveArgs @($ctx.UseGit, $src, $newPath, $repoFull) `
+                -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newPath, $src, $repoFull) `
                 -RepositoryRoot $repoFull -Command 'Move-MSBuildImport' -Engine 'dotnet' -Source $src -Destination $newPath `
                 -UndoParams @{ Path = $newPath; Destination = $src; Force = [bool]$Force } -NoJournal:$NoJournal
             $performed = $true

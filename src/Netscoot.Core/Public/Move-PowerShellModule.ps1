@@ -109,6 +109,7 @@ function Move-PowerShellModule {
         $repoRoot = Get-RepositoryRoot -StartPath $moduleDir
         $planResult = Invoke-MovePlan -Caption "Move module $manifestName" -Items $items -Move $move `
             -MoveArgs @($ctx.UseGit, $moduleDir, $newDir, $repoRoot) `
+            -BackupPath @(Join-Path $moduleDir $manifestName) -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $moduleDir, $repoRoot) `
             -RepositoryRoot $repoRoot -Command 'Move-PowerShellModule' -Engine 'powershell' -Source $moduleDir -Destination $newDir `
             -UndoParams @{ ModulePath = $newDir; Destination = $moduleDir; Force = [bool]$Force } -NoJournal:$NoJournal
         $performed = $true

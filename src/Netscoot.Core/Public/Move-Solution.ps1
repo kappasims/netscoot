@@ -112,6 +112,7 @@ function Move-Solution {
 
             $planResult = Invoke-MovePlan -Caption "Move solution $name" -Items $items -Move $move `
                 -MoveArgs @($ctx.UseGit, $src, $newPath, $repoFull) `
+                -BackupPath @($src) -Rollback $move -RollbackArgs @($ctx.UseGit, $newPath, $src, $repoFull) `
                 -RepositoryRoot $repoFull -Command 'Move-Solution' -Engine 'dotnet' -Source $src -Destination $newPath `
                 -UndoParams @{ Path = $newPath; Destination = $src; Force = [bool]$Force } -NoJournal:$NoJournal
             $performed = $true
