@@ -27,7 +27,7 @@ function Set-NetscootUpdatePolicy {
         Netscoot.UpdatePolicy - the resulting effective policy.
 
     .EXAMPLE
-        # Opt in to automatic checks (the SessionStart hook will now run)
+        # Opt in to automatic checks (Test-NetscootUpdate -Auto, e.g. from a SessionStart hook you configure)
         Set-NetscootUpdatePolicy -State Enabled
         # Block updates on this machine for every user (run elevated)
         Set-NetscootUpdatePolicy -State Disabled -Scope Machine
