@@ -10,6 +10,10 @@
 # behavior-preserving by construction - a drift would fail CI.
 
 function Invoke-DocsTask {
+    # The reference is PowerShell 7's rendering of the help; Windows PowerShell's Get-Help wraps and splits it differently.
+    if ($PSVersionTable.PSEdition -eq 'Desktop') {
+        throw "The Command reference is generated from PowerShell 7's help output. Run: pwsh -NoProfile -File ./build.ps1 -Task $Task"
+    }
     foreach ($m in $modules) {
         Import-Module ([System.IO.Path]::Combine($root, 'src', $m, "$m.psd1")) -Force
     }
