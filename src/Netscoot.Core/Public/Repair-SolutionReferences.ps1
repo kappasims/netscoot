@@ -12,7 +12,7 @@ function Repair-SolutionReferences {
 
         With -Fix it repairs every Relocatable entry: It searches the repository for a project file of the
         same name and re-points the entry at it through the dotnet CLI (remove the stale path, add
-        the found one). When one project of that name exists it is used directly; when several do,
+        the found one). When one project of that name exists it is used directly. When several do,
         the one that keeps the most of the original path's trailing folders is chosen, since a moved
         project usually keeps its own folder name. Entries it cannot resolve are left untouched and
         reported, Missing (no such project anywhere) or Ambiguous (several equally-good candidates).
@@ -39,7 +39,7 @@ function Repair-SolutionReferences {
     .EXAMPLE
         # Report dangling entries only - read-only (each tagged Relocatable, Missing, or Ambiguous)
         Repair-SolutionReferences -RepositoryRoot .
-        # Re-point relocatable entries at the project's new location (relocates; never deletes)
+        # Re-point relocatable entries at the project's new location (relocates, never deletes)
         Repair-SolutionReferences -RepositoryRoot . -Fix
         # Also remove entries whose project is gone for good - preview the whole thing first
         Repair-SolutionReferences -RepositoryRoot . -Fix -Prune -WhatIf

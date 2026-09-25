@@ -16,8 +16,8 @@ function Test-NetscootUpdate {
 
         A plain Test-NetscootUpdate always checks. -Auto is the automation/SessionStart entry point:
         It runs the check only when the update policy is Enabled (see Set-NetscootUpdatePolicy), and
-        is a silent no-op otherwise. So a hook can call it unconditionally; nothing happens until the
-        policy is opted in, and an administrator can disable it fleet-wide. Either way it never
+        is a silent no-op otherwise. So a hook can call it unconditionally, and nothing happens until
+        the policy is opted in. An administrator can disable it fleet-wide. Either way it never
         updates - it only reports.
 
     .PARAMETER Repository

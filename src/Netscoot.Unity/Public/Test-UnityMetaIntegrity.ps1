@@ -8,12 +8,12 @@ function Test-UnityMetaIntegrity {
     .DESCRIPTION
         Walks the tree and pairs every asset (file or folder) with its `<name>.meta`.
         Emits one object per problem and surfaces it through the standard streams so behavior
-        follows invocation: By default it writes a Warning per problem; -Strict escalates each to
-        a non-terminating error (honoring -ErrorAction). Objects are always emitted so results are
-        capturable/filterable.
+        follows invocation. By default it writes a Warning per problem, and -Strict escalates each
+        to a non-terminating error (honoring -ErrorAction). Objects are always emitted so results
+        are capturable/filterable.
 
-        Ignores Unity-hidden entries (names starting with '.', folders ending with '~')
-        and the Library/Temp/obj caches.
+        Ignores Unity-hidden entries (names starting with '.', folders ending with '~') and
+        everything inside them, and the Library/Temp/obj caches.
 
     .PARAMETER Root
         Folder to scan (typically an 'Assets' folder). Accepts pipeline input: a path string, or

@@ -18,7 +18,7 @@ function Move-Solution {
         supported. dotnet is not required.
 
     .PARAMETER Path
-        The .sln/.slnx file to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected).
+        The .sln/.slnx file to move. Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types.
 
     .PARAMETER Destination
         New file path (or a folder, in which case the solution keeps its name).

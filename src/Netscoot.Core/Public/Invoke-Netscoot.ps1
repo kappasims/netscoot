@@ -11,23 +11,23 @@ function Invoke-Netscoot {
         Netscoot.Unity or Netscoot.Native on demand for a Unity or native C++ target.
 
         "dotnet" here is the .NET-platform umbrella (CLR/CoreCLR), not just the dotnet CLI - the
-        verb spans every engine. Each engine's behavior lives in its own cmdlet; this only routes.
-        -WhatIf/-Confirm/-Verbose propagate; -Force/-RepositoryRoot/-NoBuild are forwarded where the
+        verb spans every engine. Each engine's behavior lives in its own cmdlet, and this only routes.
+        -WhatIf/-Confirm/-Verbose propagate, and -Force/-RepositoryRoot/-NoBuild are forwarded where the
         target's engine accepts them.
 
     .PARAMETER Path
-        The item to move (file or folder). Accepts pipeline input (a path string or a
-        Get-ChildItem/Get-Item item; other object types are rejected).
+        The item to move (file or folder). Accepts a path string or a Get-ChildItem/Get-Item item
+        from the pipeline, and rejects other object types.
 
     .PARAMETER Destination
-        New path (file or folder), following `git mv` rules; passed through to the engine.
+        New path (file or folder), following `git mv` rules, and passed through to the engine.
 
     .PARAMETER RepositoryRoot
         Repository root the engine scans for references. Defaults to the enclosing git repository root.
         Not used for a PowerShell module folder.
 
     .PARAMETER NoBuild
-        Skip the verifying 'dotnet build'. Only the .NET engine builds; ignored by the others.
+        Skip the verifying 'dotnet build'. Only the .NET engine builds, and the others ignore it.
 
     .PARAMETER Force
         When git is not installed, move with a plain PowerShell `Move-Item` without asking first.
@@ -39,7 +39,7 @@ function Invoke-Netscoot {
         when journaling is enabled.
 
     .OUTPUTS
-        The result object from the engine it routes to; the concrete type varies by engine.
+        The result object from the engine it routes to, whose type varies by engine.
 
     .EXAMPLE
         # Preview any move - detects the engine, changes nothing

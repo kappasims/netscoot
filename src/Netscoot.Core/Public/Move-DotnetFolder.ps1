@@ -2,7 +2,7 @@ function Move-DotnetFolder {
     <#
     .SYNOPSIS
         Move a folder of managed .NET projects, reconciling references. The front door for
-        folder moves in the .NET family; delegates to Move-DotnetProjectTree (which handles a
+        folder moves in the .NET family, it delegates to Move-DotnetProjectTree (which handles a
         single project or many).
 
     .DESCRIPTION
@@ -11,14 +11,14 @@ function Move-DotnetFolder {
         cross the folder boundary (internal references ride along unchanged). If the folder
         contains no managed projects, that specialist reports it. A .vcxproj in the folder moves
         with it without its references being updated, and the move warns. -WhatIf/-Confirm/-Verbose
-        propagate; -Force/-RepositoryRoot/-NoBuild are forwarded.
+        propagate, and -Force/-RepositoryRoot/-NoBuild are forwarded.
 
     .PARAMETER Path
-        The folder to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected).
+        The folder to move. Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types.
 
     .PARAMETER Destination
         New folder path, following `git mv` rules (an existing directory means move into it,
-        otherwise it is the new path); passed through to Move-DotnetProjectTree.
+        otherwise it is the new path), and passed through to Move-DotnetProjectTree.
 
     .PARAMETER RepositoryRoot
         Repository root scanned for references. Defaults to the enclosing git repository root.

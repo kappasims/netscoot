@@ -12,15 +12,14 @@ function Move-PowerShellModule {
         so the .psd1 is left unchanged and only validated with Test-ModuleManifest.
 
         Limits (warned, not fixed): a path built from variables is reported as a possible dynamic
-        reference; any path computed at runtime cannot be reconciled automatically.
+        reference. Any path computed at runtime cannot be reconciled automatically.
 
     .PARAMETER ModulePath
-        Path to the module folder, or directly to its .psd1 manifest. Accepts pipeline input (a
-        path string or a Get-ChildItem/Get-Item item; other object types are rejected).
+        Path to the module folder, or directly to its .psd1 manifest. Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types.
 
     .PARAMETER Destination
         Where to move the module folder, following `git mv` rules: An existing directory means move
-        into it (keeping the name); otherwise it is the module's new folder path.
+        into it, keeping the name. Any other path is the module's new folder path.
 
     .PARAMETER Force
         When git is not installed, move with a plain PowerShell `Move-Item` without asking first.
@@ -34,7 +33,7 @@ function Move-PowerShellModule {
         Netscoot.PSModuleMoveResult
 
     .EXAMPLE
-        # Preview; lists the callers and module paths it will update
+        # Preview the callers and module paths it will update
         Move-PowerShellModule -ModulePath ./tools/Mayo -Destination ./modules/Mayo -WhatIf
         # Move it for real
         Move-PowerShellModule -ModulePath ./tools/Mayo -Destination ./modules/Mayo

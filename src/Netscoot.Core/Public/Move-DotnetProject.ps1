@@ -19,13 +19,12 @@ function Move-DotnetProject {
         terminating error honoring -ErrorAction).
 
     .PARAMETER Project
-        Path to the project file (.csproj/.fsproj/.vbproj). Accepts pipeline input (a path string
-        or a Get-ChildItem/Get-Item item; other object types are rejected).
+        Path to the project file (.csproj/.fsproj/.vbproj). Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types.
 
     .PARAMETER Destination
-        Where to move the project folder, following `git mv` rules: if Destination is an existing
-        directory the folder moves into it (keeping its name, e.g. './libs' -> './libs/Tarragon');
-        otherwise Destination is the project's new folder path (a rename, './libs/Tarragon'). The
+        Where to move the project folder, following `git mv` rules. If Destination is an existing
+        directory, the folder moves into it (keeping its name, e.g. './libs' -> './libs/Tarragon').
+        Otherwise Destination is the project's new folder path (a rename, './libs/Tarragon'). The
         project file and its sibling contents move as one.
 
     .PARAMETER RepositoryRoot
@@ -49,7 +48,7 @@ function Move-DotnetProject {
         Netscoot.MoveResult
 
     .EXAMPLE
-        # Preview the move and emit the plan object; nothing changes
+        # Preview the move and emit the plan object, changing nothing
         Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
         # Rename the project folder src/Tarragon -> libs/Tarragon
         Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon

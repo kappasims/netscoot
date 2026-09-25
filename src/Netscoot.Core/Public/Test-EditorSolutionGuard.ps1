@@ -21,15 +21,15 @@ function Test-EditorSolutionGuard {
           GitignoreGuard   .gitignore should ignore *.sln so a regenerated one cannot be committed.
 
         Read-only: it never edits settings, .gitignore, or any solution. It emits one result object
-        per check and surfaces findings through the standard streams so behavior follows invocation:
-        by default it writes a Warning for each failed guard; -Strict escalates each Warning-level
+        per check and surfaces findings through the standard streams so behavior follows invocation.
+        By default it writes a Warning for each failed guard, and -Strict escalates each Warning-level
         finding to a non-terminating error (honoring -ErrorAction). Info-level findings (e.g. a
         missing .gitignore guard) are emitted as objects and shown under -Verbose, never as warnings.
         A repository with no .vscode/settings.json is an Info finding, since it may not use VS Code
         at all, so -Strict does not fail on it.
 
         This is editor-specific (VS Code C# Dev Kit) because that is what governs solution drift in
-        practice; the checks only run when the repository actually contains a .slnx.
+        practice. The checks only run when the repository actually contains a .slnx.
 
     .PARAMETER RepositoryRoot
         Root to inspect. Accepts pipeline input: a path string, or a file/directory item from

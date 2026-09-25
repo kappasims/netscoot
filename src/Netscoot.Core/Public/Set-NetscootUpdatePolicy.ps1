@@ -6,15 +6,15 @@ function Set-NetscootUpdatePolicy {
     .DESCRIPTION
         Writes the `NETSCOOT_AUTOUPDATE` environment variable that governs update behavior (see
         Get-NetscootUpdatePolicy for the three states). The change always takes effect in the current
-        session; the scope controls how far it persists:
+        session, and the scope controls how far it persists:
           -Scope User    (default) persists for the current user (Windows).
-          -Scope Machine persists for all users (Windows); needs an elevated session.
-          -Scope Process this session only; nothing is persisted.
+          -Scope Machine persists for all users (Windows), and needs an elevated session.
+          -Scope Process this session only, with nothing persisted.
         On non-Windows, User/Machine cannot be persisted programmatically, so this sets the session
         value and prints the line to add to your shell profile.
 
         An administrator can achieve the same fleet-wide by pushing `NETSCOOT_AUTOUPDATE` through
-        Group Policy / Intune; this cmdlet is the per-user equivalent.
+        Group Policy / Intune. This cmdlet is the per-user equivalent.
 
     .PARAMETER State
         Enabled, Disabled, or Manual.

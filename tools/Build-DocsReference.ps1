@@ -353,7 +353,7 @@ function Invoke-DocsTask {
                     [void]$sb.AppendLine()
                     if ($common.Count) {
                         $shared = ($common | ForEach-Object { $_.Name }) -join ', '
-                        [void]$sb.AppendLine((Format-Wrap "These share a common shape ($shared) and each adds its own fields; they are plain pscustomobjects with no shared base type. See [Output types](#output-types)."))
+                        [void]$sb.AppendLine((Format-Wrap "These share a common shape ($shared) and each adds its own fields. They are plain pscustomobjects with no shared base type. See [Output types](#output-types)."))
                     } else {
                         [void]$sb.AppendLine((Format-Wrap 'These result types are heterogeneous - they share no common fields. See [Output types](#output-types).'))
                     }

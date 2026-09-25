@@ -10,10 +10,10 @@ function Move-UnityAsset {
         "GUID:...") resolve by that GUID, not by path. If you move files on disk without
         their .meta, Unity regenerates fresh GUIDs and every reference to them breaks.
 
-        This cmdlet moves the asset (git mv when tracked) together with its own .meta; for a
+        This cmdlet moves the asset (git mv when tracked) together with its own .meta. For a
         folder, the descendant .meta files travel inside it and the folder's sibling .meta is
-        moved too. asmdef references are by name/GUID (not path), so they do not need editing;
-        when moving an .asmdef this reports who references it, for your awareness only.
+        moved too. asmdef references are by name/GUID (not path), so they do not need editing.
+        When moving an .asmdef this reports who references it, for your awareness only.
 
         When the destination needs new parent folders, each one under Assets/ (or inside a
         package) gets a folder .meta with a fresh GUID, staged with the move, so it is committed
@@ -24,12 +24,11 @@ function Move-UnityAsset {
         Android, etc.) are plain fields untouched by a move, so mobile layouts are preserved.
 
     .PARAMETER AssetPath
-        Asset file or folder to move (under Assets/ or a package). Accepts pipeline input (a path
-        string or a Get-ChildItem/Get-Item item; other object types are rejected).
+        Asset file or folder to move (under Assets/ or a package). Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types.
 
     .PARAMETER Destination
         Where to move the asset/folder, following `git mv` rules: An existing directory means move
-        into it (keeping the name); otherwise it is the new path.
+        into it, keeping the name. Any other path is the new path.
 
     .PARAMETER RepositoryRoot
         Root to scan for asmdef referencers. Defaults to the enclosing git repository root.
@@ -50,7 +49,7 @@ function Move-UnityAsset {
         Netscoot.UnityMoveResult
 
     .EXAMPLE
-        # Preview; moves the asset/folder together with its .meta so GUIDs survive
+        # Preview moving the asset/folder together with its .meta so GUIDs survive
         Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/Tarragon -WhatIf
         # Move it for real
         Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/Tarragon

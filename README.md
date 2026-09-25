@@ -575,8 +575,8 @@ Removes this repository's journal file from the per-user store (LocalAppData on 
 on macOS, `$XDG_DATA_HOME` or ~/.local/share on Linux, or the folder `NETSCOOT_JOURNAL_HOME` names). The journal prunes
 itself when it outgrows its size cap (dropping entries older than the age cap, then the oldest past the size cap), so
 this is rarely needed. Use it to wipe the undo history outright. After clearing, [Undo-Netscoot](#undo-netscoot) has
-nothing to reverse until the next move. It does not change whether journaling is on; use
-[Set-NetscootJournal](#set-netscootjournal) for that.
+nothing to reverse until the next move. It does not change whether journaling is on.
+[Set-NetscootJournal](#set-netscootjournal) does that.
 
 ##### Parameters
 
@@ -814,18 +814,18 @@ Invoke-Netscoot [-Path] <string> -Destination <string> [-RepositoryRoot <string>
 Classifies the target with [Resolve-MoveEngine](#resolve-moveengine), then dispatches to the namespace front door that
 performs the appropriate file/folder move (see Output for the routing). It loads Netscoot.Unity or Netscoot.Native on
 demand for a Unity or native C++ target. "dotnet" here is the .NET-platform umbrella (CLR/CoreCLR), not just the dotnet
-CLI - the verb spans every engine. Each engine's behavior lives in its own cmdlet; this only routes.
-`-WhatIf`/`-Confirm`/`-Verbose` propagate; `-Force`/`-RepositoryRoot`/`-NoBuild` are forwarded where the target's engine
-accepts them.
+CLI - the verb spans every engine. Each engine's behavior lives in its own cmdlet, and this only routes.
+`-WhatIf`/`-Confirm`/`-Verbose` propagate, and `-Force`/`-RepositoryRoot`/`-NoBuild` are forwarded where the target's
+engine accepts them.
 
 ##### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue) | The item to move (file or folder). Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
-| `‑Destination` | String | true | false | New path (file or folder), following `git mv` rules; passed through to the engine. |
+| `‑Path` | String | true | true (ByValue) | The item to move (file or folder). Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types. |
+| `‑Destination` | String | true | false | New path (file or folder), following `git mv` rules, and passed through to the engine. |
 | `‑RepositoryRoot` | String | false | false | Repository root the engine scans for references. Defaults to the enclosing git repository root. Not used for a PowerShell module folder. |
-| `‑NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build'. Only the .NET engine builds; ignored by the others. |
+| `‑NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build'. Only the .NET engine builds, and the others ignore it. |
 | `‑Force` | SwitchParameter | false | false | When git is not installed, move with a plain PowerShell `Move-Item` without asking first. Without `-Force` it asks before falling back. The plain move does not preserve git history. Forwarded to the engine. |
 | `‑NoJournal` | SwitchParameter | false | false | Skip recording this move in the undo journal for this call (forwarded to the engine), even when journaling is enabled. |
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
@@ -844,7 +844,7 @@ folder of .NET projects    ->  Netscoot.TreeMoveResult
 Unity asset or folder      ->  Netscoot.UnityMoveResult
 ```
 
-These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields; they are
+These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields. They are
 plain pscustomobjects with no shared base type. See [Output types](#output-types).
 
 ##### Examples
@@ -885,13 +885,14 @@ Dispatches a managed .NET file to the right specialist by extension (see Output 
 PowerShell (`.ps1/.psd1`) and Unity assets are deliberately not handled here - use
 [Move-NativeProject](#move-nativeproject) / [Move-PowerShellScript](#move-powershellscript) /
 [Move-PowerShellModule](#move-powershellmodule) / [Move-UnityAsset](#move-unityasset). `-WhatIf`/`-Confirm`/`-Verbose`
-propagate to the specialist; `-Force` and `-RepositoryRoot`/`-NoBuild` are forwarded where the specialist accepts them.
+propagate to the specialist, and `-Force` and `-RepositoryRoot`/`-NoBuild` are forwarded where the specialist accepts
+them.
 
 ##### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue) | The .NET file to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
+| `‑Path` | String | true | true (ByValue) | The .NET file to move. Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types. |
 | `‑Destination` | String | true | false | New path (file or folder), following `git mv` rules, passed through to the specialist. For a project file, Destination is the project's new folder, and the whole folder moves. |
 | `‑RepositoryRoot` | String | false | false | Repository root the specialist scans for references. Defaults to the enclosing git repository root. Not used for a solution file. |
 | `‑NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build' (forwarded to [Move-DotnetProject](#move-dotnetproject)). |
@@ -908,7 +909,7 @@ propagate to the specialist; `-Force` and `-RepositoryRoot`/`-NoBuild` are forwa
 .props  .targets           ->  Move-MSBuildImport   ->  Netscoot.ImportMoveResult
 ```
 
-These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields; they are
+These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields. They are
 plain pscustomobjects with no shared base type. See [Output types](#output-types).
 
 ##### Examples
@@ -930,7 +931,7 @@ Move-DotnetFile -Path ./Shared.props -Destination ./build/Shared.props
 
 #### Move-DotnetFolder
 
-Move a folder of managed .NET projects, reconciling references. The front door for folder moves in the .NET family;
+Move a folder of managed .NET projects, reconciling references. The front door for folder moves in the .NET family, it
 delegates to [Move-DotnetProjectTree](#move-dotnetprojecttree) (which handles a single project or many).
 
 ##### Syntax
@@ -943,14 +944,14 @@ A folder move always goes through [Move-DotnetProjectTree](#move-dotnetprojecttr
 under the folder as one co-moving set and reconciles only the references that cross the folder boundary (internal
 references ride along unchanged). If the folder contains no managed projects, that specialist reports it. A `.vcxproj`
 in the folder moves with it without its references being updated, and the move warns. `-WhatIf`/`-Confirm`/`-Verbose`
-propagate; `-Force`/`-RepositoryRoot`/`-NoBuild` are forwarded.
+propagate, and `-Force`/`-RepositoryRoot`/`-NoBuild` are forwarded.
 
 ##### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue) | The folder to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
-| `‑Destination` | String | true | false | New folder path, following `git mv` rules (an existing directory means move into it, otherwise it is the new path); passed through to [Move-DotnetProjectTree](#move-dotnetprojecttree). |
+| `‑Path` | String | true | true (ByValue) | The folder to move. Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types. |
+| `‑Destination` | String | true | false | New folder path, following `git mv` rules (an existing directory means move into it, otherwise it is the new path), and passed through to [Move-DotnetProjectTree](#move-dotnetprojecttree). |
 | `‑RepositoryRoot` | String | false | false | Repository root scanned for references. Defaults to the enclosing git repository root. |
 | `‑NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build' (forwarded to [Move-DotnetProjectTree](#move-dotnetprojecttree)). |
 | `‑Force` | SwitchParameter | false | false | When git is not installed, move with a plain PowerShell `Move-Item` without asking first. Without `-Force` it asks before falling back. The plain move does not preserve git history. |
@@ -1012,8 +1013,8 @@ repository's solutions) is surfaced as a Warning (or, with `-Strict`, a non- ter
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Project` | String | true | true (ByValue) | Path to the project file (`.csproj/.fsproj/.vbproj`). Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
-| `‑Destination` | String | true | false | Where to move the project folder, following `git mv` rules: if Destination is an existing directory the folder moves into it (keeping its name, e.g. './libs' -&gt; './libs/Tarragon'); otherwise Destination is the project's new folder path (a rename, './libs/Tarragon'). The project file and its sibling contents move as one. |
+| `‑Project` | String | true | true (ByValue) | Path to the project file (`.csproj/.fsproj/.vbproj`). Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types. |
+| `‑Destination` | String | true | false | Where to move the project folder, following `git mv` rules. If Destination is an existing directory, the folder moves into it (keeping its name, e.g. './libs' -&gt; './libs/Tarragon'). Otherwise Destination is the project's new folder path (a rename, './libs/Tarragon'). The project file and its sibling contents move as one. |
 | `‑RepositoryRoot` | String | false | false | Root to scan for solutions/consumers. Defaults to the enclosing git repository root. |
 | `‑Strict` | SwitchParameter | false | false | Escalate solution-divergence warnings to non-terminating errors. |
 | `‑NoBuild` | SwitchParameter | false | false | Skip the verifying 'dotnet build' at the end. |
@@ -1042,7 +1043,7 @@ Netscoot.MoveResult
 ##### Examples
 
 ```powershell
-# Preview the move and emit the plan object; nothing changes
+# Preview the move and emit the plan object, changing nothing
 Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
 
 # Rename the project folder src/Tarragon -> libs/Tarragon
@@ -1081,17 +1082,17 @@ Enumerates the managed projects (`.csproj/.fsproj/.vbproj`) under the folder and
 It reconciles only what crosses the folder boundary: solution membership for each moved project (dotnet sln remove/add),
 external consumers (projects outside the folder that reference one inside), and the moved projects' own references to
 projects outside the folder. References between two co-moved projects are left untouched - their relative path is
-unchanged because both move by the same delta. Everything is delegated to the dotnet CLI; nothing is hand-edited. A
+unchanged because both move by the same delta. Everything is delegated to the dotnet CLI, and nothing is hand-edited. A
 `.vcxproj` inside the folder moves with it, but its solution entries and references are not updated, and the move warns
-about each one. Like [Move-DotnetProject](#move-dotnetproject): dotnet is required; git is used when available (else a
-confirmed plain-move fallback via `-Force` / ShouldContinue); supports `-WhatIf`.
+about each one. As with [Move-DotnetProject](#move-dotnetproject), dotnet is required and git is used when available
+(otherwise a plain move, confirmed first or forced with `-Force`). It supports `-WhatIf`.
 
 ##### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue) | The folder to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
-| `‑Destination` | String | true | false | Where to move the folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the folder's new path. |
+| `‑Path` | String | true | true (ByValue) | The folder to move. Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types. |
+| `‑Destination` | String | true | false | Where to move the folder, following `git mv` rules: An existing directory means move into it, keeping the name. Any other path is the folder's new path. |
 | `‑RepositoryRoot` | String | false | false | Root to scan. Defaults to the enclosing git repository root. |
 | `‑NoBuild` | SwitchParameter | false | false | Skip the verifying build of the moved projects. |
 | `‑Force` | SwitchParameter | false | false | When git is not installed, move with a plain PowerShell `Move-Item` without asking first. Without `-Force` it asks before falling back. The plain move does not preserve git history. |
@@ -1154,16 +1155,16 @@ reported as unresolved rather than guessed. An importer that reaches the file th
 `$(MSBuildThisFileDirectory)` is not detected. Note: `Directory.Build.props/.targets` (and `Directory.Packages.props`,
 etc.) are imported by location, not an explicit `<Import>` - moving one changes inheritance scope, which cannot be
 "fixed" by editing imports. For those this warns (like the inheritance check) and only fixes the file's own outgoing
-imports. Importers may include native `.vcxproj` files; their `<Import>` path is fixed on any OS (a best-effort,
-path-only update), but a `.vcxproj`'s native link settings are never reconciled off Windows; that remains
-[Move-NativeProject](#move-nativeproject)'s Windows-only job. dotnet is not required here; git is used when available
-(else confirmed plain-move fallback via `-Force`). Supports `-WhatIf`.
+imports. Importers may include native `.vcxproj` files. Their `<Import>` path is fixed on any OS (a best-effort,
+path-only update). A `.vcxproj`'s native link settings are never rewritten, and
+[Move-NativeProject](#move-nativeproject) (Windows) reports them when the project itself moves. dotnet is not required
+here. git is used when available (otherwise a plain move, confirmed first or forced with `-Force`). Supports `-WhatIf`.
 
 ##### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue) | The `.props/.targets` file to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
+| `‑Path` | String | true | true (ByValue) | The `.props/.targets` file to move. Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types. |
 | `‑Destination` | String | true | false | New file path (or a folder, in which case the file keeps its name). |
 | `‑RepositoryRoot` | String | false | false | Root to scan for importers. Defaults to the enclosing git repository root. |
 | `‑Force` | SwitchParameter | false | false | When git is not installed, move with a plain PowerShell `Move-Item` without asking first. Without `-Force` it asks before falling back. The plain move does not preserve git history. |
@@ -1217,15 +1218,15 @@ Move-PowerShell [-Path] <string> -Destination <string> [-RepositoryRoot <string>
 
 Dispatches a PowerShell item to the right specialist by type (see Output for the routing): the script specialist fixes
 dot-source/call references (AST-based), the module specialist fixes the paths that load the module.
-`-WhatIf`/`-Confirm`/`-Verbose` propagate to the specialist; `-Force` is forwarded, and `-RepositoryRoot` is forwarded
+`-WhatIf`/`-Confirm`/`-Verbose` propagate to the specialist, `-Force` is forwarded, and `-RepositoryRoot` is forwarded
 to the script specialist (the module specialist has no RepositoryRoot).
 
 ##### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue) | The PowerShell item to move: a `.ps1` script, a `.psd1` manifest, or a module folder. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
-| `‑Destination` | String | true | false | New path (file or folder), following `git mv` rules; passed through to the specialist. |
+| `‑Path` | String | true | true (ByValue) | The PowerShell item to move: a `.ps1` script, a `.psd1` manifest, or a module folder. Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types. |
+| `‑Destination` | String | true | false | New path (file or folder), following `git mv` rules, and passed through to the specialist. |
 | `‑RepositoryRoot` | String | false | false | Repository root scanned for referencing scripts. Defaults to the enclosing git repository root. Forwarded to the script specialist only (the module specialist has no RepositoryRoot). |
 | `‑Force` | SwitchParameter | false | false | When git is not installed, move with a plain PowerShell `Move-Item` without asking first. Without `-Force` it asks before falling back. The plain move does not preserve git history. |
 | `‑NoJournal` | SwitchParameter | false | false | Skip recording this move in the undo journal for this call (forwarded to the specialist), even when journaling is enabled. |
@@ -1239,7 +1240,7 @@ to the script specialist (the module specialist has no RepositoryRoot).
 .psd1  module folder   ->  Move-PowerShellModule  ->  Netscoot.PSModuleMoveResult
 ```
 
-These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields; they are
+These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields. They are
 plain pscustomobjects with no shared base type. See [Output types](#output-types).
 
 ##### Examples
@@ -1274,15 +1275,15 @@ Moves a module directory (git mv when tracked). Scripts elsewhere that import th
 `using module`) or dot-source one of its files are repointed, and the module's own `.ps1/.psm1` paths to files outside
 it are rebased, with the same encoding-preserving edits as [Move-PowerShellScript](#move-powershellscript). The
 manifest's entries are module-relative, so the `.psd1` is left unchanged and only validated with Test-ModuleManifest.
-Limits (warned, not fixed): a path built from variables is reported as a possible dynamic reference; any path computed
+Limits (warned, not fixed): a path built from variables is reported as a possible dynamic reference. Any path computed
 at runtime cannot be reconciled automatically.
 
 ##### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑ModulePath` | String | true | true (ByValue) | Path to the module folder, or directly to its `.psd1` manifest. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
-| `‑Destination` | String | true | false | Where to move the module folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the module's new folder path. |
+| `‑ModulePath` | String | true | true (ByValue) | Path to the module folder, or directly to its `.psd1` manifest. Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types. |
+| `‑Destination` | String | true | false | Where to move the module folder, following `git mv` rules: An existing directory means move into it, keeping the name. Any other path is the module's new folder path. |
 | `‑Force` | SwitchParameter | false | false | When git is not installed, move with a plain PowerShell `Move-Item` without asking first. Without `-Force` it asks before falling back. The plain move does not preserve git history. |
 | `‑NoJournal` | SwitchParameter | false | false | Skip recording this move in the undo journal for this call, even when journaling is enabled ([Undo-Netscoot](#undo-netscoot) will not see this move). |
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
@@ -1305,7 +1306,7 @@ Netscoot.PSModuleMoveResult
 ##### Examples
 
 ```powershell
-# Preview; lists the callers and module paths it will update
+# Preview the callers and module paths it will update
 Move-PowerShellModule -ModulePath ./tools/Mayo -Destination ./modules/Mayo -WhatIf
 
 # Move it for real
@@ -1339,13 +1340,13 @@ string paths are resolved and rewritten. A string built from other variables (e.
 literal elsewhere in a script (e.g. a Join-Path argument), whose leaf matches the moved script is reported as a possible
 dynamic reference to verify by hand. A path assembled with no string naming the script cannot be detected at all - grep
 to be sure. Treat the result as "fixed what could be proven," not "guaranteed complete." git is used when available
-(else confirmed plain-move fallback via `-Force`). `-WhatIf` supported; dotnet not required.
+(otherwise a plain move, confirmed first or forced with `-Force`). It supports `-WhatIf` and does not need dotnet.
 
 ##### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue) | The `.ps1` to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
+| `‑Path` | String | true | true (ByValue) | The `.ps1` to move. Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types. |
 | `‑Destination` | String | true | false | New file path (or a folder, in which case the script keeps its name). |
 | `‑RepositoryRoot` | String | false | false | Root to scan for referencing scripts. Defaults to the enclosing git repository root. |
 | `‑Force` | SwitchParameter | false | false | When git is not installed, move with a plain PowerShell `Move-Item` without asking first. Without `-Force` it asks before falling back. The plain move does not preserve git history. |
@@ -1372,7 +1373,7 @@ Netscoot.ScriptMoveResult
 ##### Examples
 
 ```powershell
-# Preview; rewrites dot-source/call paths in referencing scripts and the script's own refs
+# Preview the rewrites of dot-source/call paths in referencing scripts and the script's own refs
 Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -WhatIf
 
 # Move it for real
@@ -1409,7 +1410,7 @@ is used when available (else confirmed plain-move fallback via `-Force`). `-What
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Path` | String | true | true (ByValue) | The `.sln/.slnx` file to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
+| `‑Path` | String | true | true (ByValue) | The `.sln/.slnx` file to move. Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types. |
 | `‑Destination` | String | true | false | New file path (or a folder, in which case the solution keeps its name). |
 | `‑Force` | SwitchParameter | false | false | When git is not installed, move with a plain PowerShell `Move-Item` without asking first. Without `-Force` it asks before falling back. The plain move does not preserve git history. |
 | `‑NoJournal` | SwitchParameter | false | false | Skip recording this move in the undo journal for this call, even when journaling is enabled ([Undo-Netscoot](#undo-netscoot) will not see this move). |
@@ -1601,8 +1602,8 @@ Finds solution entries and `<ProjectReference>`s that point at a project file wh
 path (usually because a project was moved or renamed without reconciling). Read-only by default: It returns one object
 per problem, each tagged with a Resolution of Relocatable, Missing, or Ambiguous. With `-Fix` it repairs every
 Relocatable entry: It searches the repository for a project file of the same name and re-points the entry at it through
-the dotnet CLI (remove the stale path, add the found one). When one project of that name exists it is used directly;
-when several do, the one that keeps the most of the original path's trailing folders is chosen, since a moved project
+the dotnet CLI (remove the stale path, add the found one). When one project of that name exists it is used directly.
+When several do, the one that keeps the most of the original path's trailing folders is chosen, since a moved project
 usually keeps its own folder name. Entries it cannot resolve are left untouched and reported, Missing (no such project
 anywhere) or Ambiguous (several equally-good candidates). A relocatable `.vcxproj` is reported with its new location but
 not re-pointed, because the dotnet CLI cannot load a native project. Re-point it in Visual Studio. With `-Prune` it
@@ -1641,7 +1642,7 @@ Netscoot.RepairResult
 # Report dangling entries only - read-only (each tagged Relocatable, Missing, or Ambiguous)
 Repair-SolutionReferences -RepositoryRoot .
 
-# Re-point relocatable entries at the project's new location (relocates; never deletes)
+# Re-point relocatable entries at the project's new location (relocates, never deletes)
 Repair-SolutionReferences -RepositoryRoot . -Fix
 
 # Also remove entries whose project is gone for good - preview the whole thing first
@@ -1703,10 +1704,10 @@ Resolve-MoveEngine ./src/Tarragon/Tarragon.csproj
 # Anything under a Unity project's Assets/ or Packages/, or paired with a .meta, is 'unity'
 Resolve-MoveEngine ./Assets/Art/logo.png
 
-# A .ps1 is 'ps-script'; a module folder or .psd1 is 'ps-module'
+# A .ps1 is 'ps-script', and a module folder or .psd1 is 'ps-module'
 Resolve-MoveEngine ./tools/build.ps1
 
-# A .vcxproj is 'native'; an unrecognized path is 'unknown'
+# A .vcxproj is 'native', and an unrecognized path is 'unknown'
 Resolve-MoveEngine ./Aleppo/Aleppo.vcxproj
 ```
 
@@ -1779,11 +1780,11 @@ Set-NetscootUpdatePolicy [-State] <string> [[-Scope] <string>] [-WhatIf] [-Confi
 
 Writes the `NETSCOOT_AUTOUPDATE` environment variable that governs update behavior (see
 [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) for the three states). The change always takes effect in the
-current session; the scope controls how far it persists: `-Scope` User (default) persists for the current user
-(Windows). `-Scope` Machine persists for all users (Windows); needs an elevated session. `-Scope` Process this session
-only; nothing is persisted. On non-Windows, User/Machine cannot be persisted programmatically, so this sets the session
-value and prints the line to add to your shell profile. An administrator can achieve the same fleet-wide by pushing
-`NETSCOOT_AUTOUPDATE` through Group Policy / Intune; this cmdlet is the per-user equivalent.
+current session, and the scope controls how far it persists: `-Scope` User (default) persists for the current user
+(Windows). `-Scope` Machine persists for all users (Windows), and needs an elevated session. `-Scope` Process this
+session only, with nothing persisted. On non-Windows, User/Machine cannot be persisted programmatically, so this sets
+the session value and prints the line to add to your shell profile. An administrator can achieve the same fleet-wide by
+pushing `NETSCOOT_AUTOUPDATE` through Group Policy / Intune. This cmdlet is the per-user equivalent.
 
 ##### Parameters
 
@@ -1907,11 +1908,11 @@ set 'dotnet.automaticallyCreateSolutionInWorkspace' to false (else Dev Kit re-mi
 deleted/nonexistent file, means Dev Kit chooses which solution loads - possibly a stray `.sln`. GitignoreGuard
 .gitignore should ignore *`.sln` so a regenerated one cannot be committed. Read-only: it never edits settings,
 .gitignore, or any solution. It emits one result object per check and surfaces findings through the standard streams so
-behavior follows invocation: by default it writes a Warning for each failed guard; `-Strict` escalates each
+behavior follows invocation. By default it writes a Warning for each failed guard, and `-Strict` escalates each
 Warning-level finding to a non-terminating error (honoring `-ErrorAction`). Info-level findings (e.g. a missing
 .gitignore guard) are emitted as objects and shown under `-Verbose`, never as warnings. A repository with no
 .vscode/settings.json is an Info finding, since it may not use VS Code at all, so `-Strict` does not fail on it. This is
-editor-specific (VS Code C# Dev Kit) because that is what governs solution drift in practice; the checks only run when
+editor-specific (VS Code C# Dev Kit) because that is what governs solution drift in practice. The checks only run when
 the repository actually contains a `.slnx`.
 
 ##### Parameters
@@ -1972,7 +1973,7 @@ user runs it when they want to know. Needs network access to api.github.com. Hon
 (offline, rate-limited, or no releases yet). A plain Test-NetscootUpdate always checks. `-Auto` is the
 automation/SessionStart entry point: It runs the check only when the update policy is Enabled (see
 [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy)), and is a silent no-op otherwise. So a hook can call it
-unconditionally; nothing happens until the policy is opted in, and an administrator can disable it fleet-wide. Either
+unconditionally, and nothing happens until the policy is opted in. An administrator can disable it fleet-wide. Either
 way it never updates - it only reports.
 
 ##### Parameters
@@ -2034,9 +2035,10 @@ When a repository carries more than one solution (e.g. a classic `.sln` alongsid
 so the same project is listed in one but not the other. Only solutions that already share at least one project are
 compared with each other: a repository may carry intentionally-separate solutions (a standalone client, a submodule's
 own solution) that were never meant to list the same projects, and those are not flagged against one another. This emits
-one object per divergent project and surfaces it through the standard streams so behavior follows invocation: By default
-it writes a Warning per divergent project; `-Strict` escalates each to a non-terminating error (honoring
-`-ErrorAction`); `-Debug` adds the full membership matrix of every solution and its projects.
+one object per divergent project and surfaces it through the standard streams so behavior follows invocation. By default
+it writes a Warning per divergent project, and `-Strict` escalates each to a non-terminating error (honoring
+`-ErrorAction`). `-Debug` adds the full membership matrix of every solution and its projects. It only reads the solution
+files, so the dotnet CLI is not required.
 
 ##### Parameters
 
@@ -2104,15 +2106,15 @@ Undo-Netscoot -List [-RepositoryRoot <string>] [-WhatIf] [-Confirm] [<CommonPara
 Every move is journaled with its inverse: the same mover, source and destination swapped. Undo-Netscoot replays that
 inverse, reconciling from the current state rather than restoring a stale snapshot. The reversing move is not itself
 journaled, so repeated calls walk back through history instead of toggling the last move. Pick what to reverse (mutually
-exclusive): `-Last` (default) the most recent move; call again to walk further back. `-Id` one specific move, by its
+exclusive): `-Last` (default) the most recent move. Call again to walk further back. `-Id` one specific move, by its
 journal id (see `-List`). `-After` every move after a given time, newest first. `-All` every recorded move, newest
 first. `-List` prints the journal and changes nothing. Because each reversal reconciles from the current state, undoing
 an older move (with `-Id`) while later moves still depend on its old location can leave references dangling. When that
 is possible, a read-only sweep of solution membership and ProjectReferences runs afterward and reports dangling entries,
 with the command to fix them. Other engines' references are not swept. `-All` and `-After` reverse many moves at once,
-so they prompt for a confirmation that `-Confirm`:`$false` does not silence; `-Force` bypasses it, and `-WhatIf` lists
-the reversals without running them. Journaling must have been on when the moves ran (it is by default; opt out with
-`$env:NETSCOOT_JOURNAL` or git config netscoot.journal false).
+so they prompt for a confirmation that `-Confirm:$false` does not silence. `-Force` bypasses it, and `-WhatIf` lists the
+reversals without running them. Journaling must have been on when the moves ran. It is on by default, and the opt-outs
+are the `NETSCOOT_JOURNAL` environment variable and git config netscoot.journal false.
 
 ##### Parameters
 
@@ -2130,9 +2132,9 @@ the reversals without running them. Journaling must have been on when the moves 
 
 ##### Output
 
-The move-result object(s) from the reversing move(s); their type matches the original mover. With `-List`, the journal
-entries. When there is nothing to undo, nothing is returned and a non-terminating error says why (an empty journal,
-journaling off, or no moves after `-After`).
+The move-result object(s) from the reversing move(s), of the same type as the original mover's. With `-List`, the
+journal entries. When there is nothing to undo, nothing is returned and a non-terminating error says why (an empty
+journal, journaling off, or no moves after `-After`).
 
 - [Netscoot.MoveResult](#netscootmoveresult)
 - [Netscoot.TreeMoveResult](#netscoottreemoveresult)
@@ -2152,7 +2154,7 @@ These result types are heterogeneous - they share no common fields. See [Output 
 # See what can be undone
 Undo-Netscoot -List
 
-# Reverse the most recent move (default); call again to walk back
+# Reverse the most recent move (default), and call again to walk back
 Undo-Netscoot
 
 # Reverse one specific move by its journal id (from -List)
@@ -2164,7 +2166,7 @@ Undo-Netscoot -WhatIf
 # Reverse everything recorded in the last hour (prompts)
 Undo-Netscoot -After (Get-Date).AddHours(-1)
 
-# Reverse every recorded move (prompts; -Force to skip the prompt)
+# Reverse every recorded move (prompts, and -Force skips the prompt)
 Undo-Netscoot -All
 ```
 
@@ -2232,7 +2234,7 @@ Checks GitHub for a newer release (via [Test-NetscootUpdate](#test-netscootupdat
 behind, runs the release's `install.ps1` to overwrite the modules on your module path. No git, no clone. Does nothing
 when already current unless `-Force`. Honors `-WhatIf`/`-Confirm`. After it runs, reload the module in the current
 session with `Import-Module Netscoot -Force`. Needs network access to GitHub. For Gallery installs,
-`Update-Module Netscoot` is the simpler path; this command updates installer/clone installs in place from the GitHub
+`Update-Module Netscoot` is the simpler path. This command updates installer/clone installs in place from the GitHub
 release. When the update policy is Disabled (see [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy)), this refuses to
 update. `-Force` overrides a policy you set for yourself, never one an administrator set.
 
@@ -2307,8 +2309,8 @@ those MSBuild settings. The dotnet CLI is not used: it cannot load a `.vcxproj` 
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑Project` | String | true | true (ByValue) | Path to the `.vcxproj`. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
-| `‑Destination` | String | true | false | Where to move the project folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the new folder path. |
+| `‑Project` | String | true | true (ByValue) | Path to the `.vcxproj`. Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types. |
+| `‑Destination` | String | true | false | Where to move the project folder, following `git mv` rules: An existing directory means move into it, keeping the name. Any other path is the new folder path. |
 | `‑RepositoryRoot` | String | false | false | Root to scan for solutions. Defaults to the enclosing git repository root. |
 | `‑Force` | SwitchParameter | false | false | When git is not installed, move with a plain PowerShell `Move-Item` without asking first. Without `-Force` it asks before falling back. The plain move does not preserve git history. |
 | `‑NoJournal` | SwitchParameter | false | false | Skip recording this move in the undo journal for this call, even when journaling is enabled ([Undo-Netscoot](#undo-netscoot) will not see this move). |
@@ -2336,7 +2338,7 @@ Netscoot.NativeMoveResult
 ##### Examples
 
 ```powershell
-# Preview; reports the native path settings it cannot reconcile (verify by hand after)
+# Preview, including the native path settings it cannot reconcile (verify by hand after)
 Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo -WhatIf
 
 # Move it (also moves the paired .vcxproj.filters)
@@ -2364,8 +2366,8 @@ Move-UnityAsset [-AssetPath] <string> -Destination <string> [-RepositoryRoot <st
 In Unity every asset and folder has a sibling `<name>.meta` carrying a stable GUID. References (in scenes, prefabs, and
 asmdef "references" entries of the form "GUID:...") resolve by that GUID, not by path. If you move files on disk without
 their `.meta`, Unity regenerates fresh GUIDs and every reference to them breaks. This cmdlet moves the asset (git mv
-when tracked) together with its own `.meta`; for a folder, the descendant `.meta` files travel inside it and the
-folder's sibling `.meta` is moved too. asmdef references are by name/GUID (not path), so they do not need editing; when
+when tracked) together with its own `.meta`. For a folder, the descendant `.meta` files travel inside it and the
+folder's sibling `.meta` is moved too. asmdef references are by name/GUID (not path), so they do not need editing. When
 moving an .asmdef this reports who references it, for your awareness only. When the destination needs new parent
 folders, each one under Assets/ (or inside a package) gets a folder `.meta` with a fresh GUID, staged with the move, so
 it is committed once instead of being generated differently on every machine. [Undo-Netscoot](#undo-netscoot) moves the
@@ -2377,8 +2379,8 @@ mobile layouts are preserved.
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑AssetPath` | String | true | true (ByValue) | Asset file or folder to move (under Assets/ or a package). Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected). |
-| `‑Destination` | String | true | false | Where to move the asset/folder, following `git mv` rules: An existing directory means move into it (keeping the name); otherwise it is the new path. |
+| `‑AssetPath` | String | true | true (ByValue) | Asset file or folder to move (under Assets/ or a package). Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types. |
+| `‑Destination` | String | true | false | Where to move the asset/folder, following `git mv` rules: An existing directory means move into it, keeping the name. Any other path is the new path. |
 | `‑RepositoryRoot` | String | false | false | Root to scan for asmdef referencers. Defaults to the enclosing git repository root. |
 | `‑Force` | SwitchParameter | false | false | When git is not installed, move with a plain PowerShell `Move-Item` without asking first. Without `-Force` it asks before falling back. The plain move does not preserve git history. |
 | `‑NoJournal` | SwitchParameter | false | false | Skip recording this move in the undo journal for this call, even when journaling is enabled ([Undo-Netscoot](#undo-netscoot) will not see this move). |
@@ -2405,7 +2407,7 @@ Netscoot.UnityMoveResult
 ##### Examples
 
 ```powershell
-# Preview; moves the asset/folder together with its .meta so GUIDs survive
+# Preview moving the asset/folder together with its .meta so GUIDs survive
 Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/Tarragon -WhatIf
 
 # Move it for real
@@ -2431,10 +2433,10 @@ Test-UnityMetaIntegrity [[-Root] <string>] [-Strict] [<CommonParameters>]
 ```
 
 Walks the tree and pairs every asset (file or folder) with its `<name>.meta`. Emits one object per problem and surfaces
-it through the standard streams so behavior follows invocation: By default it writes a Warning per problem; `-Strict`
-escalates each to a non-terminating error (honoring `-ErrorAction`). Objects are always emitted so results are
-capturable/filterable. Ignores Unity-hidden entries (names starting with '.', folders ending with '~') and the
-Library/Temp/obj caches.
+it through the standard streams so behavior follows invocation. By default it writes a Warning per problem, and
+`-Strict` escalates each to a non-terminating error (honoring `-ErrorAction`). Objects are always emitted so results are
+capturable/filterable. Ignores Unity-hidden entries (names starting with '.', folders ending with '~') and everything
+inside them, and the Library/Temp/obj caches.
 
 ##### Parameters
 

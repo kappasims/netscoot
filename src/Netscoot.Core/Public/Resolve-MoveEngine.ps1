@@ -25,9 +25,9 @@ function Resolve-MoveEngine {
         Resolve-MoveEngine ./src/Tarragon/Tarragon.csproj
         # Anything under a Unity project's Assets/ or Packages/, or paired with a .meta, is 'unity'
         Resolve-MoveEngine ./Assets/Art/logo.png
-        # A .ps1 is 'ps-script'; a module folder or .psd1 is 'ps-module'
+        # A .ps1 is 'ps-script', and a module folder or .psd1 is 'ps-module'
         Resolve-MoveEngine ./tools/build.ps1
-        # A .vcxproj is 'native'; an unrecognized path is 'unknown'
+        # A .vcxproj is 'native', and an unrecognized path is 'unknown'
         Resolve-MoveEngine ./Aleppo/Aleppo.vcxproj
     #>
     [CmdletBinding()]
