@@ -6,6 +6,20 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.6.5] - 2026-09-25
+
+### Fixed
+
+- Every move command now returns the repository to its original state when a move fails partway.
+  Previously `Move-NativeProject`, `Move-MSBuildImport`, `Move-PowerShellScript`,
+  `Move-PowerShellModule`, `Move-Solution` and `Move-UnityAsset` could leave files at the destination
+  and references half-updated while reporting that the move had been rolled back.
+- Moving a .NET project keeps it in its solution folder. It was re-added under a virtual folder that
+  mirrored its new physical path, so a deep move created empty intermediate folders and a project
+  grouped under a solution folder lost that grouping.
+- The reminder `Move-PowerShellModule` prints about dot-sourced paths shows the literal
+  `$PSScriptRoot` text again, instead of an absolute path.
+
 ## [2.6.4] - 2026-06-26
 
 ### Fixed
