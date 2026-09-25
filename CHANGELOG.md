@@ -4,6 +4,8 @@ All notable changes to netscoot are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
 ## [2.6.6] - 2026-09-25
 
 ### Fixed
@@ -316,7 +318,12 @@ See the release notes for the full pull-request list.
 
 DotnetMove 1.x history predates the rename; see the legacy DotnetMove releases.
 
-[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.6.1...HEAD
+[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.6.6...HEAD
+[2.6.6]: https://github.com/kappasims/netscoot/compare/v2.6.5...v2.6.6
+[2.6.5]: https://github.com/kappasims/netscoot/compare/v2.6.4...v2.6.5
+[2.6.4]: https://github.com/kappasims/netscoot/compare/v2.6.3...v2.6.4
+[2.6.3]: https://github.com/kappasims/netscoot/compare/v2.6.2...v2.6.3
+[2.6.2]: https://github.com/kappasims/netscoot/compare/v2.6.1...v2.6.2
 [2.6.1]: https://github.com/kappasims/netscoot/compare/v2.6.0...v2.6.1
 [2.6.0]: https://github.com/kappasims/netscoot/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/kappasims/netscoot/compare/v2.4.0...v2.5.0
