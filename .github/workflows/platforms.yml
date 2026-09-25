@@ -1,8 +1,7 @@
 name: Platforms (manual)
 
-# Linux and macOS are not in per-push CI (that runs Windows + Windows PowerShell 5.1). Run this
-# on demand before a release - via tools/Invoke-PlatformCI.ps1 or the Actions tab ("Run workflow") -
-# to confirm the cross-platform engines pass on Ubuntu and macOS too.
+# Ad-hoc Linux and macOS run for any branch, via tools/Invoke-PlatformCI.ps1 or the Actions tab.
+# Release commits get the same matrix automatically from ci.yml's test-platforms job.
 on:
   workflow_dispatch:
 

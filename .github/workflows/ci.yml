@@ -23,9 +23,8 @@ permissions:
   contents: read
   packages: read
 
-# Per-push CI runs on Windows (PS7 + Windows PowerShell 5.1) plus lint. Linux and macOS are
-# on-demand (.github/workflows/platforms.yml, via tools/Invoke-PlatformCI.ps1) - run them before a
-# release. The cross-platform code rarely regresses per-OS, and this keeps every push fast.
+# Per-push CI runs on Windows (PS7 + Windows PowerShell 5.1) plus lint. Linux and macOS run only on
+# a release commit or a manual dispatch (test-platforms below), which keeps every other push fast.
 jobs:
   test:
     # Sharded into parallel jobs (separate processes): the suite shares process-global state
