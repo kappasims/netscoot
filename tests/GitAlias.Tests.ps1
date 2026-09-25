@@ -20,7 +20,7 @@ BeforeAll {
     }
 }
 
-Describe 'Register/Unregister-NetscootGitAlias' {
+Describe 'Register/Unregister-NetscootGitAlias' -Tag 'Integration' {
     It 'sets and unsets a repo-local alias' {
         $root = New-RepoFixture
         Push-Location $root
@@ -42,7 +42,7 @@ Describe 'Register/Unregister-NetscootGitAlias' {
     }
 }
 
-Describe 'git netscoot (end-to-end, universal cross-engine routing)' {
+Describe 'git netscoot (end-to-end, universal cross-engine routing)' -Tag 'Integration' {
     It 'routes a .csproj to the .NET engine' {
         $root = New-RepoFixture
         Push-Location $root

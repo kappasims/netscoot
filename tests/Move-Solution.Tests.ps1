@@ -22,7 +22,7 @@ BeforeAll {
     }
 }
 
-Describe 'Move-Solution' {
+Describe 'Move-Solution' -Tag 'Integration' {
     It 'rebases project paths when a <Format> solution moves into a subfolder' -ForEach @(
         @{ Format = 'slnx' }, @{ Format = 'sln' }
     ) {

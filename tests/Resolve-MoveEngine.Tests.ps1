@@ -18,7 +18,7 @@ BeforeAll {
     }
 }
 
-Describe 'Resolve-MoveEngine' {
+Describe 'Resolve-MoveEngine' -Tag 'Integration' {
     It 'classifies by extension' {
         Resolve-MoveEngine 'lib/Foo.csproj'      | Should -Be 'dotnet'
         Resolve-MoveEngine 'lib/Foo.fsproj'      | Should -Be 'dotnet'

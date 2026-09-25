@@ -58,7 +58,7 @@ BeforeAll {
     }
 }
 
-Describe 'Move-MSBuildImport' {
+Describe 'Move-MSBuildImport' -Tag 'Integration' {
     It 'fixes a consumer<Import> relative path and the project still builds' {
         $root = New-ImportFixture
         try {

@@ -23,7 +23,7 @@ BeforeAll {
     }
 }
 
-Describe 'Test-SolutionConsistency' {
+Describe 'Test-SolutionConsistency' -Tag 'Integration' {
     It 'warns about and emits the divergent project' {
         $root = New-DivergentRepo
         try {

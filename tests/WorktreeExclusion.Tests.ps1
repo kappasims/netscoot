@@ -36,7 +36,7 @@ BeforeAll {
     }
 }
 
-Describe 'Nested worktrees are excluded from repo scans' {
+Describe 'Nested worktrees are excluded from repo scans' -Tag 'Integration' {
     It 'Find-Solutions ignores the worktree copies' {
         $root = New-RepoWithNestedWorktree
         try {

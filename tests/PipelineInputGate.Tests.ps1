@@ -22,7 +22,7 @@ BeforeAll {
     }
 }
 
-Describe 'Pipeline-input gate (PathInputTransform)' {
+Describe 'Pipeline-input gate (PathInputTransform)' -Tag 'Integration' {
 
     Context 'the attribute type is registered' {
         It 'exposes Netscoot.PathInputTransformAttribute as a real .NET type' {

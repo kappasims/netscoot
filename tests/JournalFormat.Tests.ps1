@@ -21,7 +21,7 @@ BeforeAll {
     Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'Netscoot.Core', 'Netscoot.Core.psd1')) -Force
 }
 
-Describe 'Journal on-disk format (v2)' {
+Describe 'Journal on-disk format (v2)' -Tag 'Integration' {
     BeforeAll {
         # Per-Describe shared repo, freshly copied from the cached template. Reuses the
         # 'journal-lib-sln' key from Journal.Tests so the template is built ONCE per session.

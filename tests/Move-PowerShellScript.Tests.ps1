@@ -20,7 +20,7 @@ Get-Greeting
     }
 }
 
-Describe 'Move-PowerShellScript' {
+Describe 'Move-PowerShellScript' -Tag 'Integration' {
     It 'fixes a dot-source reference and the script still runs' {
         $root = New-ScriptFixture
         try {

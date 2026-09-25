@@ -26,7 +26,7 @@ BeforeAll {
     }
 }
 
-Describe 'Move-DotnetProject' {
+Describe 'Move-DotnetProject' -Tag 'Integration' {
     It 'moves a referenced library and keeps the <Format> solution buildable' -ForEach @(
         @{ Format = 'slnx' }, @{ Format = 'sln' }
     ) {

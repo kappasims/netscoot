@@ -24,7 +24,7 @@ BeforeAll {
     function _check($records, [string]$name) { @($records | Where-Object { $_.Check -eq $name })[0] }
 }
 
-Describe 'Test-EditorSolutionGuard' {
+Describe 'Test-EditorSolutionGuard' -Tag 'Integration' {
     It 'reports nothing when the repository has no .slnx (guard does not apply)' {
         $root = New-GuardRepo -NoSlnx
         try {

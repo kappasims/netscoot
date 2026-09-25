@@ -57,7 +57,7 @@ BeforeAll {
     }
 }
 
-Describe 'Get-SolutionInventory' {
+Describe 'Get-SolutionInventory' -Tag 'Integration' {
     It 'surfaces non-CLI projects, folders, items, and unreferenced projects' {
         $root = New-InventoryFixture
         try {
@@ -72,7 +72,7 @@ Describe 'Get-SolutionInventory' {
     }
 }
 
-Describe 'Sync-Solution' {
+Describe 'Sync-Solution' -Tag 'Integration' {
     It 'previews additions with -WhatIf and changes nothing' {
         $root = New-DivergentFixture
         try {

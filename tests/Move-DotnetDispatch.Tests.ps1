@@ -22,7 +22,7 @@ BeforeAll {
     }
 }
 
-Describe 'Move-DotnetFile (routing)' {
+Describe 'Move-DotnetFile (routing)' -Tag 'Integration' {
     It 'routes a .csproj to Move-DotnetProject' {
         $root = New-DispatchFixture
         try {
@@ -91,7 +91,7 @@ Describe 'Move-DotnetFile (routing)' {
     }
 }
 
-Describe 'Invoke-Netscoot (legacy .vcproj)' {
+Describe 'Invoke-Netscoot (legacy .vcproj)' -Tag 'Integration' {
     It 'rejects a legacy .vcproj with a clear, specific error' {
         $root = New-DispatchFixture
         try {
@@ -105,7 +105,7 @@ Describe 'Invoke-Netscoot (legacy .vcproj)' {
     }
 }
 
-Describe 'Move-DotnetFolder (routing)' {
+Describe 'Move-DotnetFolder (routing)' -Tag 'Integration' {
     It 'routes a folder to Move-DotnetProjectTree' {
         $root = New-DispatchFixture
         try {

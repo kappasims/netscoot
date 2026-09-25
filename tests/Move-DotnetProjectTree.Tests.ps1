@@ -25,7 +25,7 @@ BeforeAll {
     }
 }
 
-Describe 'Move-DotnetProjectTree' {
+Describe 'Move-DotnetProjectTree' -Tag 'Integration' {
     It 'moves a folder of projects, fixing external refs while leaving internal refs intact' {
         $root = New-TreeFixture
         try {

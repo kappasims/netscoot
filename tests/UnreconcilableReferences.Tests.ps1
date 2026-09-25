@@ -11,7 +11,7 @@ BeforeAll {
     Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'NetscootShared', 'NetscootShared.psd1')) -Force
 }
 
-Describe 'Unreconcilable references (StrictMode .Count guard)' {
+Describe 'Unreconcilable references (StrictMode .Count guard)' -Tag 'Integration' {
     It 'does not throw when a non-moved project has a single conditional ProjectReference' {
         $root = New-TempRoot -Prefix 'netscoot_nr'
         try {
