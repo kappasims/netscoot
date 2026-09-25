@@ -57,7 +57,8 @@ A prerelease runs the same way from its own branch (for example `3.0-beta`) with
 touches `master`.
 
 `publish.yml` reads the Gallery API key from the `PSGALLERY_API_KEY` secret of the `gallery`
-environment. A prerelease, or a version below one already on the Gallery (a 2.x patch while a 3.0
+environment. Give the key the "Push only new package versions" and "Unlist package" scopes, limited
+to the `Netscoot` package, and limit the environment's deployments to `v*` tags. A prerelease, or a version below one already on the Gallery (a 2.x patch while a 3.0
 beta is listed), keeps every other version listed. Otherwise the publish unlists the older ones.
 `./build.ps1 -Task Publish -ApiKey <key>` still publishes by hand from PowerShell 7.
 
