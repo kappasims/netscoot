@@ -181,7 +181,6 @@ function Move-DotnetProject {
 
         $built = $null
         $performed = $false
-        $skippedCount = 0
 
         if ($PSCmdlet.ShouldProcess("$projFile : $oldDir -> $newDir", 'Move .NET project and reconcile references')) {
             $ctx = Resolve-MoveContext -Cmdlet $PSCmdlet -Force:$Force -TargetForError $projFull
@@ -194,14 +193,13 @@ function Move-DotnetProject {
             # Files the reconciliation edits (for rollback): each solution, each consumer project,
             # and the moved project's own file. Reverse-move returns the folder to its old place.
             $backup = @($solutions | ForEach-Object { $_.FullName }) + @($consumers) + @($projFull)
-            $planResult = Invoke-MovePlan -Caption "Move $projFile" -Items $items -Move $move `
+            Invoke-MovePlan -Caption "Move $projFile" -Items $items -Move $move `
                 -MoveArgs @($ctx.UseGit, $oldDir, $newDir, $repoFull) `
                 -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $oldDir, $repoFull) `
                 -RepositoryRoot $repoFull -Command 'Move-DotnetProject' -Engine 'dotnet' `
                 -Source $projFull -Destination $newProj `
                 -UndoParams @{ Project = $newProj; Destination = $oldDir; Force = [bool]$Force } -NoJournal:$NoJournal
             $performed = $true
-            $skippedCount = $planResult.Skipped
 
             if (-not $NoBuild) {
                 # Pipe to Out-Null so the dotnet build stdout does not leak into this cmdlet's output
@@ -216,7 +214,7 @@ function Move-DotnetProject {
         }
 
         New-MoveResult -TypeName 'Netscoot.MoveResult' -Engine 'dotnet' -Source $projFull -Destination $newProj `
-            -Performed $performed -SkippedCount $skippedCount -Extra ([ordered]@{
+            -Performed $performed -Extra ([ordered]@{
                 Solutions     = $slnNames
                 ConsumerCount = $consumers.Count
                 OwnRefCount   = $ownRefs.Count

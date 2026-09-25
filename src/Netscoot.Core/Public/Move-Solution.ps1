@@ -94,7 +94,6 @@ function Move-Solution {
         $performed = $false
         $rebased = 0
         $itemsRebased = 0
-        $skippedCount = 0
 
         if ($PSCmdlet.ShouldProcess("$src -> $newPath", "Move solution and rebase $($entries.Count + $solutionItems.Count) stored path(s)")) {
             $ctx = Resolve-MoveContext -Cmdlet $PSCmdlet -Force:$Force -TargetForError $src
@@ -116,7 +115,7 @@ function Move-Solution {
             }
             $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 
-            $planResult = Invoke-MovePlan -Caption "Move solution $name" -Items $items -Move $move `
+            Invoke-MovePlan -Caption "Move solution $name" -Items $items -Move $move `
                 -MoveArgs @($ctx.UseGit, $src, $newPath, $repoFull) `
                 -BackupPath @($src) -Rollback $move -RollbackArgs @($ctx.UseGit, $newPath, $src, $repoFull) `
                 -RepositoryRoot $repoFull -Command 'Move-Solution' -Engine 'dotnet' -Source $src -Destination $newPath `
@@ -124,11 +123,10 @@ function Move-Solution {
             $performed = $true
             $rebased = $counter.N
             $itemsRebased = $itemCounter.N
-            $skippedCount = $planResult.Skipped
         }
 
         New-MoveResult -TypeName 'Netscoot.SolutionMoveResult' -Engine 'dotnet' -Source $src -Destination $newPath `
-            -Performed $performed -SkippedCount $skippedCount -Extra ([ordered]@{
+            -Performed $performed -Extra ([ordered]@{
                 ProjectsRebased = $rebased
                 ItemsRebased    = $itemsRebased
             })

@@ -915,8 +915,8 @@ folder of .NET projects    ->  Netscoot.TreeMoveResult
 Unity asset or folder      ->  Netscoot.UnityMoveResult
 ```
 
-These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields, with no
-shared base type. See [Output types](#output-types).
+These share a common shape (Engine, Source, Destination, Performed) and each adds its own fields, with no shared base
+type. See [Output types](#output-types).
 
 ##### Examples
 
@@ -980,8 +980,8 @@ them.
 .props  .targets           ->  Move-MSBuildImport   ->  Netscoot.ImportMoveResult
 ```
 
-These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields, with no
-shared base type. See [Output types](#output-types).
+These share a common shape (Engine, Source, Destination, Performed) and each adds its own fields, with no shared base
+type. See [Output types](#output-types).
 
 ##### Examples
 
@@ -1041,7 +1041,6 @@ Netscoot.TreeMoveResult
   Source         string  # absolute path
   Destination    string  # absolute path
   Performed      bool    # false under -WhatIf
-  SkippedCount   int
   ProjectsMoved  int
   ConsumerCount  int     # external references repointed
   Built          bool?   # $null with -NoBuild
@@ -1104,7 +1103,6 @@ Netscoot.MoveResult
   Source         string    # absolute path
   Destination    string    # absolute path
   Performed      bool      # false under -WhatIf
-  SkippedCount   int
   Solutions      string[]  # solution names updated
   ConsumerCount  int       # external references repointed
   OwnRefCount    int       # the moved project's own references rebased
@@ -1181,7 +1179,6 @@ Netscoot.TreeMoveResult
   Source         string  # absolute path
   Destination    string  # absolute path
   Performed      bool    # false under -WhatIf
-  SkippedCount   int
   ProjectsMoved  int
   ConsumerCount  int     # external references repointed
   Built          bool?   # $null with -NoBuild
@@ -1253,7 +1250,6 @@ Netscoot.ImportMoveResult
   Source           string  # absolute path
   Destination      string  # absolute path
   Performed        bool    # false under -WhatIf
-  SkippedCount     int
   ImportersFixed   int     # files whose <Import> was rewritten
   OwnImportsFixed  int     # the moved file's own imports rewritten
   AutoImported     bool    # true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
@@ -1311,8 +1307,8 @@ to the script specialist (the module specialist has no RepositoryRoot).
 .psd1  module folder   ->  Move-PowerShellModule  ->  Netscoot.PSModuleMoveResult
 ```
 
-These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields, with no
-shared base type. See [Output types](#output-types).
+These share a common shape (Engine, Source, Destination, Performed) and each adds its own fields, with no shared base
+type. See [Output types](#output-types).
 
 ##### Examples
 
@@ -1366,12 +1362,11 @@ Returns a single [Netscoot.PSModuleMoveResult](#netscootpsmodulemoveresult).
 
 ```text
 Netscoot.PSModuleMoveResult
-  Engine        string
-  Source        string  # absolute path
-  Destination   string  # absolute path
-  Performed     bool    # false under -WhatIf
-  SkippedCount  int
-  Manifest      string  # the manifest file name
+  Engine       string
+  Source       string  # absolute path
+  Destination  string  # absolute path
+  Performed    bool    # false under -WhatIf
+  Manifest     string  # the manifest file name
 ```
 
 ##### Examples
@@ -1435,7 +1430,6 @@ Netscoot.ScriptMoveResult
   Source            string  # absolute path
   Destination       string  # absolute path
   Performed         bool    # false under -WhatIf
-  SkippedCount      int
   ReferencersFixed  int     # scripts whose path to the moved file was rewritten
   OwnRefsFixed      int     # the moved script's own paths rewritten
   UnresolvedRefs    int     # count of possible dynamic references to verify, not a list
@@ -1498,7 +1492,6 @@ Netscoot.SolutionMoveResult
   Source           string  # absolute path
   Destination      string  # absolute path
   Performed        bool    # false under -WhatIf
-  SkippedCount     int
   ProjectsRebased  int     # project paths rewritten
   ItemsRebased     int     # solution item paths rewritten
 ```
@@ -2469,7 +2462,6 @@ Netscoot.NativeMoveResult
   Source                string                    # absolute path
   Destination           string                    # absolute path
   Performed             bool                      # false under -WhatIf
-  SkippedCount          int
   Solutions             string[]                  # solution names updated
   UnreconciledSettings  Netscoot.NativeSetting[]  # native path settings to verify by hand
                           Kind   string  # e.g. AdditionalIncludeDirectories, OutDir, Import
@@ -2540,7 +2532,6 @@ Netscoot.UnityMoveResult
   Source        string    # absolute path
   Destination   string    # absolute path
   Performed     bool      # false under -WhatIf
-  SkippedCount  int
   MetaMoved     bool      # the paired .meta moved too
   IsAsmdef      bool      # the moved asset is an .asmdef
   ReferencedBy  string[]  # asmdefs that reference a moved .asmdef (informational, since refs are by name or GUID and survive)
@@ -2739,7 +2730,6 @@ Netscoot.ImportMoveResult
   Source           string  # absolute path
   Destination      string  # absolute path
   Performed        bool    # false under -WhatIf
-  SkippedCount     int
   ImportersFixed   int     # files whose <Import> was rewritten
   OwnImportsFixed  int     # the moved file's own imports rewritten
   AutoImported     bool    # true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
@@ -2799,7 +2789,6 @@ Netscoot.MoveResult
   Source         string    # absolute path
   Destination    string    # absolute path
   Performed      bool      # false under -WhatIf
-  SkippedCount   int
   Solutions      string[]  # solution names updated
   ConsumerCount  int       # external references repointed
   OwnRefCount    int       # the moved project's own references rebased
@@ -2822,7 +2811,6 @@ Netscoot.NativeMoveResult
   Source                string                    # absolute path
   Destination           string                    # absolute path
   Performed             bool                      # false under -WhatIf
-  SkippedCount          int
   Solutions             string[]                  # solution names updated
   UnreconciledSettings  Netscoot.NativeSetting[]  # native path settings to verify by hand
                           Kind   string  # e.g. AdditionalIncludeDirectories, OutDir, Import
@@ -2877,12 +2865,11 @@ Result of moving a PowerShell module folder and fixing the paths that load it.
 
 ```text
 Netscoot.PSModuleMoveResult
-  Engine        string
-  Source        string  # absolute path
-  Destination   string  # absolute path
-  Performed     bool    # false under -WhatIf
-  SkippedCount  int
-  Manifest      string  # the manifest file name
+  Engine       string
+  Source       string  # absolute path
+  Destination  string  # absolute path
+  Performed    bool    # false under -WhatIf
+  Manifest     string  # the manifest file name
 ```
 
 [Back to Output types](#output-types)
@@ -2923,7 +2910,6 @@ Netscoot.ScriptMoveResult
   Source            string  # absolute path
   Destination       string  # absolute path
   Performed         bool    # false under -WhatIf
-  SkippedCount      int
   ReferencersFixed  int     # scripts whose path to the moved file was rewritten
   OwnRefsFixed      int     # the moved script's own paths rewritten
   UnresolvedRefs    int     # count of possible dynamic references to verify, not a list
@@ -2965,7 +2951,6 @@ Netscoot.SolutionMoveResult
   Source           string  # absolute path
   Destination      string  # absolute path
   Performed        bool    # false under -WhatIf
-  SkippedCount     int
   ProjectsRebased  int     # project paths rewritten
   ItemsRebased     int     # solution item paths rewritten
 ```
@@ -3020,7 +3005,6 @@ Netscoot.TreeMoveResult
   Source         string  # absolute path
   Destination    string  # absolute path
   Performed      bool    # false under -WhatIf
-  SkippedCount   int
   ProjectsMoved  int
   ConsumerCount  int     # external references repointed
   Built          bool?   # $null with -NoBuild
@@ -3042,7 +3026,6 @@ Netscoot.UnityMoveResult
   Source        string    # absolute path
   Destination   string    # absolute path
   Performed     bool      # false under -WhatIf
-  SkippedCount  int
   MetaMoved     bool      # the paired .meta moved too
   IsAsmdef      bool      # the moved asset is an .asmdef
   ReferencedBy  string[]  # asmdefs that reference a moved .asmdef (informational, since refs are by name or GUID and survive)

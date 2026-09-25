@@ -179,7 +179,6 @@ function Move-NativeProject {
             })
 
         $performed = $false
-        $skippedCount = 0
 
         if ($PSCmdlet.ShouldProcess("$projFile : $oldDir -> $newDir", 'Move native project and update solution entries and project references (native paths reported only)')) {
             $ctx = Resolve-MoveContext -Cmdlet $PSCmdlet -Force:$Force -TargetForError $projFull
@@ -188,13 +187,12 @@ function Move-NativeProject {
             $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 
             $backup = @($incoming | ForEach-Object { $_.File }) + @($projFull)
-            $planResult = Invoke-MovePlan -Caption "Move native $projFile" -Items $items -Move $move `
+            Invoke-MovePlan -Caption "Move native $projFile" -Items $items -Move $move `
                 -MoveArgs @($ctx.UseGit, $oldDir, $newDir, $repoFull) `
                 -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $oldDir, $repoFull) `
                 -RepositoryRoot $repoFull -Command 'Move-NativeProject' -Engine 'native' -Source $projFull -Destination $newProj `
                 -UndoParams @{ Project = $newProj; Destination = $oldDir; Force = [bool]$Force } -NoJournal:$NoJournal
             $performed = $true
-            $skippedCount = $planResult.Skipped
         }
 
         if ($nativeSettings.Count -gt 0) {
@@ -209,7 +207,7 @@ function Move-NativeProject {
         }
 
         New-MoveResult -TypeName 'Netscoot.NativeMoveResult' -Engine 'native' -Source $projFull -Destination $newProj `
-            -Performed $performed -SkippedCount $skippedCount -Extra ([ordered]@{
+            -Performed $performed -Extra ([ordered]@{
                 Solutions            = $slnNames
                 UnreconciledSettings = $nativeSettings
                 HadFilters           = $hasFilters

@@ -67,7 +67,7 @@ function Write-MovePlan {
 
 function New-MoveResult {
     # Build a move cmdlet's result object with a uniform base shape (Engine, Source,
-    # Destination, Performed, SkippedCount) plus engine-specific extras, and stamp the
+    # Destination, Performed) plus engine-specific extras, and stamp the
     # given PSTypeName for formatting/filtering. Every move cmdlet emits one of these.
     #
     # Source/Destination are ABSOLUTE paths (the concrete on-disk locations the move acted on),
@@ -84,7 +84,6 @@ function New-MoveResult {
         [Parameter(Mandatory)][string]$Source,
         [Parameter(Mandatory)][string]$Destination,
         [bool]$Performed,
-        [int]$SkippedCount = 0,
         [System.Collections.IDictionary]$Extra = [ordered]@{}
     )
     $ordered = [ordered]@{
@@ -92,7 +91,6 @@ function New-MoveResult {
         Source       = $Source
         Destination  = $Destination
         Performed    = $Performed
-        SkippedCount = $SkippedCount
     }
     foreach ($k in $Extra.Keys) { $ordered[$k] = $Extra[$k] }
     # Construct the real DTO (DomainTypes.ps1) by name and populate its public fields from the
@@ -311,6 +309,4 @@ function Invoke-MovePlan {
     } elseif ($hint) {
         Write-Host "Undo (journaling off): $hint" -ForegroundColor DarkGray
     }
-
-    [pscustomobject]@{ Applied = @($Items).Count; Skipped = 0 }
 }

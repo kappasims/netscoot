@@ -73,7 +73,6 @@
             @{ Name = 'Source';        Type = 'string';   Note = 'absolute path' }
             @{ Name = 'Destination';   Type = 'string';   Note = 'absolute path' }
             @{ Name = 'Performed';     Type = 'bool';     Note = 'false under -WhatIf' }
-            @{ Name = 'SkippedCount';  Type = 'int';      Note = '' }
             @{ Name = 'Solutions';     Type = 'string[]'; Note = 'solution names updated' }
             @{ Name = 'ConsumerCount'; Type = 'int';      Note = 'external references repointed' }
             @{ Name = 'OwnRefCount';   Type = 'int';      Note = "the moved project's own references rebased" }
@@ -89,7 +88,6 @@
             @{ Name = 'Source';        Type = 'string'; Note = 'absolute path' }
             @{ Name = 'Destination';   Type = 'string'; Note = 'absolute path' }
             @{ Name = 'Performed';     Type = 'bool';   Note = 'false under -WhatIf' }
-            @{ Name = 'SkippedCount';  Type = 'int';    Note = '' }
             @{ Name = 'ProjectsMoved'; Type = 'int';    Note = '' }
             @{ Name = 'ConsumerCount'; Type = 'int';    Note = 'external references repointed' }
             @{ Name = 'Built';         Type = 'bool?';  Note = '$null with -NoBuild' }
@@ -104,7 +102,6 @@
             @{ Name = 'Source';         Type = 'string'; Note = 'absolute path' }
             @{ Name = 'Destination';    Type = 'string'; Note = 'absolute path' }
             @{ Name = 'Performed';      Type = 'bool';   Note = 'false under -WhatIf' }
-            @{ Name = 'SkippedCount';   Type = 'int';    Note = '' }
             @{ Name = 'ImportersFixed'; Type = 'int';    Note = 'files whose <Import> was rewritten' }
             @{ Name = 'OwnImportsFixed';Type = 'int';    Note = "the moved file's own imports rewritten" }
             @{ Name = 'AutoImported';   Type = 'bool';   Note = 'true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed' }
@@ -119,7 +116,6 @@
             @{ Name = 'Source';       Type = 'string'; Note = 'absolute path' }
             @{ Name = 'Destination';  Type = 'string'; Note = 'absolute path' }
             @{ Name = 'Performed';    Type = 'bool';   Note = 'false under -WhatIf' }
-            @{ Name = 'SkippedCount'; Type = 'int';    Note = '' }
             @{ Name = 'Manifest';     Type = 'string'; Note = 'the manifest file name' }
         )
     }
@@ -132,7 +128,6 @@
             @{ Name = 'Source';          Type = 'string'; Note = 'absolute path' }
             @{ Name = 'Destination';     Type = 'string'; Note = 'absolute path' }
             @{ Name = 'Performed';       Type = 'bool';   Note = 'false under -WhatIf' }
-            @{ Name = 'SkippedCount';    Type = 'int';    Note = '' }
             @{ Name = 'ReferencersFixed';Type = 'int';    Note = 'scripts whose path to the moved file was rewritten' }
             @{ Name = 'OwnRefsFixed';    Type = 'int';    Note = "the moved script's own paths rewritten" }
             @{ Name = 'UnresolvedRefs';  Type = 'int';    Note = 'count of possible dynamic references to verify, not a list' }
@@ -147,7 +142,6 @@
             @{ Name = 'Source';          Type = 'string'; Note = 'absolute path' }
             @{ Name = 'Destination';     Type = 'string'; Note = 'absolute path' }
             @{ Name = 'Performed';       Type = 'bool';   Note = 'false under -WhatIf' }
-            @{ Name = 'SkippedCount';    Type = 'int';    Note = '' }
             @{ Name = 'ProjectsRebased'; Type = 'int';    Note = 'project paths rewritten' }
             @{ Name = 'ItemsRebased';    Type = 'int';    Note = 'solution item paths rewritten' }
         )
@@ -161,7 +155,6 @@
             @{ Name = 'Source';               Type = 'string';                 Note = 'absolute path' }
             @{ Name = 'Destination';          Type = 'string';                 Note = 'absolute path' }
             @{ Name = 'Performed';            Type = 'bool';                   Note = 'false under -WhatIf' }
-            @{ Name = 'SkippedCount';         Type = 'int';                    Note = '' }
             @{ Name = 'Solutions';            Type = 'string[]';               Note = 'solution names updated' }
             @{ Name = 'UnreconciledSettings'; Type = 'Netscoot.NativeSetting[]'; Note = 'native path settings to verify by hand' }
             @{ Name = 'HadFilters';           Type = 'bool';                   Note = 'a paired .vcxproj.filters moved too' }
@@ -185,7 +178,6 @@
             @{ Name = 'Source';       Type = 'string';   Note = 'absolute path' }
             @{ Name = 'Destination';  Type = 'string';   Note = 'absolute path' }
             @{ Name = 'Performed';    Type = 'bool';     Note = 'false under -WhatIf' }
-            @{ Name = 'SkippedCount'; Type = 'int';      Note = '' }
             @{ Name = 'MetaMoved';    Type = 'bool';     Note = 'the paired .meta moved too' }
             @{ Name = 'IsAsmdef';     Type = 'bool';     Note = 'the moved asset is an .asmdef' }
             @{ Name = 'ReferencedBy'; Type = 'string[]'; Note = 'asmdefs that reference a moved .asmdef (informational, since refs are by name or GUID and survive)' }

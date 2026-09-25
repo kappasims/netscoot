@@ -26,7 +26,7 @@ namespace Netscoot
 {
     // ---- Move results: FLAT classes, NOT a base + derived hierarchy. PowerShell enumerates a
     // derived type's own fields before the inherited base fields, which would scramble the
-    // documented "uniform base shape (Engine/Source/Destination/Performed/SkippedCount) first, then
+    // documented "uniform base shape (Engine/Source/Destination/Performed) first, then
     // engine-specific extras in written order" contract. Declaring all fields in one class fixes the
     // enumeration order deterministically. Source/Destination are ABSOLUTE paths.
     public class MoveResult                  // dotnet project
@@ -35,7 +35,6 @@ namespace Netscoot
         public string Source;
         public string Destination;
         public bool   Performed;
-        public int    SkippedCount;
         public string[]       Solutions;
         public int            ConsumerCount;
         public int            OwnRefCount;
@@ -48,7 +47,6 @@ namespace Netscoot
         public string Source;
         public string Destination;
         public bool   Performed;
-        public int    SkippedCount;
         public int            ProjectsMoved;
         public int            ConsumerCount;
         public Nullable<bool> Built;
@@ -60,7 +58,6 @@ namespace Netscoot
         public string Source;
         public string Destination;
         public bool   Performed;
-        public int    SkippedCount;
         public int ProjectsRebased;
         public int ItemsRebased;
     }
@@ -71,7 +68,6 @@ namespace Netscoot
         public string Source;
         public string Destination;
         public bool   Performed;
-        public int    SkippedCount;
         public int  ImportersFixed;
         public int  OwnImportsFixed;
         public bool AutoImported;
@@ -83,7 +79,6 @@ namespace Netscoot
         public string Source;
         public string Destination;
         public bool   Performed;
-        public int    SkippedCount;
         public int ReferencersFixed;
         public int OwnRefsFixed;
         public int UnresolvedRefs;
@@ -95,7 +90,6 @@ namespace Netscoot
         public string Source;
         public string Destination;
         public bool   Performed;
-        public int    SkippedCount;
         public string Manifest;
     }
 
@@ -105,7 +99,6 @@ namespace Netscoot
         public string Source;
         public string Destination;
         public bool   Performed;
-        public int    SkippedCount;
         public string[]        Solutions;
         public NativeSetting[] UnreconciledSettings;
         public bool            HadFilters;
@@ -117,7 +110,6 @@ namespace Netscoot
         public string Source;
         public string Destination;
         public bool   Performed;
-        public int    SkippedCount;
         public bool     MetaMoved;
         public bool     IsAsmdef;
         public string[] ReferencedBy;

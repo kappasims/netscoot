@@ -13,9 +13,7 @@ Describe 'Invoke-MovePlan (transaction engine)' {
                 New-MoveItem -Description 'A' -Detach ({ $log.Add('detachA') }.GetNewClosure()) -Reattach ({ $log.Add('reattachA') }.GetNewClosure())
                 New-MoveItem -Description 'B' -Detach ({ $log.Add('detachB') }.GetNewClosure()) -Reattach ({ $log.Add('reattachB') }.GetNewClosure())
             )
-            $r = Invoke-MovePlan -Caption 't' -Items $items -Move { $log.Add('move') } -Rollback { }
-            $r.Applied | Should -Be 2
-            $r.Skipped | Should -Be 0
+            Invoke-MovePlan -Caption 't' -Items $items -Move { $log.Add('move') } -Rollback { } | Should -BeNullOrEmpty
             ($log -join ',') | Should -Be 'detachA,detachB,move,reattachA,reattachB'
         }
     }
@@ -33,9 +31,8 @@ Describe 'Invoke-MovePlan (transaction engine)' {
     It 'runs the move even with no reconciliation items' {
         InModuleScope NetscootShared {
             $ran = [ref]$false
-            $r = Invoke-MovePlan -Caption 't' -Items @() -Move ({ $ran.Value = $true }.GetNewClosure()) -Rollback { }
+            Invoke-MovePlan -Caption 't' -Items @() -Move ({ $ran.Value = $true }.GetNewClosure()) -Rollback { } | Out-Null
             $ran.Value | Should -BeTrue
-            $r.Applied | Should -Be 0
         }
     }
 
@@ -69,7 +66,7 @@ Describe 'New-MoveResult' {
             $r = New-MoveResult -TypeName 'Netscoot.MoveResult' -Engine 'dotnet' -Source 'a' -Destination 'b' `
                 -Performed $true -Extra ([ordered]@{ Solutions = @('S'); ConsumerCount = 1; OwnRefCount = 2; Built = $true })
             ($r.PSObject.Properties.Name -join ',') |
-                Should -Be 'Engine,Source,Destination,Performed,SkippedCount,Solutions,ConsumerCount,OwnRefCount,Built'
+                Should -Be 'Engine,Source,Destination,Performed,Solutions,ConsumerCount,OwnRefCount,Built'
             $r.PSObject.TypeNames[0] | Should -Be 'Netscoot.MoveResult'
         }
     }
@@ -77,10 +74,10 @@ Describe 'New-MoveResult' {
     It 'always emits the uniform base shape first' {
         InModuleScope NetscootShared {
             $r = New-MoveResult -TypeName 'Netscoot.SolutionMoveResult' -Engine 'dotnet' -Source 'a' -Destination 'b' `
-                -Performed $false -SkippedCount 3 -Extra ([ordered]@{ ProjectsRebased = 4 })
+                -Performed $false -Extra ([ordered]@{ ProjectsRebased = 4 })
             $names = $r.PSObject.Properties.Name
-            $names[0..4] | Should -Be @('Engine', 'Source', 'Destination', 'Performed', 'SkippedCount')
-            $r.SkippedCount | Should -Be 3
+            $names[0..3] | Should -Be @('Engine', 'Source', 'Destination', 'Performed')
+            $r.ProjectsRebased | Should -Be 4
         }
     }
 }

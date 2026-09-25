@@ -117,7 +117,6 @@ function Move-PowerShellModule {
     }
 
     $performed = $false
-    $skippedCount = 0
 
     if ($PSCmdlet.ShouldProcess("$moduleDir -> $newDir", 'Move PowerShell module and update the paths that reference it')) {
         $ctx = Resolve-MoveContext -Cmdlet $PSCmdlet -Force:$Force -TargetForError $moduleDir
@@ -139,13 +138,12 @@ function Move-PowerShellModule {
 
         $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
         $backup = @($incoming | ForEach-Object { $_.File }) + @($outgoing | ForEach-Object { $_.File })
-        $planResult = Invoke-MovePlan -Caption "Move module $manifestName" -Items $items -Move $move `
+        Invoke-MovePlan -Caption "Move module $manifestName" -Items $items -Move $move `
             -MoveArgs @($ctx.UseGit, $moduleDir, $newDir, $repoRoot) `
             -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $moduleDir, $repoRoot) `
             -RepositoryRoot $repoRoot -Command 'Move-PowerShellModule' -Engine 'powershell' -Source $moduleDir -Destination $newDir `
             -UndoParams @{ ModulePath = $newDir; Destination = $moduleDir; Force = [bool]$Force } -NoJournal:$NoJournal
         $performed = $true
-        $skippedCount = $planResult.Skipped
 
         if (-not (Test-ModuleManifest -Path $newManifest -ErrorAction SilentlyContinue)) {
             Write-Warning "Test-ModuleManifest reported problems for $newManifest"
@@ -153,6 +151,6 @@ function Move-PowerShellModule {
     }
 
     New-MoveResult -TypeName 'Netscoot.PSModuleMoveResult' -Engine 'powershell' -Source $moduleDir -Destination $newDir `
-        -Performed $performed -SkippedCount $skippedCount -Extra ([ordered]@{ Manifest = $manifestName })
+        -Performed $performed -Extra ([ordered]@{ Manifest = $manifestName })
     }
 }

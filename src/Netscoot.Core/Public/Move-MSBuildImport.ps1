@@ -129,7 +129,6 @@ function Move-MSBuildImport {
         }
 
         $performed = $false
-        $skippedCount = 0
 
         if ($PSCmdlet.ShouldProcess("$src -> $newPath", 'Move MSBuild import and fix <Import> consumers')) {
             $ctx = Resolve-MoveContext -Cmdlet $PSCmdlet -Force:$Force -TargetForError $src
@@ -150,17 +149,16 @@ function Move-MSBuildImport {
             $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 
             $backup = @($importers | ForEach-Object { $_.File }) + @($src)
-            $planResult = Invoke-MovePlan -Caption "Move import $srcName" -Items $items -Move $move `
+            Invoke-MovePlan -Caption "Move import $srcName" -Items $items -Move $move `
                 -MoveArgs @($ctx.UseGit, $src, $newPath, $repoFull) `
                 -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newPath, $src, $repoFull) `
                 -RepositoryRoot $repoFull -Command 'Move-MSBuildImport' -Engine 'dotnet' -Source $src -Destination $newPath `
                 -UndoParams @{ Path = $newPath; Destination = $src; Force = [bool]$Force } -NoJournal:$NoJournal
             $performed = $true
-            $skippedCount = $planResult.Skipped
         }
 
         New-MoveResult -TypeName 'Netscoot.ImportMoveResult' -Engine 'dotnet' -Source $src -Destination $newPath `
-            -Performed $performed -SkippedCount $skippedCount -Extra ([ordered]@{
+            -Performed $performed -Extra ([ordered]@{
                 ImportersFixed  = $importers.Count
                 OwnImportsFixed = $ownImports.Count
                 AutoImported    = $autoImported

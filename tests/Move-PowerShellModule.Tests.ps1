@@ -30,7 +30,7 @@ Describe 'Move-PowerShellModule' -Tag 'Integration' {
             $r.PSObject.TypeNames[0] | Should -Be 'Netscoot.PSModuleMoveResult'
             $r.Engine | Should -Be 'powershell'
             $r.Performed | Should -BeTrue
-            foreach ($f in 'Engine', 'Source', 'Destination', 'Performed', 'SkippedCount') { $r.PSObject.Properties.Name | Should -Contain $f }
+            foreach ($f in 'Engine', 'Source', 'Destination', 'Performed') { $r.PSObject.Properties.Name | Should -Contain $f }
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 

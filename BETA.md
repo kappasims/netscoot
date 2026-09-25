@@ -16,6 +16,7 @@ on 2.6.x, and you only get 3.0 by explicitly opting in below.
   instead of `pscustomobject`. Property access and formatting are unchanged. Only code that tested
   `-is [pscustomobject]` is affected. Journal entries, the update-check record and the tool records
   inside `Get-NetscootCapability` stay `pscustomobject`.
+- Move results no longer carry `SkippedCount`, which was always 0.
 - `Clear-NetscootJournal` now prompts before wiping a repository's undo journal (pass
   `-Confirm:$false` to suppress).
 - An update channel, `Set-NetscootUpdateChannel` / `Get-NetscootUpdateChannel`, lets an installer

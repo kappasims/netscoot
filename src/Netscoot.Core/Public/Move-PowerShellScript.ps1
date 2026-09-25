@@ -119,7 +119,6 @@ function Move-PowerShellScript {
         }
 
         $performed = $false
-        $skippedCount = 0
 
         if ($PSCmdlet.ShouldProcess("$src -> $newPath", 'Move script and fix dot-source/call references')) {
             $ctx = Resolve-MoveContext -Cmdlet $PSCmdlet -Force:$Force -TargetForError $src
@@ -140,17 +139,16 @@ function Move-PowerShellScript {
             $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 
             $backup = @($referencers | ForEach-Object { $_.File }) + @($src)
-            $planResult = Invoke-MovePlan -Caption "Move script $name" -Items $items -Move $move `
+            Invoke-MovePlan -Caption "Move script $name" -Items $items -Move $move `
                 -MoveArgs @($ctx.UseGit, $src, $newPath, $repoFull) `
                 -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newPath, $src, $repoFull) `
                 -RepositoryRoot $repoFull -Command 'Move-PowerShellScript' -Engine 'powershell' -Source $src -Destination $newPath `
                 -UndoParams @{ Path = $newPath; Destination = $src; Force = [bool]$Force } -NoJournal:$NoJournal
             $performed = $true
-            $skippedCount = $planResult.Skipped
         }
 
         New-MoveResult -TypeName 'Netscoot.ScriptMoveResult' -Engine 'powershell' -Source $src -Destination $newPath `
-            -Performed $performed -SkippedCount $skippedCount -Extra ([ordered]@{
+            -Performed $performed -Extra ([ordered]@{
                 ReferencersFixed = $referencers.Count
                 OwnRefsFixed     = $ownRefs.Count
                 UnresolvedRefs   = $unresolvedRefs.Count

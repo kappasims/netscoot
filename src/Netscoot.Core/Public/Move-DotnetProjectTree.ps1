@@ -164,7 +164,6 @@ function Move-DotnetProjectTree {
 
         $performed = $false
         $built = $null
-        $skippedCount = 0
 
         if ($PSCmdlet.ShouldProcess("$srcDir -> $newDir ($($moved.Count) project(s))", 'Move project tree and reconcile external references')) {
             $ctx = Resolve-MoveContext -Cmdlet $PSCmdlet -Force:$Force -TargetForError $srcDir
@@ -185,13 +184,12 @@ function Move-DotnetProjectTree {
                 $backup += @($item.ExtConsumers)
             }
             $backup += @($moved)
-            $planResult = Invoke-MovePlan -Caption "Move tree $(Split-Path -Leaf $srcDir)" -Items $items -Move $move `
+            Invoke-MovePlan -Caption "Move tree $(Split-Path -Leaf $srcDir)" -Items $items -Move $move `
                 -MoveArgs @($ctx.UseGit, $srcDir, $newDir, $repoFull) `
                 -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $srcDir, $repoFull) `
                 -RepositoryRoot $repoFull -Command 'Move-DotnetProjectTree' -Engine 'dotnet' -Source $srcDir -Destination $newDir `
                 -UndoParams @{ Path = $newDir; Destination = $srcDir; Force = [bool]$Force } -NoJournal:$NoJournal
             $performed = $true
-            $skippedCount = $planResult.Skipped
 
             if (-not $NoBuild) {
                 $built = $true
@@ -204,7 +202,7 @@ function Move-DotnetProjectTree {
         }
 
         New-MoveResult -TypeName 'Netscoot.TreeMoveResult' -Engine 'dotnet' -Source $srcDir -Destination $newDir `
-            -Performed $performed -SkippedCount $skippedCount -Extra ([ordered]@{
+            -Performed $performed -Extra ([ordered]@{
                 ProjectsMoved = $moved.Count
                 ConsumerCount = $totalConsumers
                 Built         = $built
