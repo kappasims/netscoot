@@ -59,7 +59,7 @@ BeforeAll {
     }
 }
 
-Describe 'Repair-NetscootSolutionReferences' {
+Describe 'Repair-NetscootSolutionReferences' -Tag 'Integration' {
     It 'reports dangling entries and whether each can be relocated' {
         $root = New-MovedFixture
         try {

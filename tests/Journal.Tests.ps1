@@ -21,7 +21,7 @@ BeforeAll {
     }
 }
 
-Describe 'Move journal + Undo-Netscoot' {
+Describe 'Move journal + Undo-Netscoot' -Tag 'Integration' {
     It 'journals a move in the per-user store and Undo reverses it, popping the entry' {
         $root = New-JournalFixture
         try {

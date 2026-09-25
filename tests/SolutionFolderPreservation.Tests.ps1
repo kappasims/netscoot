@@ -49,7 +49,7 @@ BeforeAll {
     }
 }
 
-Describe 'Solution-folder preservation on move' {
+Describe 'Solution-folder preservation on move' -Tag 'Integration' {
     It 'keeps the moved project in its original solution folder (<Format>, spaces in destination)' -ForEach @(
         @{ Format = 'slnx' }, @{ Format = 'sln' }
     ) {

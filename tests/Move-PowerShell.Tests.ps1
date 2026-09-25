@@ -11,7 +11,7 @@ BeforeAll {
     }
 }
 
-Describe 'Move-PowerShell (front door)' {
+Describe 'Move-PowerShell (front door)' -Tag 'Integration' {
     It 'routes a .ps1 to Move-PowerShellScript' {
         $root = New-PSFixture
         try {

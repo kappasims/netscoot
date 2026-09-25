@@ -28,7 +28,7 @@ AfterAll {
     Remove-Module Netscoot.Native -Force -ErrorAction SilentlyContinue
 }
 
-Describe 'Move-DotnetProject rolls back on a failed reattach (-Force / no-git path)' {
+Describe 'Move-DotnetProject rolls back on a failed reattach (-Force / no-git path)' -Tag 'Integration' {
     It 'restores the project location, the consumer reference, and solution membership' {
         $root = New-AppLibFixture
         try {
@@ -60,7 +60,7 @@ Describe 'Move-DotnetProject rolls back on a failed reattach (-Force / no-git pa
     }
 }
 
-Describe 'Every other mover rolls back on a failed step (-Force / no-git path)' {
+Describe 'Every other mover rolls back on a failed step (-Force / no-git path)' -Tag 'Integration' {
     BeforeAll {
         # Simulates a reattach that edited one file (the first item's, wherever it now lives) and then failed.
         $script:FailReattachAfterEdit = {

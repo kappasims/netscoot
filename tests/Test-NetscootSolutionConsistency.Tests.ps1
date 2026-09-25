@@ -23,7 +23,7 @@ BeforeAll {
     }
 }
 
-Describe 'Test-NetscootSolutionConsistency' {
+Describe 'Test-NetscootSolutionConsistency' -Tag 'Integration' {
     It 'warns about and emits the divergent project' {
         $root = New-DivergentRepo
         try {

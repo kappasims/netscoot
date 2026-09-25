@@ -17,7 +17,7 @@ BeforeAll {
     Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'Netscoot.Core', 'Netscoot.Core.psd1')) -Force
 }
 
-Describe 'Snapshot dir lifecycle (v2)' {
+Describe 'Snapshot dir lifecycle (v2)' -Tag 'Integration' {
     BeforeAll {
         $script:Repo = Copy-FixtureTemplate -Key 'journal-lib-sln' -Prefix 'jsnp' -Build {
             $r = New-TempRoot -Prefix 'jsnp'

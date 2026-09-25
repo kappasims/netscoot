@@ -37,7 +37,7 @@ BeforeAll {
     }
 }
 
-Describe 'Move-UnityAsset' {
+Describe 'Move-UnityAsset' -Tag 'Integration' {
     It 'moves the asset together with its .meta' {
         $root = New-UnityFixture
         try {
@@ -96,7 +96,7 @@ Describe 'Move-UnityAsset' {
     }
 }
 
-Describe 'Test-UnityMetaIntegrity' {
+Describe 'Test-UnityMetaIntegrity' -Tag 'Integration' {
     It 'flags an orphan .meta and a missing .meta' {
         $root = New-UnityFixture
         try {

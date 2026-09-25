@@ -6,7 +6,8 @@
 .DESCRIPTION
     Tasks:
       Test    (default) - import the modules and run the Pester suite (validates they load).
-                          Non-zero exit on failure (for CI).
+                          Non-zero exit on failure (for CI). -Fast skips the tests tagged
+                          'Integration', which build real fixtures on disk.
       Analyze           - run PSScriptAnalyzer over src/ if it is available.
       Install           - copy all modules (Shared, the engines, and the netscoot umbrella) into
                           a PowerShell module path so `Import-Module Netscoot` works by name.
@@ -32,6 +33,7 @@
 
 .EXAMPLE
     ./build.ps1                       # run the tests
+    ./build.ps1 -Fast                 # run only the tests that need no fixtures on disk
     ./build.ps1 -Task Analyze
     ./build.ps1 -Task Install         # into the per-user module path
     ./build.ps1 -Task Install -InstallPath D:\Modules
@@ -71,7 +73,10 @@ param(
     # Used by CI to run the suite as parallel jobs (separate processes - the tests share process-
     # global state, so they cannot be parallelized in-process). The default runs the whole suite.
     [int]$ShardIndex = 0,
-    [int]$ShardCount = 1
+    [int]$ShardCount = 1,
+    # Test: skip the tests tagged 'Integration' (those that build real fixtures on disk) for a fast
+    # inner loop. CI and Release always run the whole suite.
+    [switch]$Fast
 )
 
 $ErrorActionPreference = 'Stop'
@@ -104,6 +109,7 @@ function Invoke-TestTask {
     $cfg = New-PesterConfiguration
     $cfg.Run.Exit = $true          # non-zero exit on failure (CI)
     $cfg.Output.Verbosity = 'Detailed'
+    if ($Fast) { $cfg.Filter.ExcludeTag = 'Integration' }
 
     if ($ShardCount -gt 1) {
         # Balance the test files across ShardCount slices by cost and run this one. A plain

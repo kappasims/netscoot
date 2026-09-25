@@ -18,7 +18,7 @@ BeforeAll {
     }
 }
 
-Describe 'Reference classification' {
+Describe 'Reference classification' -Tag 'Integration' {
     It 'flags non-literal and conditional ProjectReferences, leaves literals alone' {
         $dir = New-TempDir
         try {
@@ -44,7 +44,7 @@ Describe 'Reference classification' {
     }
 }
 
-Describe 'Move-DotnetProject with a non-literal reference' {
+Describe 'Move-DotnetProject with a non-literal reference' -Tag 'Integration' {
     It 'warns that the reference cannot be reconciled (and the literal move still planned)' {
         $root = New-TempDir
         Push-Location $root
@@ -66,7 +66,7 @@ Describe 'Move-DotnetProject with a non-literal reference' {
     }
 }
 
-Describe 'Repair-NetscootSolutionReferences and non-literal references' {
+Describe 'Repair-NetscootSolutionReferences and non-literal references' -Tag 'Integration' {
     It 'does not report a non-literal reference as dangling' {
         $root = New-TempDir
         Push-Location $root

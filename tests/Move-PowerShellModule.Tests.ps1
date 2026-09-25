@@ -16,7 +16,7 @@ BeforeAll {
     }
 }
 
-Describe 'Move-PowerShellModule' {
+Describe 'Move-PowerShellModule' -Tag 'Integration' {
     It 'moves the module folder and keeps the manifest valid' {
         $root = New-ModuleFixture
         try {

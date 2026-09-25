@@ -36,7 +36,7 @@ Describe 'Required-tool gating (dotnet)' {
     }
 }
 
-Describe 'Optional-tool fallback (git)' {
+Describe 'Optional-tool fallback (git)' -Tag 'Integration' {
     It 'falls back to a plain move when git is missing and -Force is given' {
         Mock -ModuleName NetscootShared Test-GitAvailable { $false }
         $root = New-SoloFixture

@@ -31,7 +31,7 @@ BeforeAll {
     }
 }
 
-Describe 'Native project handling' {
+Describe 'Native project handling' -Tag 'Integration' {
     It 'Move-DotnetProject refuses a .vcxproj with a clear error' {
         $vcx = New-NativeFixture
         try {

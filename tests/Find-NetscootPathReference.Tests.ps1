@@ -21,7 +21,7 @@ BeforeAll {
     }
 }
 
-Describe 'Find-NetscootPathReference' {
+Describe 'Find-NetscootPathReference' -Tag 'Integration' {
     It 'flags build/CI/hook references (High) and bare-leaf references (Low)' {
         $root = New-RefFixture
         try {

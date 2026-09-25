@@ -14,7 +14,7 @@ BeforeAll {
     }
 }
 
-Describe 'Invoke-Netscoot (top-level cross-namespace routing)' {
+Describe 'Invoke-Netscoot (top-level cross-namespace routing)' -Tag 'Integration' {
     It 'routes a .csproj to the .NET file engine' {
         $root = New-EngineFixture
         try {

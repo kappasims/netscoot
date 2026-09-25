@@ -7,6 +7,7 @@ module layout. For installing and using netscoot, see the [README](README.md).
 
 ```powershell
 ./build.ps1                          # run the Pester suite (imports all modules first); CI-friendly exit code
+./build.ps1 -Fast                    # skip the 'Integration'-tagged tests that build fixtures on disk
 ./build.ps1 -Task Analyze            # PSScriptAnalyzer over src/ (skipped if not installed)
 ./build.ps1 -Task Install            # copy all modules into the per-user PowerShell module path
 ./build.ps1 -Task Install -InstallPath D:\Modules
@@ -14,12 +15,15 @@ module layout. For installing and using netscoot, see the [README](README.md).
 ./build.ps1 -Task Release -Version 1.2.0           # prepare on develop: stamp manifests, gate on analyze + tests, commit + push
 ./build.ps1 -Task Release -Version 1.2.0 -Publish  # finalize (after CI green): fast-forward master, tag vX.Y.Z, GitHub release
 ./build.ps1 -Task Publish                          # stage + validate the single bundled package (dry run)
-./build.ps1 -Task Publish -ApiKey <key>            # publish that one netscoot package to the PowerShell Gallery
+./build.ps1 -Task Publish -ApiKey <key>            # publish that one netscoot package to the PowerShell Gallery (PowerShell 7)
 ```
 
 Building and testing needs PowerShell 7+ (or Windows PowerShell 5.1), the .NET SDK (the suite
 creates and builds real projects), git, and Pester 5. `-Task Test` prints the install command for
 Pester if it is missing; nothing here auto-installs.
+
+A test that builds fixtures in a temp directory is an integration test: its `Describe` carries
+`-Tag 'Integration'`, so `-Fast` skips it. Tests that run entirely in memory stay untagged.
 
 `Install` copies every module (Shared, the engines, and the `netscoot` umbrella) to your module
 path. Once it is on `$env:PSModulePath`, `Import-Module Netscoot` loads Shared and every
