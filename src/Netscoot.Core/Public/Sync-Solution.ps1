@@ -2,17 +2,20 @@ function Sync-Solution {
     <#
     .SYNOPSIS
         Resolve solution-membership divergence by adding each project to the solutions that are
-        missing it, so every solution in the repository lists the same projects.
+        missing it, within each group of solutions that share projects.
 
     .DESCRIPTION
-        The companion to Test-SolutionConsistency, which only reports divergence. This makes
-        membership uniform: For every project present in at least one solution but absent from
-        others, it adds the project to the solutions missing it, delegating to `dotnet sln add`
-        (never hand-editing the .sln/.slnx). It only adds; it never removes, so a project in no
-        solution is left alone (use Get-SolutionInventory to find those).
+        The companion to Test-SolutionConsistency, which only reports divergence. It works on the
+        same groups: solutions that share at least one project, such as a .sln and its .slnx
+        mirror. A solution that shares no project with another is left alone. Within a group, every
+        managed project present in one solution but absent from another is added where it is
+        missing, through `dotnet sln add`. The dotnet CLI cannot load a .vcxproj or .pssproj, so a
+        missing one is reported as a warning to add in Visual Studio. It only adds and never
+        removes, so a project in no solution is left alone (use Get-SolutionInventory to find those).
 
-        Uniform membership is the assumption. If a solution is intentionally a subset, do not run
-        this against the whole repository; preview with -WhatIf first and add specific projects by hand.
+        Uniform membership within a group is the assumption. If a solution is intentionally a
+        subset of another it shares projects with, preview with -WhatIf first and add specific
+        projects by hand.
 
     .PARAMETER RepositoryRoot
         Root to scan. Accepts pipeline input: a path string, or a file/directory item from
@@ -20,7 +23,7 @@ function Sync-Solution {
         worktrees are skipped.
 
     .OUTPUTS
-        Netscoot.SyncResult - one per project added.
+        Netscoot.SyncResult - one per project added to a solution.
 
     .EXAMPLE
         # Preview which projects would be added to which solutions to make membership uniform
@@ -59,22 +62,33 @@ function Sync-Solution {
             return
         }
 
+        # Sync only solutions that share at least one project, the same groups Test-SolutionConsistency
+        # compares, so intentionally-separate solutions (a client, a submodule) are left alone.
         $membership = Get-SolutionMembership -Solutions $solutions
-        $allProjects = $membership.Projects | Sort-Object -Unique
+        $clusters = @(Group-SolutionsBySharedProjects -Membership $membership | Where-Object { @($_.Solutions).Count -ge 2 })
         $added = 0
-        foreach ($proj in $allProjects) {
-            $absent = @($membership | Where-Object { $_.Projects -notcontains $proj })
-            foreach ($m in $absent) {
-                if ($PSCmdlet.ShouldProcess($m.Solution, "add $(_rel $proj)")) {
-                    Invoke-Dotnet sln $m.Solution add $proj
-                    $added++
-                    [pscustomobject]@{ PSTypeName = 'Netscoot.SyncResult'; Solution = (_rel $m.Solution); Added = (_rel $proj) }
+        foreach ($cluster in $clusters) {
+            $group = @($cluster.Solutions)
+            foreach ($proj in ($group.Projects | Sort-Object -Unique)) {
+                $absent = @($group | Where-Object { $_.Projects -notcontains $proj })
+                if (-not $absent.Count) { continue }
+                # The dotnet CLI cannot load a native or PowerShell project, so those are reported only.
+                if ([System.IO.Path]::GetExtension($proj) -notin '.csproj', '.fsproj', '.vbproj') {
+                    Write-Warning "$(_rel $proj) is missing from $(($absent.Solution | ForEach-Object { _rel $_ }) -join ', '). Add it in Visual Studio."
+                    continue
+                }
+                foreach ($m in $absent) {
+                    if ($PSCmdlet.ShouldProcess($m.Solution, "add $(_rel $proj)")) {
+                        Invoke-Dotnet sln $m.Solution add $proj
+                        $added++
+                        [pscustomobject]@{ PSTypeName = 'Netscoot.SyncResult'; Solution = (_rel $m.Solution); Added = (_rel $proj) }
+                    }
                 }
             }
         }
 
         if ($added -eq 0) {
-            Write-Host "All $($solutions.Count) solutions already contain every project." -ForegroundColor Green
+            Write-Host 'Every group of solutions that share projects already lists the same managed projects.' -ForegroundColor Green
         }
     }
 }
