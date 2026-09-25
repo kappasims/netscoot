@@ -13,14 +13,12 @@ function Update-Netscoot {
         Needs network access to GitHub. For Gallery installs, `Update-Module Netscoot` is the
         simpler path; this command updates installer/clone installs in place from the GitHub release.
 
-        Policy kill-switch: when the update policy is Disabled (see Set-NetscootUpdatePolicy), this
-        refuses to update so machine state stays managed. -Force overrides a Disabled you set for
-        yourself (process or user scope), but NOT one an administrator pushed machine-wide (Group
-        Policy / Intune).
+        When the update policy is Disabled (see Set-NetscootUpdatePolicy), this refuses to update.
+        -Force overrides a policy you set for yourself, never one an administrator set.
 
     .PARAMETER Force
         Reinstall the latest release even if already current, and override a Disabled update policy
-        that you set for yourself. A machine-scope (administrator) Disabled is never overridden.
+        that you set for yourself.
 
     .PARAMETER Repository
         The GitHub repository to install from, in `owner/name` form. Defaults to the project
@@ -54,11 +52,8 @@ function Update-Netscoot {
         [string]$Repository = 'kappasims/netscoot'
     )
 
-    # Policy kill-switch (GPO/Intune-friendly): refuse when the update policy is Disabled, so a
-    # managed fleet does not self-update outside its own pipeline. Checked before the network call
-    # so a disabled fleet makes no request. -Force overrides a Disabled the user set for themselves
-    # (Process/User scope), but NOT one pushed by an administrator (Machine scope) - otherwise -Force
-    # would defeat the fleet kill-switch.
+    # Policy kill-switch, checked before the network call so a disabled fleet makes no request.
+    # -Force overrides a Disabled the user set for themselves, never an administrator's.
     $policy = Get-NetscootUpdatePolicy
     if ($policy.State -eq 'Disabled') {
         if ($policy.Source -eq 'Machine') {
