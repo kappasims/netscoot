@@ -1,0 +1,41 @@
+name: Publish
+
+# Publishes the bundled netscoot package to the PowerShell Gallery when build.ps1 -Task Release pushes
+# a release tag. The API key lives only in the `gallery` environment's PSGALLERY_API_KEY secret.
+on:
+  push:
+    tags: ['v*']
+
+concurrency:
+  group: gallery-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish to the PowerShell Gallery
+    runs-on: windows-latest
+    environment: gallery
+    steps:
+      - uses: actions/checkout@v4
+
+      # Release tags only ever sit on the `release: vX.Y.Z` commit that CI passed on.
+      - name: Check the tag is on its release commit
+        shell: pwsh
+        run: |
+          $subject = "$(git log -1 --format=%s)".Trim()
+          if ($subject -ne "release: $env:GITHUB_REF_NAME") {
+            throw "$env:GITHUB_REF_NAME points at '$subject', not 'release: $env:GITHUB_REF_NAME'. Cut releases with build.ps1 -Task Release."
+          }
+
+      - name: Publish
+        shell: pwsh
+        env:
+          PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
+        run: |
+          if (-not $env:PSGALLERY_API_KEY) {
+            throw 'The gallery environment has no PSGALLERY_API_KEY secret. Add it under Settings > Environments > gallery, then rerun this job.'
+          }
+          ./build.ps1 -Task Publish -ApiKey $env:PSGALLERY_API_KEY

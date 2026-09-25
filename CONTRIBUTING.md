@@ -12,10 +12,9 @@ module layout. For installing and using netscoot, see the [README](README.md).
 ./build.ps1 -Task Install            # copy all modules into the per-user PowerShell module path
 ./build.ps1 -Task Install -InstallPath D:\Modules
 ./build.ps1 -Task Docs               # regenerate the README Command reference section from the cmdlets' help
-./build.ps1 -Task Release -Version 1.2.0           # prepare on develop: stamp manifests, gate on analyze + tests, commit + push
-./build.ps1 -Task Release -Version 1.2.0 -Publish  # finalize (after CI green): fast-forward master, tag vX.Y.Z, GitHub release
-./build.ps1 -Task Publish                          # stage + validate the single bundled package (dry run)
-./build.ps1 -Task Publish -ApiKey <key>            # publish that one netscoot package to the PowerShell Gallery (PowerShell 7)
+./build.ps1 -Task Release -Version 1.2.0                    # from develop: stable release, end to end
+./build.ps1 -Task Release -Version 3.0.0 -Prerelease beta5  # from 3.0-beta: prerelease, end to end
+./build.ps1 -Task Publish                                   # stage + validate the single bundled package (dry run)
 ```
 
 Building and testing needs PowerShell 7+ (or Windows PowerShell 5.1), the .NET SDK (the suite
@@ -37,22 +36,30 @@ For an ad-hoc Linux and macOS run on any branch, use `tools/Invoke-PlatformCI.ps
 
 Releases ship from `master`, which is branch-protected: the CI checks are required and enforced
 even for admins, so `master` only ever receives a commit that already passed CI. The release is
-therefore prepared on `develop` and `master` is fast-forwarded to it. Run both from `develop`:
+therefore prepared on `develop` and `master` is fast-forwarded to it. From a clean `develop`,
+`./build.ps1 -Task Release -Version X.Y.Z` does the whole release in one run:
 
-1. **Prepare:** `./build.ps1 -Task Release -Version X.Y.Z`. From a clean `develop`, it stamps the
-   version into every manifest, gates on PSScriptAnalyzer (required + clean) and the full suite,
-   then commits `release: vX.Y.Z` and pushes `develop` so CI runs on that exact commit.
-2. **Wait for green on all platforms:** `ci.yml` runs Windows, Windows PowerShell 5.1,
-   PSScriptAnalyzer, Linux and macOS on the release commit.
-3. **Finalize:** `./build.ps1 -Task Release -Version X.Y.Z -Publish`. It refuses to continue until the
-   Linux and macOS jobs have passed on the release commit. Then it fast-forwards `master` to
-   that commit (the protected push is accepted only because the checks passed on it), tags, pushes,
-   creates the GitHub release, and returns you to `develop`. `master` is protected and rejects any
-   commit whose CI checks are not green (admins included), so a tag can only ever sit on a
-   CI-passed commit, with `ModuleVersion` in every manifest equal to it.
+1. **Prepare:** it checks the docs and that `CHANGELOG.md` has a `## [X.Y.Z]` entry, stamps the
+   version into every manifest, commits `release: vX.Y.Z` and pushes `develop`.
+2. **Wait:** every workflow run on that commit must pass, including the Linux and macOS jobs that
+   `ci.yml` runs only on a release commit. The analyzer and the tests run there, not locally.
+3. **Tag:** it fast-forwards `master` to the release commit (the protected push is accepted only
+   because the checks passed on it), tags it, creates the GitHub release, and returns you to
+   `develop`.
+4. **Publish:** the tag push starts `publish.yml`, which publishes the single bundled package to
+   the PowerShell Gallery. The command waits for it and reports the result.
 
-The PowerShell Gallery is a separate step: `./build.ps1 -Task Publish -ApiKey <key>` assembles and
-publishes the single bundled package (a dry run without `-ApiKey`).
+If CI fails, fix it on `develop`, commit, and run the same command again. It commits a fresh
+release commit on top and carries on from there.
+
+A prerelease runs the same way from its own branch (for example `3.0-beta`) with
+`-Prerelease <label>`. It tags that branch, marks the GitHub release as a prerelease, and never
+touches `master`.
+
+`publish.yml` reads the Gallery API key from the `PSGALLERY_API_KEY` secret of the `gallery`
+environment. A prerelease, or a version below one already on the Gallery (a 2.x patch while a 3.0
+beta is listed), keeps every other version listed. Otherwise the publish unlists the older ones.
+`./build.ps1 -Task Publish -ApiKey <key>` still publishes by hand from PowerShell 7.
 
 ## Two release cadences
 

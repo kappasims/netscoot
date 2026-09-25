@@ -2,11 +2,11 @@ name: CI
 
 # A pull request from a branch in this repo already fires `pull_request`, so scoping `push` to the
 # long-lived branches avoids running the whole matrix twice for the same commit (the duplicate run
-# also leaves redundant, slower-settling status checks). Pushes to develop/master still run CI - the
-# release flow (prepare on develop, fast-forward master) depends on it.
+# also leaves redundant, slower-settling status checks). Pushes to develop/master and prerelease
+# branches still run CI, because the release flow gates on it.
 on:
   push:
-    branches: [develop, master]
+    branches: [develop, master, '*-beta']
   pull_request:
   # Manual trigger to run the full matrix (including the Linux/macOS jobs below) on demand.
   workflow_dispatch:
