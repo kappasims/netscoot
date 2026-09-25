@@ -8,11 +8,11 @@ function Move-DotnetFile {
         Dispatches a managed .NET file to the right specialist by extension (see Output for the
         routing). Native (.vcxproj), PowerShell (.ps1/.psd1) and Unity assets are deliberately not
         handled here - use Move-NativeProject / Move-PowerShellScript / Move-PowerShellModule /
-        Move-UnityAsset. -WhatIf/-Confirm/-Verbose propagate to the specialist; -Force and
+        Move-UnityAsset. -WhatIf/-Confirm/-Verbose propagate to the specialist, and -Force and
         -RepositoryRoot/-NoBuild are forwarded where the specialist accepts them.
 
     .PARAMETER Path
-        The .NET file to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected).
+        The .NET file to move. Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types.
 
     .PARAMETER Destination
         New path (file or folder), following `git mv` rules, passed through to the specialist. For a

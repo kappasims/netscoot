@@ -10,7 +10,7 @@ function Undo-Netscoot {
         history instead of toggling the last move.
 
         Pick what to reverse (mutually exclusive):
-          -Last   (default) the most recent move; call again to walk further back.
+          -Last   (default) the most recent move. Call again to walk further back.
           -Id     one specific move, by its journal id (see -List).
           -After  every move after a given time, newest first.
           -All    every recorded move, newest first.
@@ -23,11 +23,11 @@ function Undo-Netscoot {
         swept.
 
         -All and -After reverse many moves at once, so they prompt for a confirmation that
-        -Confirm:$false does not silence; -Force bypasses it, and -WhatIf lists the reversals without
-        running them.
+        `-Confirm:$false` does not silence. -Force bypasses it, and -WhatIf lists the reversals
+        without running them.
 
-        Journaling must have been on when the moves ran (it is by default; opt out with
-        $env:NETSCOOT_JOURNAL or git config netscoot.journal false).
+        Journaling must have been on when the moves ran. It is on by default, and the opt-outs are
+        the `NETSCOOT_JOURNAL` environment variable and git config netscoot.journal false.
 
     .PARAMETER RepositoryRoot
         Repository whose journal to use, and the boundary every reversal is confined to. Defaults to
@@ -55,14 +55,14 @@ function Undo-Netscoot {
         List the journal (oldest first) and return without undoing anything.
 
     .OUTPUTS
-        The move-result object(s) from the reversing move(s); their type matches the original mover.
+        The move-result object(s) from the reversing move(s), of the same type as the original mover's.
         With -List, the journal entries. When there is nothing to undo, nothing is returned and a
         non-terminating error says why (an empty journal, journaling off, or no moves after -After).
 
     .EXAMPLE
         # See what can be undone
         Undo-Netscoot -List
-        # Reverse the most recent move (default); call again to walk back
+        # Reverse the most recent move (default), and call again to walk back
         Undo-Netscoot
         # Reverse one specific move by its journal id (from -List)
         Undo-Netscoot -Id a1b2c3d4
@@ -70,7 +70,7 @@ function Undo-Netscoot {
         Undo-Netscoot -WhatIf
         # Reverse everything recorded in the last hour (prompts)
         Undo-Netscoot -After (Get-Date).AddHours(-1)
-        # Reverse every recorded move (prompts; -Force to skip the prompt)
+        # Reverse every recorded move (prompts, and -Force skips the prompt)
         Undo-Netscoot -All
 
     .LINK

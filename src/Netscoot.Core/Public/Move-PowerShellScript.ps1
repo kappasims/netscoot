@@ -20,11 +20,11 @@ function Move-PowerShellScript {
         with no string naming the script cannot be detected at all - grep to be sure. Treat the
         result as "fixed what could be proven," not "guaranteed complete."
 
-        git is used when available (else confirmed plain-move fallback via -Force). -WhatIf
-        supported; dotnet not required.
+        git is used when available (otherwise a plain move, confirmed first or forced with
+        -Force). It supports -WhatIf and does not need dotnet.
 
     .PARAMETER Path
-        The .ps1 to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected).
+        The .ps1 to move. Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types.
 
     .PARAMETER Destination
         New file path (or a folder, in which case the script keeps its name).
@@ -44,7 +44,7 @@ function Move-PowerShellScript {
         Netscoot.ScriptMoveResult
 
     .EXAMPLE
-        # Preview; rewrites dot-source/call paths in referencing scripts and the script's own refs
+        # Preview the rewrites of dot-source/call paths in referencing scripts and the script's own refs
         Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -WhatIf
         # Move it for real
         Move-PowerShellScript -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1

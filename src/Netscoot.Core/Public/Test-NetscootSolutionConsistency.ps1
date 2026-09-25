@@ -11,9 +11,10 @@ function Test-NetscootSolutionConsistency {
         repository may carry intentionally-separate solutions (a standalone client, a submodule's
         own solution) that were never meant to list the same projects, and those are not flagged
         against one another. This emits one object per divergent project and surfaces it through
-        the standard streams so behavior follows invocation: By default it writes a Warning per
-        divergent project; -Strict escalates each to a non-terminating error (honoring
-        -ErrorAction); -Debug adds the full membership matrix of every solution and its projects.
+        the standard streams so behavior follows invocation. By default it writes a Warning per
+        divergent project, and -Strict escalates each to a non-terminating error (honoring
+        -ErrorAction). -Debug adds the full membership matrix of every solution and its projects.
+        It only reads the solution files, so the dotnet CLI is not required.
 
     .PARAMETER RepositoryRoot
         Root to scan. Accepts pipeline input: a path string, or a file/directory item from

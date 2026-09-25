@@ -13,18 +13,18 @@ function Move-DotnetProjectTree {
         references to projects outside the folder.
         References between two co-moved projects are left untouched - their relative path is
         unchanged because both move by the same delta. Everything is delegated to the dotnet
-        CLI; nothing is hand-edited. A .vcxproj inside the folder moves with it, but its solution
-        entries and references are not updated, and the move warns about each one.
+        CLI, and nothing is hand-edited. A .vcxproj inside the folder moves with it, but its
+        solution entries and references are not updated, and the move warns about each one.
 
-        Like Move-DotnetProject: dotnet is required; git is used when available (else a
-        confirmed plain-move fallback via -Force / ShouldContinue); supports -WhatIf.
+        As with Move-DotnetProject, dotnet is required and git is used when available (otherwise
+        a plain move, confirmed first or forced with -Force). It supports -WhatIf.
 
     .PARAMETER Path
-        The folder to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected).
+        The folder to move. Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types.
 
     .PARAMETER Destination
         Where to move the folder, following `git mv` rules: An existing directory means move into
-        it (keeping the name); otherwise it is the folder's new path.
+        it, keeping the name. Any other path is the folder's new path.
 
     .PARAMETER RepositoryRoot
         Root to scan. Defaults to the enclosing git repository root.

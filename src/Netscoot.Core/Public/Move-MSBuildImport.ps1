@@ -18,15 +18,15 @@ function Move-MSBuildImport {
         cannot be "fixed" by editing imports. For those this warns (like the inheritance check)
         and only fixes the file's own outgoing imports.
 
-        Importers may include native .vcxproj files; their `<Import>` path is fixed on any OS (a
-        best-effort, path-only update), but a .vcxproj's native link settings are never
-        reconciled off Windows; that remains Move-NativeProject's Windows-only job.
+        Importers may include native .vcxproj files. Their `<Import>` path is fixed on any OS (a
+        best-effort, path-only update). A .vcxproj's native link settings are never rewritten,
+        and Move-NativeProject (Windows) reports them when the project itself moves.
 
-        dotnet is not required here; git is used when available (else confirmed plain-move
-        fallback via -Force). Supports -WhatIf.
+        dotnet is not required here. git is used when available (otherwise a plain move, confirmed
+        first or forced with -Force). Supports -WhatIf.
 
     .PARAMETER Path
-        The .props/.targets file to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected).
+        The .props/.targets file to move. Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types.
 
     .PARAMETER Destination
         New file path (or a folder, in which case the file keeps its name).

@@ -21,11 +21,11 @@ function Move-NativeProject {
         it cannot load a .vcxproj outside Visual Studio's MSBuild.
 
     .PARAMETER Project
-        Path to the .vcxproj. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected).
+        Path to the .vcxproj. Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other object types.
 
     .PARAMETER Destination
         Where to move the project folder, following `git mv` rules: An existing directory means
-        move into it (keeping the name); otherwise it is the new folder path.
+        move into it, keeping the name. Any other path is the new folder path.
 
     .PARAMETER RepositoryRoot
         Root to scan for solutions. Defaults to the enclosing git repository root.
@@ -42,7 +42,7 @@ function Move-NativeProject {
         Netscoot.NativeMoveResult
 
     .EXAMPLE
-        # Preview; reports the native path settings it cannot reconcile (verify by hand after)
+        # Preview, including the native path settings it cannot reconcile (verify by hand after)
         Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo -WhatIf
         # Move it (also moves the paired .vcxproj.filters)
         Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo

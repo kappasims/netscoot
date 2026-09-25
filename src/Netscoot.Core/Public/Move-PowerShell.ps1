@@ -7,17 +7,17 @@ function Move-PowerShell {
     .DESCRIPTION
         Dispatches a PowerShell item to the right specialist by type (see Output for the routing):
         the script specialist fixes dot-source/call references (AST-based), the module specialist
-        fixes the paths that load the module. -WhatIf/-Confirm/-Verbose propagate to the specialist; -Force is
-        forwarded, and -RepositoryRoot is forwarded to the script specialist (the module specialist has
-        no RepositoryRoot).
+        fixes the paths that load the module. -WhatIf/-Confirm/-Verbose propagate to the specialist,
+        -Force is forwarded, and -RepositoryRoot is forwarded to the script specialist (the module
+        specialist has no RepositoryRoot).
 
     .PARAMETER Path
         The PowerShell item to move: a .ps1 script, a .psd1 manifest, or a module folder.
-        Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object
-        types are rejected).
+        Accepts a path string or a Get-ChildItem/Get-Item item from the pipeline, and rejects other
+        object types.
 
     .PARAMETER Destination
-        New path (file or folder), following `git mv` rules; passed through to the specialist.
+        New path (file or folder), following `git mv` rules, and passed through to the specialist.
 
     .PARAMETER RepositoryRoot
         Repository root scanned for referencing scripts. Defaults to the enclosing git repository root.
