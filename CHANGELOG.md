@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [3.0.0-beta3] - 2026-09-25
+
 ### Fixed
 
 - `Move-NativeProject` now works for a project that is in a solution. It rewrites the project's path
