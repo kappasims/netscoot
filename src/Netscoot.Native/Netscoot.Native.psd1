@@ -3,7 +3,7 @@
     ModuleVersion        = '2.6.5'
     GUID                 = 'a04eb714-497e-477b-99d3-ea09801d7dc5'
     Author               = 'kappasims'
-    Description          = 'Windows-only extension of Netscoot for native / C++/CLI (.vcxproj) projects. Delegates solution membership + the folder move, and reports the native MSBuild path settings the dotnet CLI cannot reconcile.'
+    Description          = 'Windows-only extension of Netscoot for native / C++/CLI (.vcxproj) projects. Moves the project folder, updates the solutions and projects that reference it while keeping GUIDs and platform mappings, and reports the native MSBuild path settings it does not rewrite.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Core', 'Desktop')
     # No RequiredModules: bundled into the single Netscoot package; the umbrella loads

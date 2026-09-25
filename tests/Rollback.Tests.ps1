@@ -23,6 +23,11 @@ BeforeAll {
     }
 }
 
+AfterAll {
+    # Netscoot.Native is imported unconditionally here; remove it so it cannot leak into Umbrella.Tests.
+    Remove-Module Netscoot.Native -Force -ErrorAction SilentlyContinue
+}
+
 Describe 'Move-DotnetProject rolls back on a failed reattach (-Force / no-git path)' {
     It 'restores the project location, the consumer reference, and solution membership' {
         $root = New-AppLibFixture
@@ -56,6 +61,16 @@ Describe 'Move-DotnetProject rolls back on a failed reattach (-Force / no-git pa
 }
 
 Describe 'Every other mover rolls back on a failed step (-Force / no-git path)' {
+    BeforeAll {
+        # Simulates a reattach that edited one file (the first item's, wherever it now lives) and then failed.
+        $script:FailReattachAfterEdit = {
+            $ref = $Items[0].ReattachArgs[0]
+            $file = if (Test-Path -LiteralPath $ref.File) { $ref.File } else { $Items[0].ReattachArgs[1] }
+            Add-Content -LiteralPath $file -Value 'partial edit'
+            throw 'simulated reattach failure'
+        }
+    }
+
     BeforeEach {
         Mock -ModuleName NetscootShared Test-GitAvailable { $false }
     }
@@ -69,7 +84,7 @@ Describe 'Every other mover rolls back on a failed step (-Force / no-git path)' 
             Set-Content -LiteralPath $lib -Value 'function Write-Common { }'
             Set-Content -LiteralPath $main -Value '. "$PSScriptRoot/lib/Common.ps1"'
             $before = Get-Content -LiteralPath $main -Raw
-            Mock -ModuleName Netscoot.Core Set-RawFileReplacement { throw 'simulated reattach failure' }
+            Mock -ModuleName NetscootShared Invoke-MovePhase -ParameterFilter { $Phase -eq 'Reattach' } -MockWith $script:FailReattachAfterEdit
 
             { Move-PowerShellScript -Path $lib -Destination (Join-Path $root (Join-Path 'shared' 'Common.ps1')) -RepositoryRoot $root -Force -Confirm:$false } |
                 Should -Throw -ExpectedMessage '*rolled back*'
@@ -89,7 +104,7 @@ Describe 'Every other mover rolls back on a failed step (-Force / no-git path)' 
             $text = (Get-Content -LiteralPath $app -Raw) -replace '(<Project Sdk="Microsoft\.NET\.Sdk">)', "`$1`n  <Import Project=`"..\..\Shared.props`" />"
             Set-Content -LiteralPath $app -Value $text -NoNewline
             $before = Get-Content -LiteralPath $app -Raw
-            Mock -ModuleName Netscoot.Core Set-RawImportValue { throw 'simulated reattach failure' }
+            Mock -ModuleName NetscootShared Invoke-MovePhase -ParameterFilter { $Phase -eq 'Reattach' } -MockWith $script:FailReattachAfterEdit
 
             { Move-MSBuildImport -Path $props -Destination (Join-Path $root (Join-Path 'build' 'Shared.props')) -RepositoryRoot $root -Force -Confirm:$false } |
                 Should -Throw -ExpectedMessage '*rolled back*'
@@ -108,7 +123,7 @@ Describe 'Every other mover rolls back on a failed step (-Force / no-git path)' 
             try { & dotnet new sln -n Demo --format slnx | Out-Null; & dotnet sln Demo.slnx add $lib | Out-Null } finally { Pop-Location }
             $sln = Join-Path $root 'Demo.slnx'
             $before = Get-Content -LiteralPath $sln -Raw
-            Mock -ModuleName Netscoot.Core Set-RawFileReplacement { throw 'simulated reattach failure' }
+            Mock -ModuleName NetscootShared Invoke-MovePhase -ParameterFilter { $Phase -eq 'Reattach' } -MockWith $script:FailReattachAfterEdit
 
             { Move-Solution -Path $sln -Destination (Join-Path $root (Join-Path 'build' 'Demo.slnx')) -Force -Confirm:$false } |
                 Should -Throw -ExpectedMessage '*rolled back*'
@@ -130,11 +145,7 @@ Describe 'Every other mover rolls back on a failed step (-Force / no-git path)' 
             try { & dotnet new sln -n Demo --format slnx | Out-Null; & dotnet sln Demo.slnx add $vcx | Out-Null } finally { Pop-Location }
             $sln = Join-Path $root 'Demo.slnx'
             $before = Get-Content -LiteralPath $sln -Raw
-            Mock -ModuleName NetscootShared Invoke-Dotnet {
-                if ($Arguments -contains 'add') { throw 'simulated reattach failure' }
-                & dotnet @Arguments 2>&1 | Out-Null
-                if ($LASTEXITCODE -ne 0) { throw "dotnet $($Arguments -join ' ') failed" }
-            }
+            Mock -ModuleName NetscootShared Invoke-MovePhase -ParameterFilter { $Phase -eq 'Reattach' } -MockWith $script:FailReattachAfterEdit
 
             { Move-NativeProject -Project $vcx -Destination (Join-Path $root (Join-Path 'native' 'Calc')) -RepositoryRoot $root -Force -Confirm:$false -WarningAction SilentlyContinue } |
                 Should -Throw -ExpectedMessage '*rolled back*'

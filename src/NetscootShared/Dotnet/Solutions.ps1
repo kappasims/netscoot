@@ -128,18 +128,18 @@ function Get-ProjectSolutionFolder {
 }
 
 function Get-SolutionProjectEntries {
-    # The project entries stored in a solution, as the exact string written in the file plus
-    # its resolved absolute path. Used to rebase a solution's relative paths when it moves.
-    # Skips solution folders (their second field is a name, not a project path).
+    # The project paths stored in a solution, as Netscoot.StoredPath (a .slnx Path attribute or a
+    # quoted .sln entry). Skips solution folders (their second field is a name, not a project path).
     [CmdletBinding()]
+    [OutputType([Netscoot.StoredPath])]
     param([Parameter(Mandatory)][string]$SolutionFile)
-    $sln = Read-Solution -SolutionFile $SolutionFile
-    $entries = @()
+    $full = Resolve-FullPath $SolutionFile
+    $sln = Read-Solution -SolutionFile $full
     foreach ($p in $sln.Projects) {
         if (-not $script:ProjectFileExtRegex.IsMatch($p.Stored)) { continue }
-        $entries += [pscustomobject]@{ Stored = $p.Stored; Abs = $p.Abs }
+        if ($full -like '*.slnx') { [Netscoot.StoredPath]::InSlnxEntry($full, $p.Stored, $p.Abs) }
+        else { [Netscoot.StoredPath]::InSolutionEntry($full, $p.Stored, $p.Abs) }
     }
-    return $entries
 }
 
 function Get-SolutionContent {

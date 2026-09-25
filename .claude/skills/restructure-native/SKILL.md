@@ -6,14 +6,15 @@ description: Use when moving or restructuring a native C++ or C++/CLI project (.
 # Restructuring native / C++ projects (.vcxproj), Windows only
 
 Purpose (full overview: the [netscoot README](https://github.com/kappasims/netscoot)): a move
-that reconciles what it can and reports the rest. Unlike the managed engines, the dotnet CLI cannot
-fix a native project's link paths, so netscoot updates solution membership and moves the folder
-(with its paired `.vcxproj.filters`), then reports every `$(SolutionDir)`-relative setting you must
-verify by hand rather than silently editing it.
+that reconciles what it can and reports the rest. netscoot moves the folder (with its paired
+`.vcxproj.filters`), updates the solution entries and `ProjectReference`s that point at it, then
+reports every relative or `$(SolutionDir)`-relative setting you must verify by hand rather than
+silently editing it.
 
-Native projects do not fit the dotnet-CLI delegation model that managed projects use.
-`dotnet sln add/remove` can update solution membership for a `.vcxproj`, but the dotnet CLI
-**cannot** reconcile how native projects actually link:
+Native projects do not fit the dotnet-CLI delegation model that managed projects use: the dotnet
+CLI cannot load a real `.vcxproj` outside Visual Studio's MSBuild. So netscoot rewrites the path in
+each `.sln`/`.slnx` entry and each `ProjectReference` in place, keeping GUIDs, platform mappings and
+solution folders. It does **not** rewrite how native projects link:
 
 - `<AdditionalIncludeDirectories>` / `<AdditionalLibraryDirectories>` (often `..\` or `$(SolutionDir)`-relative)
 - `<AdditionalDependencies>` (e.g. `Tarragon.lib`, resolved via the library dirs above)
@@ -53,11 +54,12 @@ Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo
 folder's name (`./native` puts it at `./native/Aleppo`); otherwise it is the new folder path (a
 rename).
 
-It will: update `.sln`/`.slnx` membership via `dotnet sln`, move the folder (`git mv` when
-tracked) including the paired `.vcxproj.filters`, and then **report every relative /
-`$(SolutionDir)`-relative native setting** it could not safely rewrite. It does not silently
-edit those MSBuild paths; the report (`UnreconciledSettings` on the result object, plus
-warnings) tells you exactly what to verify or hand-fix afterward.
+It will: move the folder (`git mv` when tracked) including the paired `.vcxproj.filters`; update
+the project's path in every `.sln`/`.slnx` entry, in every `ProjectReference` to it (native or
+C#/C++/CLI consumers) and in its own `ProjectReference`s; and then **report every relative /
+`$(SolutionDir)`-relative native setting** it does not rewrite, in the moved project and in any
+other project whose settings point into the moved folder. The report (`UnreconciledSettings` on
+the result object, plus warnings) tells you exactly what to verify or hand-fix afterward.
 
 ## After the move, always
 
