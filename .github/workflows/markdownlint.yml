@@ -1,9 +1,9 @@
 name: Markdownlint
 
 # Enforce DavidAnson/markdownlint on all Markdown (README + skills + docs). Config in
-# .markdownlint.jsonc tunes only MD013/MD024 to the generated reference's shape; the rest are
-# defaults. The repo has no other Node tooling, so this job sets up Node and runs the CLI.
-# Scope push to the long-lived branches; a PR from an in-repo branch already triggers on
+# .markdownlint.jsonc tunes only MD013/MD024/MD033 to the generated reference's shape, and the rest
+# are defaults. The repository has no other Node tooling, so this job sets up Node and runs the CLI.
+# Push runs only on the long-lived branches. A PR from an in-repository branch already triggers on
 # pull_request, so this avoids linting the same commit twice.
 on:
   push:

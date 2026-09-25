@@ -1,18 +1,15 @@
-# Generator for the "Command reference" section of README.md - a ~470-line markdown compiler that
-# turns every public cmdlet's comment-based help (synopsis, syntax, parameters, output types,
-# examples, related links) and the output-type registry into the reference tables and per-command
-# entries. Extracted from build.ps1 (which was 55% this one function) so the build script stays a
-# thin task dispatcher.
+# Generator for the "Command reference" section of README.md. It turns every public cmdlet's
+# comment-based help (synopsis, syntax, parameters, output types, examples, related links) and the
+# output-type registry into the reference tables and per-command entries.
 #
 # DOT-SOURCED by build.ps1, never run as a child script: it defines Invoke-DocsTask in build.ps1's
 # scope and relies on that scope's $root, $modules, and $umbrella. The CheckDocs gate
-# (Assert-DocsNotStale) verifies the generated output is byte-stable, so this extraction is
-# behavior-preserving by construction - a drift would fail CI.
+# (Assert-DocsNotStale) fails when regenerating changes the README beyond line endings.
 
 function Invoke-DocsTask {
     # The reference is PowerShell 7's rendering of the help; Windows PowerShell's Get-Help wraps and splits it differently.
     if ($PSVersionTable.PSEdition -eq 'Desktop') {
-        throw "The Command reference is generated from PowerShell 7's help output. Run: pwsh -NoProfile -File ./build.ps1 -Task $Task"
+        throw 'The Command reference is generated from PowerShell 7''s help output. Run the same ./build.ps1 command under pwsh.'
     }
     foreach ($m in $modules) {
         Import-Module ([System.IO.Path]::Combine($root, 'src', $m, "$m.psd1")) -Force
@@ -218,7 +215,7 @@ function Invoke-DocsTask {
     $sb = [System.Text.StringBuilder]::new()
     $emittedBy = @{}   # type name -> @(command names) that declare it via [OutputType]
 
-    # Two subsections under the hand-written "# Reference": the commands, then the output types.
+    # Two subsections under the hand-written "## Reference": the commands, then the output types.
     [void]$sb.AppendLine('### Command reference')
     [void]$sb.AppendLine()
 
@@ -343,7 +340,7 @@ function Invoke-DocsTask {
                     [void]$sb.AppendLine((Format-TypeCodeView $t $def))
                     [void]$sb.AppendLine('```')
                 } elseif ($registered.Count -gt 1) {
-                    [void]$sb.AppendLine((Format-Wrap (ConvertTo-MdText ($(if ($outNote) { $outNote } else { 'The result object from the command it routes to; the concrete type varies.' })))))
+                    [void]$sb.AppendLine((Format-Wrap (ConvertTo-MdText ($(if ($outNote) { $outNote } else { 'The result object from the command it routes to, whose type varies.' })))))
                     [void]$sb.AppendLine()
                     foreach ($t in $registered) { [void]$sb.AppendLine("- $(Format-TypeLink $t)") }
                 } else {
@@ -380,8 +377,8 @@ function Invoke-DocsTask {
 
             # Related cmdlets (from .LINK blocks). Only emit when at least one link points at a
             # documented cmdlet in $blurbs (so a stray external .LINK target is dropped quietly
-            # instead of producing a broken anchor). Renders one font size down as a compact
-            # bracketed list, matching the type-page cross-ref style.
+            # instead of producing a broken anchor). Renders as a compact bracketed list, matching
+            # the type-page cross-ref style.
             $related = @()
             foreach ($l in @($h.relatedLinks.navigationLink)) {
                 $name = ("$($l.linkText)").Trim()
@@ -398,7 +395,7 @@ function Invoke-DocsTask {
             }
 
             # Back-link to the index, so a reader who jumped to one command can return without
-            # scrolling. Anchor matches the "## Command reference" heading.
+            # scrolling. Anchor matches the "### Command reference" heading.
             [void]$sb.AppendLine((Format-Small '[Back to Command reference](#command-reference)'))
             [void]$sb.AppendLine()
         }
@@ -408,7 +405,7 @@ function Invoke-DocsTask {
     [void]$sb.AppendLine('---')
     [void]$sb.AppendLine()
 
-    # Output types: the second subsection under "# Reference", one entry per typedef with the same
+    # Output types: the second subsection under "## Reference", one entry per typedef with the same
     # code-view the commands link to. Back-references (which commands emit it, which types nest it)
     # sit as a callout right under each type name. A type that is only nested in another (never
     # emitted directly, e.g. Netscoot.ToolInfo inside Capability) is still listed so its link
@@ -422,7 +419,7 @@ function Invoke-DocsTask {
     }
     [void]$sb.AppendLine('### Output types')
     [void]$sb.AppendLine()
-    [void]$sb.AppendLine((Format-Wrap 'Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several (and some types are also used as a field on another); whether a given command returns one or a collection is stated in that command''s Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `Netscoot.*` field is itself one of these types.'))
+    [void]$sb.AppendLine((Format-Wrap 'Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several, and some types are also used as a field on another. Whether a given command returns one or a collection is stated in that command''s Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `Netscoot.*` field is itself one of these types.'))
     [void]$sb.AppendLine()
     $sortedTypes = @($typeDefs.Keys | Sort-Object)
     [void]$sb.AppendLine('| ' + (Format-Small 'Type') + ' | ' + (Format-Small 'Represents') + ' |')
@@ -440,8 +437,8 @@ function Invoke-DocsTask {
         [void]$sb.AppendLine()
         [void]$sb.AppendLine("#### $name")
         [void]$sb.AppendLine()
-        # Cross-references as a compact bracketed list (no label), one font size down. The link
-        # text - a command name or a Netscoot.* type - is self-describing.
+        # Cross-references as a compact bracketed list (no label). The link text, a command name or a
+        # Netscoot.* type, is self-describing.
         $refs = @()
         if ($emittedBy[$name]) { $refs += @(@($emittedBy[$name]) | Sort-Object -Unique | ForEach-Object { "[$_](#$($_.ToLower()))" }) }
         if ($nestedIn[$name]) { $refs += @(@($nestedIn[$name]) | Sort-Object -Unique | ForEach-Object { Format-TypeLink $_ }) }
@@ -451,7 +448,7 @@ function Invoke-DocsTask {
         [void]$sb.AppendLine((Format-TypeCodeView $name $def))
         [void]$sb.AppendLine('```')
         [void]$sb.AppendLine()
-        # Back-link to the types index, mirroring the per-command one. Anchor matches "## Output types".
+        # Back-link to the types index, mirroring the per-command one. Anchor matches "### Output types".
         [void]$sb.AppendLine((Format-Small '[Back to Output types](#output-types)'))
         [void]$sb.AppendLine()
     }

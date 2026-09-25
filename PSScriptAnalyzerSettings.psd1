@@ -8,7 +8,7 @@
 
         # Public state-changing cmdlets DO implement ShouldProcess (enforced by review). This
         # rule also fires on internal builder/writer helpers (New-MoveItem/New-MoveResult/
-        # New-DotnetReferenceItems/Set-Raw*) and the delegating dispatchers, which are not
+        # New-DotnetReferenceItems) and the delegating dispatchers, which are not
         # user-facing cmdlets.
         'PSUseShouldProcessForStateChangingFunctions'
 

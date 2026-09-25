@@ -1,11 +1,8 @@
 #requires -Modules Pester
 
 # Guards the umbrella Netscoot.psd1's declared public surface against drift. Background:
-#   - Adding/removing public cmdlets in the engines while forgetting the umbrella manifest used to
-#     ship silently: the cmdlet worked at runtime (the engines own the export, loaded -Global),
-#     but the Gallery (which indexes the manifest, not the runtime) didn't list it by name. 2.2.0
-#     shipped that way for Get-NetscootUpdatePolicy / Set-NetscootUpdatePolicy / Repair-NetscootJournal
-#     until this gate landed.
+#   - A public engine cmdlet missing from the umbrella manifest is neither re-exported by the
+#     umbrella nor listed by name on the Gallery (which indexes the manifest).
 # The contract: Netscoot.psd1's FunctionsToExport must equal the UNION of the public engines'
 # FunctionsToExport (Core + Unity + Native; Shared is internal plumbing, intentionally excluded).
 # Same for AliasesToExport.
