@@ -481,6 +481,11 @@ function Invoke-PublishTask {
             return
         }
 
+        # The Gallery requires TLS 1.2, which Windows PowerShell 5.1 does not enable by default.
+        if ($PSVersionTable.PSEdition -eq 'Desktop') {
+            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
+        }
+
         # Capture the versions already listed on the Gallery BEFORE publishing, so we know exactly
         # which ones to unlist afterward (everything that existed before this publish). Captured up
         # front to avoid any post-publish indexing lag on the new version.
@@ -490,7 +495,7 @@ function Invoke-PublishTask {
                     ForEach-Object { "$($_.Version)" })
         }
 
-        Publish-Module -Path $pkg -NuGetApiKey $ApiKey -Repository PSGallery -Force:$Force
+        Publish-Module -Path $pkg -NuGetApiKey $ApiKey -Repository PSGallery -Force:$Force -ErrorAction Stop
         Write-Host 'Published netscoot to the PowerShell Gallery.' -ForegroundColor Green
 
         # Unlist every prior version (default; -KeepOldVersions opts out) so only the just-published
