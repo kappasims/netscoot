@@ -3,7 +3,7 @@
     ModuleVersion        = '3.0.0'
     GUID                 = 'c8d7847d-bd74-4cc8-8705-bbcb7116e372'
     Author               = 'kappasims'
-    Description          = 'Cross-platform (PowerShell 7) cmdlets to move/restructure managed .NET and PowerShell projects by delegating path/GUID changes to first-party tooling (dotnet sln, dotnet reference, Update-ModuleManifest). Native C++ (.vcxproj) handling lives in the Windows-only Netscoot.Native module.'
+    Description          = 'Cross-platform (PowerShell 7) cmdlets to move/restructure managed .NET and PowerShell projects by delegating path/GUID changes to first-party tooling (dotnet sln, dotnet reference) and rewriting only the path text where no such tool exists. Native C++ (.vcxproj) handling lives in the Windows-only Netscoot.Native module.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Core', 'Desktop')
     # No RequiredModules: shipped as one bundled Netscoot package; the umbrella loads the bundled

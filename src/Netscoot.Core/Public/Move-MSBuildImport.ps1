@@ -86,7 +86,6 @@ function Move-MSBuildImport {
         $srcName = Split-Path -Leaf $src
         # git mv semantics (shared by every mover): existing dir -> move into it; else rename.
         $newPath = Resolve-MoveTarget -Source $src -Destination $Destination
-        $newDir = Split-Path -Parent $newPath
         if (Test-Path -LiteralPath $newPath) {
             $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
                     [System.IO.IOException]::new("Destination already exists: $newPath"),
@@ -104,17 +103,14 @@ function Move-MSBuildImport {
         if (-not $autoImported) {
             foreach ($f in (Find-MSBuildFiles -Root $repoFull)) {
                 if (Test-PathEqual $f.FullName $src) { continue }
-                foreach ($imp in (Get-ImportPaths -ProjectFile $f.FullName)) {
-                    if ($imp.FullPath -and (Test-PathEqual $imp.FullPath $src)) {
-                        $importers += [pscustomobject]@{ File = $f.FullName; OldRaw = $imp.Raw }
-                    }
-                }
+                $importers += @((Get-ImportPaths -ProjectFile $f.FullName).Paths | Where-Object { Test-PathEqual $_.Target $src })
             }
         }
 
         # The moved file's own outgoing imports (break when its location changes).
-        $ownImports = @(Get-ImportPaths -ProjectFile $src | Where-Object { -not $_.Unresolved -and $_.FullPath })
-        $ownUnresolved = @(Get-ImportPaths -ProjectFile $src | Where-Object { $_.Unresolved })
+        $own = Get-ImportPaths -ProjectFile $src
+        $ownImports = @($own.Paths | Where-Object { $_.RawFollowing($newPath) -ne $_.Raw })
+        $ownUnresolved = @($own.Unresolved)
 
         $importerRels = @($importers | ForEach-Object { $_.File })
         $ownImportRaw = @($ownImports | ForEach-Object { $_.Raw })
@@ -127,7 +123,7 @@ function Move-MSBuildImport {
             Write-Warning "$srcName is imported by location (auto-import). Moving it changes which projects inherit it; that inheritance cannot be fixed by editing <Import> - verify the new location applies to the intended projects."
         }
         foreach ($u in $ownUnresolved) {
-            Write-Warning "Own <Import Project=`"$($u.Raw)`"> uses an unresolved MSBuild variable; fix it by hand if its target is outside the moved file."
+            Write-Warning "Own <Import Project=`"$u`"> uses an unresolved MSBuild variable; fix it by hand if its target is outside the moved file."
         }
 
         $performed = $false
@@ -137,20 +133,17 @@ function Move-MSBuildImport {
             $ctx = Resolve-MoveContext -Cmdlet $PSCmdlet -Force:$Force -TargetForError $src
             if (-not $ctx) { return }
 
-            # Import fixes happen after the move; Reattach-only items. New paths are computable now.
-            $fixSb = { param($File, $Old, $New) [void](Set-RawImportValue -File $File -OldValue $Old -NewValue $New) }
+            # Import fixes happen after the move; Reattach-only items.
+            $pointAt = { param($Ref, $Target) [void]$Ref.PointAt($Target) }
+            $followFile = { param($Ref, $NewFile) [void]$Ref.FollowFile($NewFile) }
             $items = @()
             foreach ($imp in $importers) {
-                $newRaw = Get-NewImportRaw -ImporterDir (Split-Path -Parent $imp.File) -TargetAbs $newPath -OldRaw $imp.OldRaw
-                $items += New-MoveItem -Description "importer $(Split-Path -Leaf $imp.File): $($imp.OldRaw) -> $newRaw" `
-                    -Reattach $fixSb -ReattachArgs @($imp.File, $imp.OldRaw, $newRaw)
+                $items += New-MoveItem -Description "importer $(Split-Path -Leaf $imp.File): $($imp.Raw) -> $($imp.RawPointingAt($newPath))" `
+                    -Reattach $pointAt -ReattachArgs @($imp, $newPath)
             }
-            foreach ($own in $ownImports) {
-                $newRaw = Get-NewImportRaw -ImporterDir $newDir -TargetAbs $own.FullPath -OldRaw $own.Raw
-                if ($newRaw -ne $own.Raw) {
-                    $items += New-MoveItem -Description "own import: $($own.Raw) -> $newRaw" `
-                        -Reattach $fixSb -ReattachArgs @($newPath, $own.Raw, $newRaw)
-                }
+            foreach ($ref in $ownImports) {
+                $items += New-MoveItem -Description "own import: $($ref.Raw) -> $($ref.RawFollowing($newPath))" `
+                    -Reattach $followFile -ReattachArgs @($ref, $newPath)
             }
             $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 

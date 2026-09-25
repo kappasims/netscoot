@@ -1,16 +1,18 @@
 function Move-PowerShellModule {
     <#
     .SYNOPSIS
-        Move a PowerShell module folder and reconcile its manifest, delegating manifest
-        edits to Update-ModuleManifest rather than hand-editing the .psd1.
+        Move a PowerShell module folder and update the script paths that reference it or that
+        it uses.
 
     .DESCRIPTION
-        Moves a module directory (git mv when tracked), then rewrites RootModule,
-        NestedModules and FileList in the .psd1 via Update-ModuleManifest so relative
-        references stay valid. Validates the result with Test-ModuleManifest.
+        Moves a module directory (git mv when tracked). Scripts elsewhere that import the module
+        by path (Import-Module, `using module`) or dot-source one of its files are repointed, and
+        the module's own .ps1/.psm1 paths to files outside it are rebased, with the same precise,
+        BOM-preserving edits as Move-PowerShellScript. The manifest's entries are module-relative,
+        so the .psd1 is left unchanged and only validated with Test-ModuleManifest.
 
-        Limits (warned, not fixed): Dot-sourced relative paths inside .psm1/.ps1 files,
-        and any path computed at runtime, cannot be reconciled automatically.
+        Limits (warned, not fixed): a path built from variables is reported as a possible dynamic
+        reference; any path computed at runtime cannot be reconciled automatically.
 
     .PARAMETER ModulePath
         Path to the module folder, or directly to its .psd1 manifest. Accepts pipeline input (a
@@ -31,7 +33,7 @@ function Move-PowerShellModule {
         Netscoot.PSModuleMoveResult
 
     .EXAMPLE
-        # Preview; reconciles RootModule/NestedModules/FileList via Update-ModuleManifest
+        # Preview; lists the callers and module paths it will update
         Move-PowerShellModule -ModulePath ./tools/Mayo -Destination ./modules/Mayo -WhatIf
         # Move it for real
         Move-PowerShellModule -ModulePath ./tools/Mayo -Destination ./modules/Mayo
@@ -80,45 +82,74 @@ function Move-PowerShellModule {
         return
     }
 
-    Write-MovePlan -Cmdlet $PSCmdlet -Caption "Move-PowerShellModule $manifestName  $moduleDir -> $newDir" -Items ([ordered]@{
-            'manifest to update' = $manifestName
-        })
     $newManifest = Join-Path $newDir $manifestName
+    $repoRoot = Get-RepositoryRoot -StartPath $moduleDir
+    $moduleName = [System.IO.Path]::GetFileNameWithoutExtension($manifestName)
+
+    # Paths from elsewhere into the module (Import-Module by path, dot-sourcing a module file) and
+    # paths from the module's own files to outside it both break when the folder moves. Manifest
+    # entries are module-relative, so the .psd1 itself needs no change.
+    $incoming = @()
+    $outgoing = @()
+    $dynamicRefs = @()
+    foreach ($f in (Find-PowerShellFiles -Root $repoRoot)) {
+        $scan = Get-PowerShellScriptReferences -File $f.FullName
+        $fileInside = Test-PathUnder $f.FullName $moduleDir
+        foreach ($ref in $scan.Paths) {
+            $targetInside = (Test-PathEqual $ref.Target $moduleDir) -or (Test-PathUnder $ref.Target $moduleDir)
+            if ($fileInside -and -not $targetInside) { $outgoing += $ref }
+            elseif (-not $fileInside -and $targetInside) { $incoming += $ref }
+        }
+        if (-not $fileInside) { $dynamicRefs += @($scan.Dynamic | Where-Object { $_.Raw -match [regex]::Escape($moduleName) }) }
+    }
+    $inNewDir = {
+        param($Path)
+        $rel = $Path.Substring($moduleDir.Length).TrimStart('\', '/')
+        if ($rel) { Join-Path $newDir $rel } else { $newDir }
+    }
+
+    Write-MovePlan -Cmdlet $PSCmdlet -Caption "Move-PowerShellModule $manifestName  $moduleDir -> $newDir" -Items ([ordered]@{
+            'callers to update'                  = @($incoming | ForEach-Object { "$(Split-Path -Leaf $_.File): $($_.Raw)" })
+            'module paths pointing outside to rebase' = @($outgoing | ForEach-Object { "$(Split-Path -Leaf $_.File): $($_.Raw)" })
+        })
+    foreach ($d in $dynamicRefs) {
+        Write-Warning "Possible dynamic reference to module $moduleName in $($d.File): `"$($d.Raw)`" - could not resolve statically; verify by hand."
+    }
 
     $performed = $false
     $skippedCount = 0
 
-    if ($PSCmdlet.ShouldProcess("$moduleDir -> $newDir", 'Move PowerShell module and reconcile manifest')) {
+    if ($PSCmdlet.ShouldProcess("$moduleDir -> $newDir", 'Move PowerShell module and update the paths that reference it')) {
         $ctx = Resolve-MoveContext -Cmdlet $PSCmdlet -Force:$Force -TargetForError $moduleDir
         if (-not $ctx) { return }
 
-        # The manifest refresh + validate happens after the move (reads the new layout).
-        $manifestFix = {
-            param($NewDir, $NewManifest)
-            $files = Get-ChildItem -LiteralPath $NewDir -Recurse -File |
-                ForEach-Object { $_.FullName.Substring($NewDir.Length).TrimStart('\', '/') }
-            try { Update-ModuleManifest -Path $NewManifest -FileList $files; Write-Verbose "Manifest FileList refreshed ($($files.Count) files)." }
-            catch { Write-Warning "Update-ModuleManifest failed: $_" }
-            $r = Test-ModuleManifest -Path $NewManifest -ErrorAction SilentlyContinue
-            if ($r) { Write-Verbose "Test-ModuleManifest OK: $($r.Name) $($r.Version)" }
-            else { Write-Warning "Test-ModuleManifest reported problems for $NewManifest" }
+        $pointAt = { param($Ref, $Target) [void]$Ref.PointAt($Target) }
+        $followFile = { param($Ref, $NewFile) [void]$Ref.FollowFile($NewFile) }
+        $items = @()
+        foreach ($ref in $incoming) {
+            $target = & $inNewDir $ref.Target
+            $items += New-MoveItem -Description "caller $(Split-Path -Leaf $ref.File): $($ref.Raw) -> $($ref.RawPointingAt($target))" `
+                -Reattach $pointAt -ReattachArgs @($ref, $target)
         }
-        $items = @( New-MoveItem -Description "refresh manifest $manifestName (FileList + validate)" -Reattach $manifestFix -ReattachArgs @($newDir, $newManifest) )
+        foreach ($ref in $outgoing) {
+            $newFile = & $inNewDir $ref.File
+            $items += New-MoveItem -Description "module file $(Split-Path -Leaf $ref.File): $($ref.Raw) -> $($ref.RawFollowing($newFile))" `
+                -Reattach $followFile -ReattachArgs @($ref, $newFile)
+        }
 
         $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
-        $repoRoot = Get-RepositoryRoot -StartPath $moduleDir
+        $backup = @($incoming | ForEach-Object { $_.File }) + @($outgoing | ForEach-Object { $_.File })
         $planResult = Invoke-MovePlan -Caption "Move module $manifestName" -Items $items -Move $move `
             -MoveArgs @($ctx.UseGit, $moduleDir, $newDir, $repoRoot) `
-            -BackupPath @(Join-Path $moduleDir $manifestName) -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $moduleDir, $repoRoot) `
+            -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $moduleDir, $repoRoot) `
             -RepositoryRoot $repoRoot -Command 'Move-PowerShellModule' -Engine 'powershell' -Source $moduleDir -Destination $newDir `
             -UndoParams @{ ModulePath = $newDir; Destination = $moduleDir; Force = [bool]$Force } -NoJournal:$NoJournal
         $performed = $true
         $skippedCount = $planResult.Skipped
 
-        # Single-quoted so $PSScriptRoot stays LITERAL in the example. It was double-quoted with a
-        # backslash ('\$') on the mistaken belief that \ escapes $ in PowerShell (the escape char is
-        # the backtick), so $PSScriptRoot interpolated to netscoot's own module path in the message.
-        Write-Warning 'Reminder: dot-sourced relative paths inside .psm1/.ps1 are not auto-fixed. Grep the module for ''. $PSScriptRoot'' style references if depth changed.'
+        if (-not (Test-ModuleManifest -Path $newManifest -ErrorAction SilentlyContinue)) {
+            Write-Warning "Test-ModuleManifest reported problems for $newManifest"
+        }
     }
 
     New-MoveResult -TypeName 'Netscoot.PSModuleMoveResult' -Engine 'powershell' -Source $moduleDir -Destination $newDir `

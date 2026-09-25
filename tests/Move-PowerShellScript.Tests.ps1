@@ -54,3 +54,39 @@ $libDir = "$PSScriptRoot\..\lib"
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 }
+
+Describe 'Move-PowerShellScript path style and coverage' -Tag 'Integration' {
+    It 'keeps a caller''s forward slashes' {
+        $root = New-ScriptFixture
+        try {
+            $caller = Join-Path $root 'slash.ps1'
+            Set-Content -LiteralPath $caller -Value '. "$PSScriptRoot/lib/helpers.ps1"'
+            Move-PowerShellScript -Path (Join-Path $root (Join-Path 'lib' 'helpers.ps1')) -Destination (Join-Path (Join-Path $root 'shared') 'helpers.ps1') `
+                -RepositoryRoot $root -NoJournal -Confirm:$false -WarningAction SilentlyContinue | Out-Null
+            (Get-Content -LiteralPath $caller -Raw).Trim() | Should -BeExactly '. "$PSScriptRoot/shared/helpers.ps1"'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'reports a Join-Path argument that names the moved script' {
+        $root = New-ScriptFixture
+        try {
+            Set-Content -LiteralPath (Join-Path $root 'joined.ps1') -Value ". (Join-Path `$PSScriptRoot 'lib\helpers.ps1')"
+            Move-PowerShellScript -Path (Join-Path $root (Join-Path 'lib' 'helpers.ps1')) -Destination (Join-Path (Join-Path $root 'shared') 'helpers.ps1') `
+                -RepositoryRoot $root -WhatIf -WarningVariable w -WarningAction SilentlyContinue
+            ($w -join "`n") | Should -Match ([regex]::Escape('"lib\helpers.ps1"'))
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'rebases the moved script''s own Import-Module path' {
+        $root = New-ScriptFixture
+        try {
+            New-Item -ItemType Directory -Path (Join-Path $root (Join-Path 'modules' 'M')) -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $root (Join-Path 'modules' (Join-Path 'M' 'M.psd1'))) -Value '@{ ModuleVersion = ''1.0.0'' }'
+            $script = Join-Path $root 'use.ps1'
+            Set-Content -LiteralPath $script -Value 'Import-Module "$PSScriptRoot/modules/M/M.psd1"'
+            $dest = Join-Path (Join-Path $root 'bin') 'use.ps1'
+            Move-PowerShellScript -Path $script -Destination $dest -RepositoryRoot $root -NoJournal -Confirm:$false -WarningAction SilentlyContinue | Out-Null
+            (Get-Content -LiteralPath $dest -Raw).Trim() | Should -BeExactly 'Import-Module "$PSScriptRoot/../modules/M/M.psd1"'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+}

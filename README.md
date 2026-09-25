@@ -24,18 +24,19 @@ git netscoot src/Tarragon/Tarragon.csproj libs/Tarragon --whatif
 For AI agents, the repository ships Claude Code skills that run these commands, triggering on phrases
 like "move this project" (see [Usage](#usage)).
 
-**Guarantees.** Solution and project files are never hand-edited: every path and GUID change goes
-through the tool that owns the format (`dotnet sln` / `dotnet reference`, `git mv`,
-`Update-ModuleManifest`), with a targeted in-place rewrite only where no such tool exists. Every move
-rolls back to the original state if any step fails, and path-reference detection is report-only.
+**Guarantees.** Path and GUID changes go through the tool that owns the format where one works
+(`dotnet sln` / `dotnet reference` for managed projects, `git mv`). Where none does, such as native
+`.vcxproj` entries, `<Import>` paths and script references, netscoot rewrites only the path text in
+place and keeps every GUID, platform mapping and line of formatting. Every move rolls back to the
+original state if any step fails, and path-reference detection is report-only.
 
 ## Project philosophy
 
 What netscoot optimizes for, in order:
 
-1. **Accurate functionality.** Path and GUID changes delegate to first-party tooling
-   (`dotnet sln`, `git mv`, `Update-ModuleManifest`); netscoot never hand-edits `.sln` / `.slnx` /
-   `.csproj`. A move that breaks references is worse than no move.
+1. **Accurate functionality.** Path and GUID changes delegate to first-party tooling (`dotnet sln`,
+   `git mv`) wherever it works, and otherwise change only the path text. A move that breaks
+   references is worse than no move.
 2. **Reliability.** Write-ahead journal, in-operation rollback, structured `-WhatIf` previews, and
    CI gates against drift on both the Gallery-listed surface and the agent-discovery
    (`.claude/skills/`) surface.
@@ -175,8 +176,8 @@ Level 3, specialists, when you want one specific reconciliation:
 | `Move-DotnetProjectTree` | many projects under a folder | same, for every cross-boundary reference |
 | `Move-Solution` | a solution (`.sln`/`.slnx`) | rebases the stored project paths |
 | `Move-MSBuildImport` | a shared `.props`/`.targets` | fixes `<Import>` paths in consumers |
-| `Move-PowerShellScript` | a `.ps1` | rewrites dot-source/call references from the AST |
-| `Move-PowerShellModule` | a module folder | `Update-ModuleManifest` (`RootModule`/`NestedModules`/`FileList`) |
+| `Move-PowerShellScript` | a `.ps1` | rewrites dot-source/call/`Import-Module` references from the AST |
+| `Move-PowerShellModule` | a module folder | rewrites `Import-Module`/dot-source paths into and out of the module (manifest untouched) |
 
 `Move-UnityAsset` moves the asset together with its `.meta`, so the GUIDs scenes and prefabs
 reference are preserved (nothing to rewrite). `Directory.Build.props/.targets` and
@@ -478,8 +479,8 @@ Relocate a project, folder, file, module, or asset and reconcile what the move w
 | [Move-Solution](#move-solution) | Move a solution file (`.sln/.slnx`) and rebase the relative project paths it stores, so every project it references still resolves from the solution's new location. |
 | [Move-PowerShell](#move-powershell) | Move a PowerShell item and reconcile references, routing by type to the right specialist. |
 | [Move-PowerShellScript](#move-powershellscript) | Move a standalone `.ps1` script and fix the relative paths in scripts that dot-source or call it (and the moved script's own dot-source/call paths). |
-| [Move-PowerShellModule](#move-powershellmodule) | Move a PowerShell module folder and reconcile its manifest, delegating manifest edits to Update-ModuleManifest rather than hand-editing the `.psd1`. |
-| [Move-NativeProject](#move-nativeproject) | Move a native or C++/CLI project (`.vcxproj`) and reconcile the parts the dotnet CLI can delegate (solution membership, the move itself), reporting the native path-bearing settings it cannot reconcile so they are never silently broken. |
+| [Move-PowerShellModule](#move-powershellmodule) | Move a PowerShell module folder and update the script paths that reference it or that it uses. |
+| [Move-NativeProject](#move-nativeproject) | Move a native or C++/CLI project (`.vcxproj`), update the solutions and projects that reference it, and report the native path-bearing settings it does not rewrite so they are never silently broken. |
 | [Move-UnityAsset](#move-unityasset) | Move a Unity asset or folder while keeping its paired `.meta` file(s), so the GUIDs that scene/prefab/asmdef references depend on survive the move. |
 
 #### Inspect
@@ -1314,8 +1315,8 @@ Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared
 
 #### Move-PowerShellModule
 
-Move a PowerShell module folder and reconcile its manifest, delegating manifest edits to Update-ModuleManifest rather
-than hand-editing the `.psd1`.
+Move a PowerShell module folder and update the script paths that reference it or that
+it uses.
 
 ##### Syntax
 
@@ -1323,10 +1324,12 @@ than hand-editing the `.psd1`.
 Move-PowerShellModule [-ModulePath] <string> -Destination <string> [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-Moves a module directory (git mv when tracked), then rewrites RootModule, NestedModules and FileList in the `.psd1` via
-Update-ModuleManifest so relative references stay valid. Validates the result with Test-ModuleManifest. Limits (warned,
-not fixed): Dot-sourced relative paths inside `.psm1/.ps1` files, and any path computed at runtime, cannot be reconciled
-automatically.
+Moves a module directory (git mv when tracked). Scripts elsewhere that import the module by path (Import-Module,
+`using module`) or dot-source one of its files are repointed, and the module's own `.ps1/.psm1` paths to files outside
+it are rebased, with the same precise, BOM-preserving edits as [Move-PowerShellScript](#move-powershellscript). The
+manifest's entries are module-relative, so the `.psd1` is left unchanged and only validated with Test-ModuleManifest.
+Limits (warned, not fixed): a path built from variables is reported as a possible dynamic reference; any path computed
+at runtime cannot be reconciled automatically.
 
 ##### Parameters
 
@@ -1356,7 +1359,7 @@ Netscoot.PSModuleMoveResult
 ##### Examples
 
 ```powershell
-# Preview; reconciles RootModule/NestedModules/FileList via Update-ModuleManifest
+# Preview; lists the callers and module paths it will update
 Move-PowerShellModule -ModulePath ./tools/Mayo -Destination ./modules/Mayo -WhatIf
 
 # Move it for real
@@ -1383,12 +1386,14 @@ Move-PowerShellScript [-Path] <string> -Destination <string> [-RepositoryRoot <s
 
 Finds references via the PowerShell AST: dot-source (`. path`) and call (`& path`) invocations whose path is a literal
 string or a `$PSScriptRoot`-based string resolving to the moved script. It rewrites those relative paths with precise,
-BOM-preserving edits, preserving the original style (`$PSScriptRoot`-prefixed or .\-relative). HEURISTIC LIMIT: only
-literal and `$PSScriptRoot`-based string paths are resolved and rewritten. A path that is a string built from other
-variables (e.g. one rooted at `$dir`) whose leaf matches the moved script is reported as a possible dynamic reference to
-verify by hand. A path built entirely from an expression (e.g. Join-Path ...) is not a string node and cannot be
-detected at all - grep to be sure. Treat the result as "fixed what could be proven," not "guaranteed complete." git is
-used when available (else confirmed plain-move fallback via `-Force`). `-WhatIf` supported; dotnet not required.
+BOM-preserving edits, preserving the original style (`$PSScriptRoot`-prefixed or .\-relative, and the / or \ separator).
+The moved script's own dot-source, call, Import-Module and `using module` paths are rebased too. HEURISTIC LIMIT: only
+literal and `$PSScriptRoot`-based string paths are resolved and rewritten. A string built from other variables (e.g. one
+rooted at `$dir`), or a string literal elsewhere in a script (e.g. a Join-Path argument), whose leaf matches the moved
+script is reported as a possible dynamic reference to verify by hand. A path assembled with no string naming the script
+cannot be detected at all - grep to be sure. Treat the result as "fixed what could be proven," not "guaranteed
+complete." git is used when available (else confirmed plain-move fallback via `-Force`). `-WhatIf` supported; dotnet not
+required.
 
 ##### Parameters
 
@@ -2379,9 +2384,8 @@ Update-Netscoot -Force
 
 #### Move-NativeProject
 
-Move a native or C++/CLI project (`.vcxproj`) and reconcile the parts the dotnet CLI can delegate (solution membership,
-the move itself), reporting the native path-bearing settings it cannot reconcile so they are never silently broken.
-Windows-only.
+Move a native or C++/CLI project (`.vcxproj`), update the solutions and projects that reference it, and report the
+native path-bearing settings it does not rewrite so they are never silently broken. Windows-only.
 
 ##### Syntax
 
@@ -2389,13 +2393,14 @@ Windows-only.
 Move-NativeProject [-Project] <string> -Destination <string> [-RepositoryRoot <string>] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-Native projects link through MSBuild settings the dotnet CLI does not touch: AdditionalIncludeDirectories /
+Native projects link through MSBuild settings that a move can break: AdditionalIncludeDirectories /
 AdditionalLibraryDirectories / AdditionalDependencies, `<Import>` of shared `.props/.targets`, `$(SolutionDir)`-relative
 OutDir, and the paired `.vcxproj`.filters. C++/CLI is Windows-only, so this cmdlet refuses to run elsewhere. It will:
-Update `.sln/.slnx` membership via 'dotnet sln' (which understands `.vcxproj`), move the folder (git mv when tracked),
-move the paired `.vcxproj`.filters alongside, and then emit a report of every relative/SolutionDir-relative native
-setting that a human (or a future native engine) must verify. It deliberately does not rewrite those MSBuild paths yet -
-surfacing them beats silently mis-editing them.
+move the folder (git mv when tracked) with its paired `.vcxproj`.filters; rewrite the project's path in each
+`.sln/.slnx` entry, in every ProjectReference to it (native or managed consumers) and in its own ProjectReferences,
+keeping GUIDs, platform mappings and solution folders as they are; and report every relative/SolutionDir-relative native
+setting, in the moved project or in another project pointing into its folder, for a human to verify. It does not rewrite
+those MSBuild settings. The dotnet CLI is not used: it cannot load a `.vcxproj` outside Visual Studio's MSBuild.
 
 ##### Parameters
 

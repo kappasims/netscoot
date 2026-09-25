@@ -8,6 +8,17 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- `Move-NativeProject` now works for a project that is in a solution. It rewrites the project's path
+  in each `.sln`/`.slnx` entry and in every `ProjectReference` to it, native or managed, and rebases
+  its own `ProjectReference`s, keeping GUIDs, platform mappings and solution folders. It no longer
+  needs the dotnet CLI, which cannot load a real `.vcxproj`. Include paths in other projects that
+  point into the moved folder are reported.
+- `Move-PowerShellModule` updates scripts that load the module by path (`Import-Module`,
+  `using module`) and rebases the module's own paths to files outside it. It no longer rewrites the
+  manifest, which reformatted it and could drop an explicit `VariablesToExport`.
+- `Move-PowerShellScript` keeps the `/` or `\` style of the paths it rewrites, rebases the moved
+  script's own `Import-Module` and `using module` paths, and reports other strings that name the
+  moved script, such as a `Join-Path` argument.
 - Every move command now returns the repository to its original state when a move fails partway.
   Previously `Move-NativeProject`, `Move-MSBuildImport`, `Move-PowerShellScript`,
   `Move-PowerShellModule`, `Move-Solution` and `Move-UnityAsset` could leave files at the destination

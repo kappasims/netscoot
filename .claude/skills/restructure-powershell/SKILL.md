@@ -7,16 +7,18 @@ description: Use when moving, relocating, or restructuring PowerShell code: movi
 
 Purpose (full overview: the [netscoot README](https://github.com/kappasims/netscoot)): a move
 that fixes what it would otherwise break. PowerShell has no Visual Studio to reconcile a relocated
-file, so netscoot rewrites the dot-source/call paths a script move breaks and the `.psd1` manifest
-a module move breaks, delegating manifest edits to `Update-ModuleManifest` rather than hand-editing.
+file, so netscoot rewrites the script paths a move breaks, changing only the path text.
 
 These cmdlets are **cross-platform** (PowerShell 7 on Windows/Linux/macOS, and Windows
 PowerShell 5.1) and need only git. The hazard is **relative references that break when a file
 moves**. Unlike a .NET project, there is no manifest/CLI that reconciles every kind:
 
-- **Scripts**: `. path` (dot-source) and `& path` (call) of other scripts, often
-  `$PSScriptRoot`-relative. Move the script and those paths no longer resolve.
-- **Modules**: the `.psd1` manifest's `RootModule` / `NestedModules` / `FileList`.
+- **Scripts**: `. path` (dot-source), `& path` (call), `Import-Module <path>` and
+  `using module <path>`, often `$PSScriptRoot`-relative. Move the script and those paths no longer
+  resolve.
+- **Modules**: scripts elsewhere that import the module (or dot-source one of its files) by path,
+  and the module's own `.ps1`/`.psm1` paths to files outside it. The `.psd1` manifest's entries are
+  module-relative, so a folder move leaves it valid and netscoot does not rewrite it.
 
 Use the installed `netscoot` module (`Import-Module Netscoot`; if it is not installed, point
 the user to the project's install steps and let them run them, never auto-install). The single
@@ -40,7 +42,7 @@ Import-Module Netscoot
 Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -WhatIf
 Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1
 
-# Module (reconciles the .psd1 manifest via Update-ModuleManifest, then Test-ModuleManifest):
+# Module (updates callers and the module's outward paths, then runs Test-ModuleManifest):
 Move-PowerShell -Path ./tools/Mayo -Destination ./modules/Mayo
 ```
 
@@ -54,23 +56,17 @@ the new path, a rename (`-Destination ./shared/helpers.ps1`).
 
 Script reference fixing is AST-based, so it only resolves what it can prove:
 
-- Literal and `$PSScriptRoot`-based string paths → rewritten (style preserved).
-- A path built with **other variables** (e.g. `"$dir\x.ps1"`) whose leaf matches → **reported**
-  as a possible dynamic reference to verify by hand.
-- A path built entirely from an expression (e.g. `Join-Path ...`) is not a string node and
-  **cannot be detected**. Grep to be sure.
+- Literal and `$PSScriptRoot`-based string paths → rewritten (style preserved, including `/` or `\`).
+- A path built with **other variables** (e.g. `"$dir\x.ps1"`), or any other string naming the
+  moved file (e.g. a `Join-Path` argument or a `Publish-Module -Path` value) → **reported** as a
+  possible dynamic reference to verify by hand.
+- A path assembled with no string naming the file **cannot be detected**. Grep to be sure.
 
 Treat the result as "fixed what could be proven," not "guaranteed complete."
 
-## Module limits (warned, not fixed)
-
-- Dot-sourced relative paths *inside* `.psm1`/`.ps1` files in the module are not reconciled by
-  the manifest refresh; verify them.
-- Any path computed at runtime.
-
 ## Do not
 
-- Hand-edit the `.psd1` to repoint paths; let `Update-ModuleManifest` do it.
+- Rewrite the `.psd1` after a module move; its entries are module-relative and stay valid.
 - Move a `.ps1` with a plain `git mv` and assume its callers still work; references break silently.
 
 ## Undoing a move

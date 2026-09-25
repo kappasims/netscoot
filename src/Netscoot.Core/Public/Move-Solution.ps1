@@ -81,11 +81,10 @@ function Move-Solution {
                     'DestinationExists', [System.Management.Automation.ErrorCategory]::ResourceExists, $newPath))
             return
         }
-        $newDir = Split-Path -Parent $newPath
 
         $entries = @(Get-SolutionProjectEntries -SolutionFile $src)
         Write-MovePlan -Cmdlet $PSCmdlet -Caption "Move-Solution $name  $src -> $newPath" -Items ([ordered]@{
-                'project paths to rebase' = @($entries | ForEach-Object { $_.Stored })
+                'project paths to rebase' = @($entries | ForEach-Object { $_.Raw })
             })
 
         $performed = $false
@@ -99,14 +98,11 @@ function Move-Solution {
 
             # The solution-path rebases happen after the move, so they are Reattach-only items.
             $counter = @{ N = 0 }
-            $rebaseSb = { param($File, $Old, $New, $Counter) if (Set-RawFileReplacement -File $File -Old $Old -New $New) { $Counter.N++ } }
+            $rebaseSb = { param($Ref, $NewFile, $Counter) if ($Ref.FollowFile($NewFile)) { $Counter.N++ } }
             $items = @()
             foreach ($e in $entries) {
-                $rel = Get-RelativePathSafe -From $newDir -To $e.Abs
-                if ($ext -ieq '.slnx') { $rel = $rel -replace '\\', '/'; $old = "Path=`"$($e.Stored)`""; $new = "Path=`"$rel`"" }
-                else { $old = "`"$($e.Stored)`""; $new = "`"$rel`"" }
-                $items += New-MoveItem -Description "rebase path: $($e.Stored) -> $rel" `
-                    -Reattach $rebaseSb -ReattachArgs @($newPath, $old, $new, $counter)
+                $items += New-MoveItem -Description "rebase path: $($e.Raw) -> $($e.RawFollowing($newPath))" `
+                    -Reattach $rebaseSb -ReattachArgs @($e, $newPath, $counter)
             }
             $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 

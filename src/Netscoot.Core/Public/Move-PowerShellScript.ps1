@@ -8,14 +8,16 @@ function Move-PowerShellScript {
         Finds references via the PowerShell AST: dot-source (`. path`) and call (`& path`)
         invocations whose path is a literal string or a $PSScriptRoot-based string resolving to
         the moved script. It rewrites those relative paths with precise, BOM-preserving edits,
-        preserving the original style ($PSScriptRoot-prefixed or .\-relative).
+        preserving the original style ($PSScriptRoot-prefixed or .\-relative, and the / or \
+        separator). The moved script's own dot-source, call, Import-Module and `using module`
+        paths are rebased too.
 
         HEURISTIC LIMIT: only literal and $PSScriptRoot-based string paths are resolved and
-        rewritten. A path that is a string built from other variables (e.g. one rooted at $dir)
-        whose leaf matches the moved script is reported as a possible dynamic reference to verify by
-        hand. A path built entirely from an expression (e.g. Join-Path ...) is not a string node
-        and cannot be detected at all - grep to be sure. Treat the result as "fixed what could
-        be proven," not "guaranteed complete."
+        rewritten. A string built from other variables (e.g. one rooted at $dir), or a string
+        literal elsewhere in a script (e.g. a Join-Path argument), whose leaf matches the moved
+        script is reported as a possible dynamic reference to verify by hand. A path assembled
+        with no string naming the script cannot be detected at all - grep to be sure. Treat the
+        result as "fixed what could be proven," not "guaranteed complete."
 
         git is used when available (else confirmed plain-move fallback via -Force). -WhatIf
         supported; dotnet not required.
@@ -88,7 +90,6 @@ function Move-PowerShellScript {
                     'DestinationExists', [System.Management.Automation.ErrorCategory]::ResourceExists, $newPath))
             return
         }
-        $newDir = Split-Path -Parent $newPath
 
         if (-not $RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath (Split-Path -Parent $src) }
         $repoFull = Resolve-FullPath $RepositoryRoot
@@ -98,16 +99,12 @@ function Move-PowerShellScript {
         $unresolvedRefs = @()
         foreach ($f in (Find-PowerShellFiles -Root $repoFull)) {
             if (Test-PathEqual $f.FullName $src) { continue }
-            foreach ($r in (Get-PowerShellScriptReferences -File $f.FullName)) {
-                if ($r.Unresolved) {
-                    if ((Split-Path $r.Raw -Leaf) -eq $name) { $unresolvedRefs += [pscustomobject]@{ File = $f.FullName; Raw = $r.Raw } }
-                    continue
-                }
-                if (Test-PathEqual $r.Abs $src) { $referencers += [pscustomobject]@{ File = $f.FullName; Raw = $r.Raw } }
-            }
+            $scan = Get-PowerShellScriptReferences -File $f.FullName
+            $referencers += @($scan.Paths | Where-Object { Test-PathEqual $_.Target $src })
+            $unresolvedRefs += @($scan.Dynamic | Where-Object { ($_.Raw -split '[\\/]')[-1] -eq $name })
         }
-        # The moved script's own dot-source/call paths (break when its location changes).
-        $ownRefs = @(Get-PowerShellScriptReferences -File $src | Where-Object { -not $_.Unresolved })
+        # The moved script's own paths (break when its location changes).
+        $ownRefs = @((Get-PowerShellScriptReferences -File $src).Paths | Where-Object { $_.RawFollowing($newPath) -ne $_.Raw })
 
         $refRels = @($referencers | ForEach-Object { $_.File })
         $ownRels = @($ownRefs | ForEach-Object { $_.Raw })
@@ -126,20 +123,17 @@ function Move-PowerShellScript {
             $ctx = Resolve-MoveContext -Cmdlet $PSCmdlet -Force:$Force -TargetForError $src
             if (-not $ctx) { return }
 
-            # Reference fixes happen after the move; Reattach-only items (new raw computable now).
-            $fixSb = { param($File, $Old, $New) [void](Set-RawFileReplacement -File $File -Old $Old -New $New) }
+            # Reference fixes happen after the move; Reattach-only items.
+            $pointAt = { param($Ref, $Target) [void]$Ref.PointAt($Target) }
+            $followFile = { param($Ref, $NewFile) [void]$Ref.FollowFile($NewFile) }
             $items = @()
             foreach ($ref in $referencers) {
-                $newRaw = Get-NewScriptRaw -RefDir (Split-Path -Parent $ref.File) -TargetAbs $newPath -OldRaw $ref.Raw
-                $items += New-MoveItem -Description "referencer $(Split-Path -Leaf $ref.File): $($ref.Raw) -> $newRaw" `
-                    -Reattach $fixSb -ReattachArgs @($ref.File, $ref.Raw, $newRaw)
+                $items += New-MoveItem -Description "referencer $(Split-Path -Leaf $ref.File): $($ref.Raw) -> $($ref.RawPointingAt($newPath))" `
+                    -Reattach $pointAt -ReattachArgs @($ref, $newPath)
             }
-            foreach ($own in $ownRefs) {
-                $newRaw = Get-NewScriptRaw -RefDir $newDir -TargetAbs $own.Abs -OldRaw $own.Raw
-                if ($newRaw -ne $own.Raw) {
-                    $items += New-MoveItem -Description "own reference: $($own.Raw) -> $newRaw" `
-                        -Reattach $fixSb -ReattachArgs @($newPath, $own.Raw, $newRaw)
-                }
+            foreach ($ref in $ownRefs) {
+                $items += New-MoveItem -Description "own reference: $($ref.Raw) -> $($ref.RawFollowing($newPath))" `
+                    -Reattach $followFile -ReattachArgs @($ref, $newPath)
             }
             $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 
