@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [3.0.0-beta4] - 2026-09-25
+
 ### Fixed
 
 - `Move-UnityAsset` gives each new parent folder it creates under `Assets/` (or inside a package) a
