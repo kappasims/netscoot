@@ -2353,7 +2353,7 @@ depend on survive the move.
 ##### Syntax
 
 ```powershell
-Move-UnityAsset [-AssetPath] <string> -Destination <string> [-RepositoryRoot <string>] [-Force] [-NoJournal] [-WhatIf] [-Confirm] [<CommonParameters>]
+Move-UnityAsset [-AssetPath] <string> -Destination <string> [-RepositoryRoot <string>] [-Force] [-NoJournal] [-FoldersToPrune <string[]>] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 In Unity every asset and folder has a sibling `<name>.meta` carrying a stable GUID. References (in scenes, prefabs, and
@@ -2364,9 +2364,9 @@ folder's sibling `.meta` is moved too. asmdef references are by name/GUID (not p
 moving an .asmdef this reports who references it, for your awareness only. When the destination needs new parent
 folders, each one under Assets/ (or inside a package) gets a folder `.meta` with a fresh GUID, staged with the move, so
 it is committed once instead of being generated differently on every machine. [Undo-Netscoot](#undo-netscoot) moves the
-asset back but leaves those new folders and their `.meta` files in place. Cross-platform and target-agnostic: asmdef
-includePlatforms/excludePlatforms (iOS, Android, etc.) are plain fields untouched by a move, so mobile layouts are
-preserved.
+asset back and removes those folders and their `.meta` files again, if they are empty. Cross-platform and
+target-agnostic: asmdef includePlatforms/excludePlatforms (iOS, Android, etc.) are plain fields untouched by a move, so
+mobile layouts are preserved.
 
 ##### Parameters
 
@@ -2377,6 +2377,7 @@ preserved.
 | `‑RepositoryRoot` | String | false | false | Root to scan for asmdef referencers. Defaults to the enclosing git repository root. |
 | `‑Force` | SwitchParameter | false | false | Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. |
 | `‑NoJournal` | SwitchParameter | false | false | Skip recording this move in the undo journal for this call, even when journaling is enabled ([Undo-Netscoot](#undo-netscoot) will not see this move). |
+| `‑FoldersToPrune` | String[] | false | false | Set by [Undo-Netscoot](#undo-netscoot): the folders an earlier move created above AssetPath. After this move, each one that is empty is removed with its folder `.meta`. |
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 

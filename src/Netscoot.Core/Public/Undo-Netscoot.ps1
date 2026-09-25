@@ -225,13 +225,14 @@ function Invoke-MoveJournalUndo {
     # and the prefix check rejects anything resolving outside this repository, capping the blast radius.
     $rootFull = [System.IO.Path]::GetFullPath($RepositoryRoot).TrimEnd([char]'\', [char]'/')
     $rootPrefix = $rootFull + [System.IO.Path]::DirectorySeparatorChar
-    foreach ($k in 'Project', 'Path', 'ModulePath', 'AssetPath', 'Destination') {
+    foreach ($k in 'Project', 'Path', 'ModulePath', 'AssetPath', 'Destination', 'FoldersToPrune') {
         if (-not $params.ContainsKey($k)) { continue }
-        $raw = [string]$params[$k]
-        $combined = if ([System.IO.Path]::IsPathRooted($raw)) { $raw } else { Join-Path $rootFull $raw }
-        $resolved = [System.IO.Path]::GetFullPath($combined)
-        if ($resolved -ne $rootFull -and -not $resolved.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
-            throw "Refusing to replay journal entry '$($Entry.id)': path '$raw' resolves outside the repository '$rootFull' (the journal may be tampered with)."
+        foreach ($raw in @($params[$k] | ForEach-Object { [string]$_ })) {
+            $combined = if ([System.IO.Path]::IsPathRooted($raw)) { $raw } else { Join-Path $rootFull $raw }
+            $resolved = [System.IO.Path]::GetFullPath($combined)
+            if ($resolved -ne $rootFull -and -not $resolved.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+                throw "Refusing to replay journal entry '$($Entry.id)': path '$raw' resolves outside the repository '$rootFull' (the journal may be tampered with)."
+            }
         }
     }
 

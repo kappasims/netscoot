@@ -151,6 +151,43 @@ Describe 'Move-UnityAsset new parent folders' -Tag 'Integration' {
             (Join-Path $assets 'Plugins.meta') | Should -Not -Exist
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
+
+    It 'Undo-Netscoot removes the new folders and their .meta files' {
+        $root = New-UnityFixture
+        try {
+            $assets = Join-Path $root 'Assets'
+            Move-UnityAsset -AssetPath (Join-Path $assets 'Foo') -Destination (Join-Path $assets (Join-Path 'Plugins' (Join-Path 'Deep' 'Foo'))) -RepositoryRoot $root -Confirm:$false | Out-Null
+            Undo-Netscoot -RepositoryRoot $root -Confirm:$false | Out-Null
+            (Join-Path $assets (Join-Path 'Foo' 'Bar.cs')) | Should -Exist
+            (Join-Path $assets 'Plugins') | Should -Not -Exist
+            (Join-Path $assets 'Plugins.meta') | Should -Not -Exist
+            (& git -C $root status --porcelain) | Should -BeNullOrEmpty
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'Undo-Netscoot keeps a new folder that has gained other content' {
+        $root = New-UnityFixture
+        try {
+            $assets = Join-Path $root 'Assets'
+            Move-UnityAsset -AssetPath (Join-Path $assets 'Foo') -Destination (Join-Path $assets (Join-Path 'Plugins' 'Foo')) -RepositoryRoot $root -Confirm:$false | Out-Null
+            Set-Content -LiteralPath (Join-Path $assets (Join-Path 'Plugins' 'Other.cs')) -Value 'public class Other {}'
+            Undo-Netscoot -RepositoryRoot $root -Confirm:$false | Out-Null
+            (Join-Path $assets (Join-Path 'Plugins' 'Other.cs')) | Should -Exist
+            (Join-Path $assets 'Plugins.meta') | Should -Exist
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'never prunes a folder that is not above the moved asset' {
+        $root = New-UnityFixture
+        try {
+            $assets = Join-Path $root 'Assets'
+            $unrelated = Join-Path $assets 'Empty'
+            New-Item -ItemType Directory -Path $unrelated | Out-Null
+            Move-UnityAsset -AssetPath (Join-Path $assets (Join-Path 'Foo' 'Bar.cs')) -Destination (Join-Path $assets 'Bar.cs') -RepositoryRoot $root `
+                -FoldersToPrune $unrelated -NoJournal -Confirm:$false | Out-Null
+            $unrelated | Should -Exist
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
 }
 
 Describe 'Test-UnityMetaIntegrity' -Tag 'Integration' {

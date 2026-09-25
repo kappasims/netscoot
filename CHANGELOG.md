@@ -22,6 +22,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `Move-UnityAsset` gives each new parent folder it creates under `Assets/` (or inside a package) a
   folder `.meta`, staged with the move. Before, Unity generated those on import with a different
   GUID on every machine, and `Test-UnityMetaIntegrity` flagged them right after the move.
+  `Undo-Netscoot` removes those folders and their `.meta` files again if nothing else was added.
 
 ## [2.6.5] - 2026-09-25
 
