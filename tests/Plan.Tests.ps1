@@ -36,6 +36,14 @@ Describe 'Invoke-MovePlan (transaction engine)' {
         }
     }
 
+    It 'runs the move when the caller binds $null for no reconciliation items' {
+        InModuleScope NetscootShared {
+            $ran = [ref]$false
+            Invoke-MovePlan -Caption 't' -Items $null -Move ({ $ran.Value = $true }.GetNewClosure()) -Rollback { } | Out-Null
+            $ran.Value | Should -BeTrue
+        }
+    }
+
     It 'reverses a completed move when a reattach fails' {
         InModuleScope NetscootShared {
             $log = [System.Collections.Generic.List[string]]::new()

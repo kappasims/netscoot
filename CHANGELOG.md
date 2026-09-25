@@ -47,6 +47,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   installer installs.
 - Update policy handling is more consistent.
 - `Unregister-NetscootGitAlias` reports its own error under Windows PowerShell 5.1.
+- Under Windows PowerShell 5.1, moving a project that no solution lists and nothing references no
+  longer fails.
 
 ## [3.0.0-beta5] - 2026-09-25
 

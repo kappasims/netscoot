@@ -103,8 +103,8 @@ prerequisite is missing, tell the user the install command and let them run it.
 
 netscoot does not auto-update. Check with `Test-NetscootUpdate`, which compares the installed module
 to the latest GitHub release on the update channel (stable unless
-`Set-NetscootUpdateChannel -Channel Beta` opted into betas). Update a Gallery install with `Update-Module Netscoot`, an installer
-install with `Update-Netscoot`, and a dev clone with `git pull` then `./build.ps1 -Task Install`. A
-SessionStart hook running `Test-NetscootUpdate -Auto` can remind automatically. It checks only when
-the update policy is Enabled, and never updates. Ask the user before adding it, since it edits their
-settings.json.
+`Set-NetscootUpdateChannel -Channel Beta` opted into betas). Update a Gallery install with
+`Update-Module Netscoot`, an installer install with `Update-Netscoot`, and a dev clone with
+`git pull` then `./build.ps1 -Task Install`. A SessionStart hook running `Test-NetscootUpdate -Auto`
+can remind automatically. It checks only when the update policy is Enabled, and never updates. Ask
+the user before adding it, since it edits their settings.json.

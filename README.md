@@ -528,7 +528,7 @@ Read-only audits. These change nothing.
 | [Resolve-MoveEngine](#resolve-moveengine) | Classify a path to the reconciliation engine that should move it: dotnet, native, unity, ps-script, ps-module, or unknown. |
 | [Get-NetscootCapability](#get-netscootcapability) | Resolve Netscoot's external-tool capabilities (git, dotnet) and platform. |
 | [Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) | Report projects whose membership diverges across the solution files in a repository (present in some solutions but absent from others). |
-| [Get-NetscootSolutionInventory](#get-netscootsolutioninventory) | [Get-NetscootSolutionInventory](#get-netscootsolutioninventory) [[`-RepositoryRoot`] &lt;string&gt;] [&lt;CommonParameters&gt;] |
+| [Get-NetscootSolutionInventory](#get-netscootsolutioninventory) | List the full contents of every solution in a repository (projects of any type, solution folders, and solution items), plus on-disk managed and native projects that no solution references. |
 | [Find-NetscootPathReference](#find-netscootpathreference) | Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party tool reconciles. |
 | [Test-UnityMetaIntegrity](#test-unitymetaintegrity) | Report Unity `.meta` integrity problems under a root: Assets missing a `.meta`, and orphan `.meta` files whose asset is gone. |
 | [Test-EditorSolutionGuard](#test-editorsolutionguard) | Check that a repository's editor configuration will keep a `.slnx` consolidation durable - i.e. |
@@ -748,7 +748,8 @@ Get-NetscootCapability
 
 #### Get-NetscootSolutionInventory
 
-Get-NetscootSolutionInventory [[`-RepositoryRoot`] &lt;string&gt;] [&lt;CommonParameters&gt;]
+List the full contents of every solution in a repository (projects of any type, solution folders, and solution items),
+plus on-disk managed and native projects that no solution references.
 
 ##### Syntax
 
@@ -756,15 +757,24 @@ Get-NetscootSolutionInventory [[`-RepositoryRoot`] &lt;string&gt;] [&lt;CommonPa
 Get-NetscootSolutionInventory [[-RepositoryRoot] <string>] [<CommonParameters>]
 ```
 
+Where [Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) compares membership and
+[Repair-NetscootSolutionReferences](#repair-netscootsolutionreferences) finds dangling entries, this gives the complete
+picture without reading the files by hand. It parses each `.sln/.slnx` directly (not via `dotnet sln list`, which only
+returns CLI-buildable projects), so it also surfaces non-CLI project types (e.g. .pssproj), solution folders, and loose
+solution items. It then compares against the managed and native (vcxproj) projects on disk and flags any that are in no
+solution at all. An unreferenced PowerShell project (pssproj) is not flagged. Read-only: One record per item, so you can
+group, filter, or format it however you like.
+
 ##### Parameters
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑RepositoryRoot` | string | false | true (ByValue) |  |
+| `‑RepositoryRoot` | String | false | true (ByValue) | Root to scan. Accepts pipeline input: a path string, or a file/directory item from Get-Item / Get-ChildItem. Defaults to the enclosing git repository root. Nested git worktrees are skipped. |
 
 ##### Output
 
 Returns zero or more [Netscoot.SolutionItem](#netscootsolutionitem), collected as an array.
+One per item.
 
 ```text
 Netscoot.SolutionItem
@@ -774,6 +784,28 @@ Netscoot.SolutionItem
   Name      string
   Path      string                     # as stored in the solution, or repository-relative
 ```
+
+##### Examples
+
+```powershell
+# Everything across all solutions, plus projects in none
+Get-NetscootSolutionInventory -RepositoryRoot . | Format-Table -AutoSize
+
+# Only the projects on disk that no solution references
+Get-NetscootSolutionInventory | Where-Object Kind -eq 'UnreferencedProject'
+
+# Only loose solution items (e.g. a README in a solution folder)
+Get-NetscootSolutionInventory | Where-Object Kind -eq 'SolutionItem'
+
+# Kind is the [Netscoot.SolutionItemKind] enum, so this also works
+Get-NetscootSolutionInventory | Where-Object Kind -eq ([Netscoot.SolutionItemKind]::UnreferencedProject)
+```
+
+##### Related
+
+[ [Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) |
+[Sync-NetscootSolution](#sync-netscootsolution) |
+[Repair-NetscootSolutionReferences](#repair-netscootsolutionreferences) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1073,11 +1105,12 @@ Move-DotnetProject [-Project] <string> -Destination <string> [-RepositoryRoot <s
 
 Enumerates the solutions that include the project, the projects that reference it, and the project's own references.
 Removes those links while the old paths still resolve, moves the directory (git mv when tracked), then re-adds every
-link so the dotnet CLI recomputes fresh relative paths. The solution and project XML (`.sln/.slnx`, `.csproj`) is never
-hand-edited. Because the CLI re-creates each solution entry, a `.sln` entry gets a new project GUID unless the project
-sets `<ProjectGuid>`. The entry's solution folder is restored. Diagnostics follow invocation: `-Verbose` narrates the
-plan, `-Debug` emits the full solution-membership matrix, and divergence (the project living in some but not all of the
-repository's solutions) is surfaced as a Warning (or, with `-Strict`, a non- terminating error honoring `-ErrorAction`).
+link so the dotnet CLI recomputes fresh relative paths. The solution and project XML (the `.sln/.slnx` and the
+`.csproj`) is never hand-edited. Because the CLI re-creates each solution entry, a `.sln` entry gets a new project GUID
+unless the project sets `<ProjectGuid>`. The entry's solution folder is restored. Diagnostics follow invocation:
+`-Verbose` narrates the plan, `-Debug` emits the full solution-membership matrix, and divergence (the project living in
+some but not all of the repository's solutions) is surfaced as a Warning (or, with `-Strict`, a non- terminating error
+honoring `-ErrorAction`).
 
 ##### Parameters
 
@@ -2432,7 +2465,7 @@ Move-NativeProject [-Project] <string> -Destination <string> [-RepositoryRoot <s
 
 Native projects link through MSBuild settings that a move can break: AdditionalIncludeDirectories /
 AdditionalLibraryDirectories / AdditionalDependencies, `<Import>` of shared `.props/.targets`, `$(SolutionDir)`-relative
-OutDir, and the paired `.vcxproj`.filters. C++/CLI is Windows-only, so this cmdlet refuses to run elsewhere. It will:
+OutDir, and the paired vcxproj.filters file. C++/CLI is Windows-only, so this cmdlet refuses to run elsewhere. It will:
 move the folder (git mv when tracked) with its paired `.vcxproj`.filters; rewrite the project's path in each
 `.sln/.slnx` entry, in every ProjectReference to it (native or managed consumers) and in its own ProjectReferences,
 keeping GUIDs, platform mappings and solution folders as they are; and report native settings for a human to verify:

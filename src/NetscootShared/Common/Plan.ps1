@@ -234,6 +234,8 @@ function Invoke-MovePlan {
         [hashtable]$UndoParams,
         [switch]$NoJournal
     )
+    # A caller with nothing to reconcile may bind $null, and Windows PowerShell 5.1 then gives @($Items) no Count.
+    if ($null -eq $Items) { $Items = @() }
     Write-Verbose "Reconciling $(@($Items).Count) reference(s) around: $Caption"
 
     # The edited files we will snapshot, deduped and limited to ones that exist now, in a stable

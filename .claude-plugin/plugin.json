@@ -1,7 +1,7 @@
 {
   "name": "netscoot",
   "displayName": "netscoot",
-  "version": "3.0.0-beta6",
+  "version": "3.0.0-beta6.1",
   "description": "Move and restructure .NET, PowerShell, Unity, and native C++ projects without breaking references. Solution entries and project references are updated, hardcoded paths elsewhere are reported, and a failed move rolls back, with solution-consistency analysis and post-move verification.",
   "author": {
     "name": "kappasims",
