@@ -25,6 +25,8 @@ function Test-EditorSolutionGuard {
         by default it writes a Warning for each failed guard; -Strict escalates each Warning-level
         finding to a non-terminating error (honoring -ErrorAction). Info-level findings (e.g. a
         missing .gitignore guard) are emitted as objects and shown under -Verbose, never as warnings.
+        A repository with no .vscode/settings.json is an Info finding, since it may not use VS Code
+        at all, so -Strict does not fail on it.
 
         This is editor-specific (VS Code C# Dev Kit) because that is what governs solution drift in
         practice; the checks only run when the repository actually contains a .slnx.
@@ -160,7 +162,11 @@ function Test-EditorSolutionGuard {
         }
 
         if (-not @($records | Where-Object { $_.Severity -eq 'Warning' }).Count) {
-            Write-Host "Editor solution guards look good - the .slnx consolidation is durable." -ForegroundColor Green
+            if (@($records | Where-Object { $_.Check -eq 'AutoCreateGuard' -and $_.Severity -eq 'OK' }).Count) {
+                Write-Host 'Editor solution guards look good. The .slnx consolidation is durable.' -ForegroundColor Green
+            } else {
+                Write-Host 'No guard failed, but there is no .vscode/settings.json to confirm the C# Dev Kit guard.' -ForegroundColor Yellow
+            }
         }
     }
 }
