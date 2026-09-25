@@ -7,7 +7,7 @@ name: Markdownlint
 # pull_request, so this avoids linting the same commit twice.
 on:
   push:
-    branches: [develop, master]
+    branches: [develop, master, '*-beta']
   pull_request:
 
 concurrency:
