@@ -6,11 +6,12 @@ function Register-NetscootGitAlias {
 
     .DESCRIPTION
         Adds `alias.netscoot = !pwsh -NoProfile -File <forwarder>` to git config so
-        `git netscoot <src> <dst>` works. "dotnet" is the .NET-platform umbrella: The verb
-        branches by target type to the right engine - the .NET project model
-        (csproj/sln/props), Unity (.meta/.asmdef), PowerShell (.ps1/.psd1), or native C++
-        (.vcxproj). Scope is your choice (repository-local or global). Undo with
-        Unregister-NetscootGitAlias. Use -WhatIf to see the exact `git config` command.
+        `git netscoot <src> <dst>` works. The forwarder calls Invoke-Netscoot, which routes by
+        target type to the right engine: the .NET project model (csproj/sln/props), Unity
+        (.meta/.asmdef), PowerShell (.ps1/.psd1), or native C++ (.vcxproj). The alias runs
+        `pwsh`, so it needs PowerShell 7 on PATH. Scope is your choice (repository-local or
+        global). Undo with Unregister-NetscootGitAlias. The returned object's Command property
+        holds the exact `git config` command, and -WhatIf previews the change.
 
     .PARAMETER Scope
         'Local' (this repository, default) or 'Global' (~/.gitconfig).
@@ -19,7 +20,7 @@ function Register-NetscootGitAlias {
         Netscoot.GitAlias
 
     .EXAMPLE
-        # Preview the exact git config command (changes nothing)
+        # Preview the change (changes nothing)
         Register-NetscootGitAlias -Scope Global -WhatIf
         # Register for this repository only (default scope is Local)
         Register-NetscootGitAlias

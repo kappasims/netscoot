@@ -30,7 +30,8 @@ function Find-PathReference {
         a path string, or a file/directory item from Get-Item / Get-ChildItem.
 
     .PARAMETER RepositoryRoot
-        Root to scan. Defaults to the enclosing git repository root.
+        Root to scan. Defaults to the enclosing git repository root of the current directory, not
+        of -Path, which may no longer exist.
 
     .PARAMETER AdditionalGlob
         Extra repository-relative globs to include in the candidate set (e.g. 'deploy/*.sh').

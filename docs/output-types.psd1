@@ -169,7 +169,7 @@
     }
 
     'Netscoot.NativeSetting' = @{
-        Summary = 'One path-bearing MSBuild setting in a moved .vcxproj that the dotnet CLI cannot reconcile.'
+        Summary = 'One path-bearing MSBuild setting in a moved .vcxproj that the move reports for manual verification.'
         Array   = $false
         Fields  = @(
             @{ Name = 'Kind';  Type = 'string'; Note = 'e.g. AdditionalIncludeDirectories, OutDir, Import' }
@@ -188,7 +188,7 @@
             @{ Name = 'SkippedCount'; Type = 'int';      Note = '' }
             @{ Name = 'MetaMoved';    Type = 'bool';     Note = 'the paired .meta moved too' }
             @{ Name = 'IsAsmdef';     Type = 'bool';     Note = 'the moved asset is an .asmdef' }
-            @{ Name = 'ReferencedBy'; Type = 'string[]'; Note = 'asmdefs that reference a moved .asmdef; informational, refs are by name/GUID and survive' }
+            @{ Name = 'ReferencedBy'; Type = 'string[]'; Note = 'asmdefs that reference a moved .asmdef (informational, since refs are by name or GUID and survive)' }
         )
     }
 

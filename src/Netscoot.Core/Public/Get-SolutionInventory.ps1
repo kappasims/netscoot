@@ -2,15 +2,17 @@ function Get-SolutionInventory {
     <#
     .SYNOPSIS
         List the full contents of every solution in a repository (projects of any type, solution
-        folders, and solution items), plus on-disk projects that no solution references.
+        folders, and solution items), plus on-disk managed and native projects that no solution
+        references.
 
     .DESCRIPTION
         Where Test-SolutionConsistency compares membership and Repair-SolutionReferences finds
         dangling entries, this gives the complete picture without reading the files by hand. It
         parses each .sln/.slnx directly (not via `dotnet sln list`, which only returns
         CLI-buildable projects), so it also surfaces non-CLI project types (e.g. .pssproj),
-        solution folders, and loose solution items. It then compares against the projects on disk
-        and flags any that are in no solution at all.
+        solution folders, and loose solution items. It then compares against the managed and
+        .vcxproj projects on disk and flags any that are in no solution at all. An unreferenced
+        .pssproj is not flagged.
 
         Read-only: One record per item, so you can group, filter, or format it however you like.
 

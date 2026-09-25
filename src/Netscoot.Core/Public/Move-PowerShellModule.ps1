@@ -7,8 +7,8 @@ function Move-PowerShellModule {
     .DESCRIPTION
         Moves a module directory (git mv when tracked). Scripts elsewhere that import the module
         by path (Import-Module, `using module`) or dot-source one of its files are repointed, and
-        the module's own .ps1/.psm1 paths to files outside it are rebased, with the same precise,
-        BOM-preserving edits as Move-PowerShellScript. The manifest's entries are module-relative,
+        the module's own .ps1/.psm1 paths to files outside it are rebased, with the same
+        encoding-preserving edits as Move-PowerShellScript. The manifest's entries are module-relative,
         so the .psd1 is left unchanged and only validated with Test-ModuleManifest.
 
         Limits (warned, not fixed): a path built from variables is reported as a possible dynamic
@@ -23,7 +23,8 @@ function Move-PowerShellModule {
         into it (keeping the name); otherwise it is the module's new folder path.
 
     .PARAMETER Force
-        Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
+        When git is not installed, move with a plain PowerShell `Move-Item` without asking first.
+        Without -Force it asks before falling back. The plain move does not preserve git history.
 
     .PARAMETER NoJournal
         Skip recording this move in the undo journal for this call, even when journaling is enabled

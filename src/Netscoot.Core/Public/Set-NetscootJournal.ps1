@@ -7,11 +7,12 @@ function Set-NetscootJournal {
         Journaling is on by default. This cmdlet writes the git setting that the precedence stack
         reads (git config netscoot.journal), so the choice persists across sessions and rides along
         with the repository's git config - no environment variable to remember. Local config (the
-        default here) wins over global, matching the resolution order in Test-MoveJournalEnabled.
+        default here) wins over global.
 
         With -Global it writes the user's global git config, switching the default for every
-        repository on the machine in one place. Requires git; with no git, set $env:NETSCOOT_JOURNAL
-        instead.
+        repository on the machine in one place. Requires git. The `NETSCOOT_JOURNAL` environment
+        variable, when set, overrides this setting, so this cmdlet has no effect while it is set.
+        Without git, set that variable instead.
 
     .PARAMETER Enabled
         $true to journal moves (the default behavior), $false to stop journaling.
