@@ -27,10 +27,8 @@ BeforeAll {
 }
 
 Describe 'Move-DotnetProject' -Tag 'Integration' {
-    It 'moves a referenced library and keeps the <Format> solution buildable' -ForEach @(
-        @{ Format = 'slnx' }, @{ Format = 'sln' }
-    ) {
-        $root = New-Fixture -Format $Format
+    It 'moves a referenced library and keeps the .slnx solution buildable' {
+        $root = New-Fixture -Format slnx
         try {
             $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
             $dest = Join-Path $root (Join-Path 'libs' ('Lib'))
@@ -46,19 +44,33 @@ Describe 'Move-DotnetProject' -Tag 'Integration' {
             $listed = & dotnet sln $sln list
             ($listed -join "`n") | Should -Match 'libs[\\/]Lib[\\/]Lib\.csproj'
 
-            # `dotnet build` is the project-level build-smoke - run it for slnx only, the file format
-            # most likely to exercise the rebase machinery. The sln variant gets file-state assertions
-            # above (sln membership listed correctly + consumer ref rewritten by the test below), which
-            # is what would actually break if a reconciliation regressed. Saves ~6-7s/run.
-            if ($Format -eq 'slnx') {
-                $bo = & dotnet build $sln 2>&1
-                $LASTEXITCODE | Should -Be 0 -Because ($bo -join [Environment]::NewLine)
-            } else {
-                # For the .sln variant, prove the consumer .csproj got its ProjectReference rewritten
-                # (the same thing `dotnet build` would have proven, without the build cost).
-                $app = Join-Path $root (Join-Path 'src' (Join-Path 'App' 'App.csproj'))
-                (Get-Content -LiteralPath $app -Raw) | Should -Match 'libs[\\/]Lib[\\/]Lib\.csproj'
-            }
+            $bo = & dotnet build $sln 2>&1
+            $LASTEXITCODE | Should -Be 0 -Because ($bo -join [Environment]::NewLine)
+        } finally {
+            Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'moves a referenced library and keeps the .sln solution buildable' {
+        $root = New-Fixture -Format sln
+        try {
+            $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
+            $dest = Join-Path $root (Join-Path 'libs' ('Lib'))
+            $sln = (Get-ChildItem -LiteralPath $root -File -Include '*.sln', '*.slnx').FullName
+
+            Move-DotnetProject -Project $lib -Destination $dest -RepositoryRoot $root -NoBuild -Confirm:$false
+
+            # File physically moved.
+            Join-Path $dest 'Lib.csproj' | Should -Exist
+            $lib | Should -Not -Exist
+
+            # Solution lists the new path (GUIDs preserved by the CLI).
+            $listed = & dotnet sln $sln list
+            ($listed -join "`n") | Should -Match 'libs[\\/]Lib[\\/]Lib\.csproj'
+
+            # The rewritten consumer reference stands in for the build smoke, which runs in the .slnx case.
+            $app = Join-Path $root (Join-Path 'src' (Join-Path 'App' 'App.csproj'))
+            (Get-Content -LiteralPath $app -Raw) | Should -Match 'libs[\\/]Lib[\\/]Lib\.csproj'
         } finally {
             Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
         }

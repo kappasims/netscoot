@@ -10,13 +10,23 @@ BeforeAll {
 Describe 'StrictMode is enforced in every module' {
     # Guards against anyone removing Set-StrictMode -Version Latest from a module loader:
     # accessing an undefined variable inside the module scope must throw.
-    It '<Module> runs its code under StrictMode' -ForEach @(
-        @{ Module = 'NetscootShared' }
-        @{ Module = 'Netscoot.Core' }
-        @{ Module = 'Netscoot.Native' }
-        @{ Module = 'Netscoot.Unity' }
-    ) {
-        { InModuleScope $Module { $__definitely_not_a_real_variable__ } } |
+    It 'NetscootShared runs its code under StrictMode' {
+        { InModuleScope NetscootShared { $__definitely_not_a_real_variable__ } } |
+            Should -Throw -ExpectedMessage '*has not been set*'
+    }
+
+    It 'Netscoot.Core runs its code under StrictMode' {
+        { InModuleScope Netscoot.Core { $__definitely_not_a_real_variable__ } } |
+            Should -Throw -ExpectedMessage '*has not been set*'
+    }
+
+    It 'Netscoot.Native runs its code under StrictMode' {
+        { InModuleScope Netscoot.Native { $__definitely_not_a_real_variable__ } } |
+            Should -Throw -ExpectedMessage '*has not been set*'
+    }
+
+    It 'Netscoot.Unity runs its code under StrictMode' {
+        { InModuleScope Netscoot.Unity { $__definitely_not_a_real_variable__ } } |
             Should -Throw -ExpectedMessage '*has not been set*'
     }
 }
