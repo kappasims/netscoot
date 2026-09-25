@@ -23,10 +23,8 @@ BeforeAll {
 }
 
 Describe 'Move-Solution' -Tag 'Integration' {
-    It 'rebases project paths when a <Format> solution moves into a subfolder' -ForEach @(
-        @{ Format = 'slnx' }, @{ Format = 'sln' }
-    ) {
-        $root = New-SlnFixture -Format $Format
+    It 'rebases project paths when a .slnx solution moves into a subfolder' {
+        $root = New-SlnFixture -Format slnx
         try {
             $sln = (Get-ChildItem -LiteralPath $root -File | Where-Object { $_.Extension -in '.sln', '.slnx' }).FullName
             $dest = Join-Path (Join-Path $root 'build') (Split-Path -Leaf $sln)
@@ -36,10 +34,24 @@ Describe 'Move-Solution' -Tag 'Integration' {
             $dest | Should -Exist
             $sln | Should -Not -Exist
 
-            # The moved solution still resolves its project. `dotnet sln list` is what would fail if
-            # the rebase produced a wrong relative path; the build smoke is covered by
-            # Move-DotnetProject.Tests.ps1's slnx variant, so we skip the per-format build here
-            # (saves ~3s per format = ~6s total across both ForEach iterations).
+            # A wrong rebased path fails the listing. The build smoke lives in Move-DotnetProject.Tests.ps1.
+            $listed = & dotnet sln $dest list
+            ($listed -join "`n") | Should -Match 'Lib\.csproj'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'rebases project paths when a .sln solution moves into a subfolder' {
+        $root = New-SlnFixture -Format sln
+        try {
+            $sln = (Get-ChildItem -LiteralPath $root -File | Where-Object { $_.Extension -in '.sln', '.slnx' }).FullName
+            $dest = Join-Path (Join-Path $root 'build') (Split-Path -Leaf $sln)
+
+            $r = Move-Solution -Path $sln -Destination $dest -Confirm:$false -WarningAction SilentlyContinue
+            $r.ProjectsRebased | Should -Be 1
+            $dest | Should -Exist
+            $sln | Should -Not -Exist
+
+            # A wrong rebased path fails the listing. The build smoke lives in Move-DotnetProject.Tests.ps1.
             $listed = & dotnet sln $dest list
             ($listed -join "`n") | Should -Match 'Lib\.csproj'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

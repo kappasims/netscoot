@@ -20,6 +20,42 @@ BeforeAll {
     if ($onWindows) {
         Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Native' ('Netscoot.Native.psd1'))))) -Force
     }
+
+    function Assert-MoverBindsPipedString {
+        param([string]$Name)
+        $errs = $null
+        './does/not/exist' | & $Name -Destination './elsewhere' -WhatIf -ErrorAction SilentlyContinue -ErrorVariable errs
+        @($errs | Where-Object { $_.FullyQualifiedErrorId -like 'ParameterArgumentTransformationError*' }).Count |
+            Should -Be 0 -Because 'a string path must bind'
+    }
+
+    function Assert-MoverRejectsPipedObject {
+        param([string]$Name)
+        $rec = [pscustomobject]@{ Project = 'p'; Path = 'p'; AssetPath = 'p'; ModulePath = 'p' }
+        { $rec | & $Name -Destination './x' -WhatIf -ErrorAction Stop } |
+            Should -Throw -ErrorId "ParameterArgumentTransformationError,$Name"
+    }
+
+    function Assert-GatedRejectsPipedObject {
+        param([string]$Name)
+        $rec = [pscustomobject]@{ PSTypeName = 'Netscoot.SolutionItem'; Path = 'src/Lib/Lib.csproj'; Project = 'src/Lib/Lib.csproj' }
+        { $rec | & $Name -ErrorAction Stop } |
+            Should -Throw -ErrorId "ParameterArgumentTransformationError,$Name"
+    }
+
+    function Assert-GatedBindsPipedString {
+        param([string]$Name)
+        # A string must BIND. The cmdlet may then fail downstream on the fake path (not found),
+        # which is NOT a binding/transformation failure - the only thing this gate is about. So we
+        # tolerate a terminating downstream error and assert only that it is not a transform error.
+        $errs = $null; $caught = $null
+        try {
+            './does/not/exist' | & $Name -ErrorAction SilentlyContinue -ErrorVariable errs -WarningAction SilentlyContinue
+        } catch { $caught = $_ }
+        @($errs | Where-Object { $_.FullyQualifiedErrorId -like 'ParameterArgumentTransformationError*' }).Count |
+            Should -Be 0 -Because 'a string path must bind'
+        if ($caught) { $caught.FullyQualifiedErrorId | Should -Not -BeLike 'ParameterArgumentTransformationError*' }
+    }
 }
 
 Describe 'Pipeline-input gate (PathInputTransform)' -Tag 'Integration' {
@@ -34,14 +70,20 @@ Describe 'Pipeline-input gate (PathInputTransform)' -Tag 'Integration' {
         # A string must BIND. The cmdlet may then emit a non-terminating "not found" error from its
         # process block (the path is fake), but that is NOT a binding/transformation failure - which
         # is the only thing this gate is responsible for. So we assert no transformation error fires.
-        It '<Name> binds a piped path string (no transformation error)' -ForEach @(
-            @{ Name = 'Move-DotnetProject' }, @{ Name = 'Move-PowerShell' }, @{ Name = 'Move-UnityAsset' }
-            @{ Name = 'Move-Solution' }, @{ Name = 'Move-DotnetFile' }
-        ) {
-            $errs = $null
-            './does/not/exist' | & $Name -Destination './elsewhere' -WhatIf -ErrorAction SilentlyContinue -ErrorVariable errs
-            @($errs | Where-Object { $_.FullyQualifiedErrorId -like 'ParameterArgumentTransformationError*' }).Count |
-                Should -Be 0 -Because 'a string path must bind'
+        It 'Move-DotnetProject binds a piped path string (no transformation error)' {
+            Assert-MoverBindsPipedString -Name 'Move-DotnetProject'
+        }
+        It 'Move-PowerShell binds a piped path string (no transformation error)' {
+            Assert-MoverBindsPipedString -Name 'Move-PowerShell'
+        }
+        It 'Move-UnityAsset binds a piped path string (no transformation error)' {
+            Assert-MoverBindsPipedString -Name 'Move-UnityAsset'
+        }
+        It 'Move-Solution binds a piped path string (no transformation error)' {
+            Assert-MoverBindsPipedString -Name 'Move-Solution'
+        }
+        It 'Move-DotnetFile binds a piped path string (no transformation error)' {
+            Assert-MoverBindsPipedString -Name 'Move-DotnetFile'
         }
     }
 
@@ -87,13 +129,13 @@ Describe 'Pipeline-input gate (PathInputTransform)' -Tag 'Integration' {
         # These objects carry a .Project or .Path property that ByPropertyName used to bind. The
         # transform must throw on the whole-object input rather than bind its property.
 
-        It 'Test-NetscootSolutionConsistency output does NOT bind into Move-DotnetProject' {
+        It 'Test-SolutionConsistency output does NOT bind into Move-DotnetProject' {
             $rec = [pscustomobject]@{ PSTypeName = 'Netscoot.ConsistencyResult'; Project = 'src/Lib/Lib.csproj'; Severity = 'Warning' }
             { $rec | Move-DotnetProject -Destination './x' -WhatIf -ErrorAction Stop } |
                 Should -Throw -ErrorId 'ParameterArgumentTransformationError,Move-DotnetProject'
         }
 
-        It 'Get-NetscootSolutionInventory output does NOT bind into Move-DotnetProject' {
+        It 'Get-SolutionInventory output does NOT bind into Move-DotnetProject' {
             $rec = [pscustomobject]@{ PSTypeName = 'Netscoot.SolutionItem'; Solution = 'Demo.slnx'; Name = 'Lib'; Path = 'src/Lib/Lib.csproj' }
             { $rec | Move-DotnetProject -Destination './x' -WhatIf -ErrorAction Stop } |
                 Should -Throw -ErrorId 'ParameterArgumentTransformationError,Move-DotnetProject'
@@ -116,16 +158,38 @@ Describe 'Pipeline-input gate (PathInputTransform)' -Tag 'Integration' {
 
     Context 'every mutator rejects an arbitrary object' {
         # One assertion per mover so a regression in any single param block is caught.
-        $movers = @(
-            @{ Name = 'Move-DotnetFile' }, @{ Name = 'Move-DotnetFolder' }, @{ Name = 'Move-DotnetProject' }
-            @{ Name = 'Move-DotnetProjectTree' }, @{ Name = 'Move-MSBuildImport' }, @{ Name = 'Move-PowerShell' }
-            @{ Name = 'Move-PowerShellModule' }, @{ Name = 'Move-PowerShellScript' }, @{ Name = 'Move-Solution' }
-            @{ Name = 'Move-UnityAsset' }, @{ Name = 'Invoke-Netscoot' }
-        )
-        It '<Name> throws a transformation error on a piped result object' -ForEach $movers {
-            $rec = [pscustomobject]@{ Project = 'p'; Path = 'p'; AssetPath = 'p'; ModulePath = 'p' }
-            { $rec | & $Name -Destination './x' -WhatIf -ErrorAction Stop } |
-                Should -Throw -ErrorId "ParameterArgumentTransformationError,$Name"
+        It 'Move-DotnetFile throws a transformation error on a piped result object' {
+            Assert-MoverRejectsPipedObject -Name 'Move-DotnetFile'
+        }
+        It 'Move-DotnetFolder throws a transformation error on a piped result object' {
+            Assert-MoverRejectsPipedObject -Name 'Move-DotnetFolder'
+        }
+        It 'Move-DotnetProject throws a transformation error on a piped result object' {
+            Assert-MoverRejectsPipedObject -Name 'Move-DotnetProject'
+        }
+        It 'Move-DotnetProjectTree throws a transformation error on a piped result object' {
+            Assert-MoverRejectsPipedObject -Name 'Move-DotnetProjectTree'
+        }
+        It 'Move-MSBuildImport throws a transformation error on a piped result object' {
+            Assert-MoverRejectsPipedObject -Name 'Move-MSBuildImport'
+        }
+        It 'Move-PowerShell throws a transformation error on a piped result object' {
+            Assert-MoverRejectsPipedObject -Name 'Move-PowerShell'
+        }
+        It 'Move-PowerShellModule throws a transformation error on a piped result object' {
+            Assert-MoverRejectsPipedObject -Name 'Move-PowerShellModule'
+        }
+        It 'Move-PowerShellScript throws a transformation error on a piped result object' {
+            Assert-MoverRejectsPipedObject -Name 'Move-PowerShellScript'
+        }
+        It 'Move-Solution throws a transformation error on a piped result object' {
+            Assert-MoverRejectsPipedObject -Name 'Move-Solution'
+        }
+        It 'Move-UnityAsset throws a transformation error on a piped result object' {
+            Assert-MoverRejectsPipedObject -Name 'Move-UnityAsset'
+        }
+        It 'Invoke-Netscoot throws a transformation error on a piped result object' {
+            Assert-MoverRejectsPipedObject -Name 'Invoke-Netscoot'
         }
     }
 
@@ -133,33 +197,58 @@ Describe 'Pipeline-input gate (PathInputTransform)' -Tag 'Integration' {
         # The two non-move MUTATORS (Repair/Sync) and the read-only analysis cmdlets all take their
         # root/path ByValue through the same transform: a string or a FileSystemInfo binds, any other
         # object throws. This closes the report->reconciler dual-context and gives one pipeline contract.
-        $gated = @(
-            @{ Name = 'Repair-NetscootSolutionReferences' }, @{ Name = 'Sync-NetscootSolution' }
-            @{ Name = 'Test-NetscootSolutionConsistency' }, @{ Name = 'Get-NetscootSolutionInventory' }
-            @{ Name = 'Find-NetscootPathReference' }, @{ Name = 'Resolve-MoveEngine' }
-            @{ Name = 'Test-UnityMetaIntegrity' }, @{ Name = 'Test-EditorSolutionGuard' }
-        )
-        It '<Name> rejects a piped result object' -ForEach $gated {
-            $rec = [pscustomobject]@{ PSTypeName = 'Netscoot.SolutionItem'; Path = 'src/Lib/Lib.csproj'; Project = 'src/Lib/Lib.csproj' }
-            { $rec | & $Name -ErrorAction Stop } |
-                Should -Throw -ErrorId "ParameterArgumentTransformationError,$Name"
+        It 'Repair-SolutionReferences rejects a piped result object' {
+            Assert-GatedRejectsPipedObject -Name 'Repair-SolutionReferences'
         }
-        It '<Name> binds a piped path string (no transformation error)' -ForEach $gated {
-            # A string must BIND. The cmdlet may then fail downstream on the fake path (not found),
-            # which is NOT a binding/transformation failure - the only thing this gate is about. So we
-            # tolerate a terminating downstream error and assert only that it is not a transform error.
-            $errs = $null; $caught = $null
-            try {
-                './does/not/exist' | & $Name -ErrorAction SilentlyContinue -ErrorVariable errs -WarningAction SilentlyContinue
-            } catch { $caught = $_ }
-            @($errs | Where-Object { $_.FullyQualifiedErrorId -like 'ParameterArgumentTransformationError*' }).Count |
-                Should -Be 0 -Because 'a string path must bind'
-            if ($caught) { $caught.FullyQualifiedErrorId | Should -Not -BeLike 'ParameterArgumentTransformationError*' }
+        It 'Sync-Solution rejects a piped result object' {
+            Assert-GatedRejectsPipedObject -Name 'Sync-Solution'
         }
-        It 'Get-Item <dir> | Test-NetscootSolutionConsistency binds the directory item (no transformation error)' {
+        It 'Test-SolutionConsistency rejects a piped result object' {
+            Assert-GatedRejectsPipedObject -Name 'Test-SolutionConsistency'
+        }
+        It 'Get-SolutionInventory rejects a piped result object' {
+            Assert-GatedRejectsPipedObject -Name 'Get-SolutionInventory'
+        }
+        It 'Find-PathReference rejects a piped result object' {
+            Assert-GatedRejectsPipedObject -Name 'Find-PathReference'
+        }
+        It 'Resolve-MoveEngine rejects a piped result object' {
+            Assert-GatedRejectsPipedObject -Name 'Resolve-MoveEngine'
+        }
+        It 'Test-UnityMetaIntegrity rejects a piped result object' {
+            Assert-GatedRejectsPipedObject -Name 'Test-UnityMetaIntegrity'
+        }
+        It 'Test-EditorSolutionGuard rejects a piped result object' {
+            Assert-GatedRejectsPipedObject -Name 'Test-EditorSolutionGuard'
+        }
+        It 'Repair-SolutionReferences binds a piped path string (no transformation error)' {
+            Assert-GatedBindsPipedString -Name 'Repair-SolutionReferences'
+        }
+        It 'Sync-Solution binds a piped path string (no transformation error)' {
+            Assert-GatedBindsPipedString -Name 'Sync-Solution'
+        }
+        It 'Test-SolutionConsistency binds a piped path string (no transformation error)' {
+            Assert-GatedBindsPipedString -Name 'Test-SolutionConsistency'
+        }
+        It 'Get-SolutionInventory binds a piped path string (no transformation error)' {
+            Assert-GatedBindsPipedString -Name 'Get-SolutionInventory'
+        }
+        It 'Find-PathReference binds a piped path string (no transformation error)' {
+            Assert-GatedBindsPipedString -Name 'Find-PathReference'
+        }
+        It 'Resolve-MoveEngine binds a piped path string (no transformation error)' {
+            Assert-GatedBindsPipedString -Name 'Resolve-MoveEngine'
+        }
+        It 'Test-UnityMetaIntegrity binds a piped path string (no transformation error)' {
+            Assert-GatedBindsPipedString -Name 'Test-UnityMetaIntegrity'
+        }
+        It 'Test-EditorSolutionGuard binds a piped path string (no transformation error)' {
+            Assert-GatedBindsPipedString -Name 'Test-EditorSolutionGuard'
+        }
+        It 'Get-Item <dir> | Test-SolutionConsistency binds the directory item (no transformation error)' {
             $root = New-TempRoot -Prefix 'gate'
             $errs = $null
-            Get-Item -LiteralPath $root | Test-NetscootSolutionConsistency -ErrorAction SilentlyContinue -ErrorVariable errs -WarningAction SilentlyContinue
+            Get-Item -LiteralPath $root | Test-SolutionConsistency -ErrorAction SilentlyContinue -ErrorVariable errs -WarningAction SilentlyContinue
             @($errs | Where-Object { $_.FullyQualifiedErrorId -like 'ParameterArgumentTransformationError*' }).Count |
                 Should -Be 0 -Because 'a Get-Item directory must bind via its FullName'
         }

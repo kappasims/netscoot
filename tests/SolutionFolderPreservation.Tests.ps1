@@ -50,10 +50,17 @@ BeforeAll {
 }
 
 Describe 'Solution-folder preservation on move' -Tag 'Integration' {
-    It 'keeps the moved project in its original solution folder (<Format>, spaces in destination)' -ForEach @(
-        @{ Format = 'slnx' }, @{ Format = 'sln' }
-    ) {
-        $root = New-FolderFixture -Format $Format
+    It 'keeps the moved project in its original solution folder (slnx, spaces in destination)' {
+        $root = New-FolderFixture -Format slnx
+        try {
+            Move-DotnetProject -Project (Join-Path $root (Join-Path 'src' (Join-Path 'Core' 'Core.csproj'))) `
+                -Destination (Join-Path $root (Join-Path 'src' 'Core Library')) -RepositoryRoot $root -NoBuild -Confirm:$false | Out-Null
+            Get-MovedFolder -Root $root | Should -Be 'src'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'keeps the moved project in its original solution folder (sln, spaces in destination)' {
+        $root = New-FolderFixture -Format sln
         try {
             Move-DotnetProject -Project (Join-Path $root (Join-Path 'src' (Join-Path 'Core' 'Core.csproj'))) `
                 -Destination (Join-Path $root (Join-Path 'src' 'Core Library')) -RepositoryRoot $root -NoBuild -Confirm:$false | Out-Null
