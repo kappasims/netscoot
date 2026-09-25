@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Netscoot
 {
@@ -69,11 +70,23 @@ namespace Netscoot
 
         protected abstract string Format(string relative);
 
-        protected abstract string Token(string raw, char quote);
+        protected virtual string Token(string raw, char quote)
+        {
+            return quote + raw + quote;
+        }
 
         protected virtual char[] Quotes
         {
             get { return new char[] { '"' }; }
+        }
+
+        protected virtual string Replace(string text, string oldRaw, string newRaw)
+        {
+            foreach (char q in Quotes)
+            {
+                text = text.Replace(Token(oldRaw, q), Token(newRaw, q));
+            }
+            return text;
         }
 
         protected virtual char DefaultSeparator
@@ -93,21 +106,11 @@ namespace Netscoot
 
         private bool Rewrite(string file, string newRaw)
         {
-            byte[] bytes = System.IO.File.ReadAllBytes(file);
-            bool bom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
-            string text = System.IO.File.ReadAllText(file);
-            bool changed = false;
-            foreach (char q in Quotes)
-            {
-                string oldToken = Token(Raw, q);
-                if (text.IndexOf(oldToken, StringComparison.Ordinal) >= 0)
-                {
-                    text = text.Replace(oldToken, Token(newRaw, q));
-                    changed = true;
-                }
-            }
-            if (changed) { System.IO.File.WriteAllText(file, text, new UTF8Encoding(bom)); }
-            return changed;
+            EncodedText content = EncodedText.Read(file);
+            string text = Replace(content.Text, Raw, newRaw);
+            if (string.Equals(text, content.Text, StringComparison.Ordinal)) { return false; }
+            content.Write(file, text);
+            return true;
         }
 
         private static string RelativePath(string fromDir, string to)
@@ -125,6 +128,61 @@ namespace Netscoot
             for (int i = common; i < dest.Length; i++) { parts.Add(dest[i]); }
             if (parts.Count == 0) { return "."; }
             return string.Join(sep.ToString(), parts.ToArray());
+        }
+    }
+
+    // A file's text with the byte-order mark and encoding it was read in, so a rewrite keeps both.
+    // BOM-less text that is not valid UTF-8 is a legacy code page, round-tripped byte for byte as Latin-1.
+    internal sealed class EncodedText
+    {
+        private readonly byte[] bom;
+        private readonly Encoding encoding;
+
+        public string Text { get; private set; }
+
+        private EncodedText(byte[] bom, Encoding encoding, string text)
+        {
+            this.bom = bom;
+            this.encoding = encoding;
+            Text = text;
+        }
+
+        public static EncodedText Read(string file)
+        {
+            byte[] bytes = System.IO.File.ReadAllBytes(file);
+            Encoding[] withBom = new Encoding[]
+            {
+                new UTF32Encoding(false, true), new UTF32Encoding(true, true), new UTF8Encoding(true),
+                new UnicodeEncoding(false, true), new UnicodeEncoding(true, true)
+            };
+            foreach (Encoding candidate in withBom)
+            {
+                byte[] preamble = candidate.GetPreamble();
+                int matched = 0;
+                while (matched < preamble.Length && matched < bytes.Length && bytes[matched] == preamble[matched]) { matched++; }
+                if (matched == preamble.Length)
+                {
+                    return new EncodedText(preamble, candidate, candidate.GetString(bytes, preamble.Length, bytes.Length - preamble.Length));
+                }
+            }
+            try
+            {
+                return new EncodedText(new byte[0], new UTF8Encoding(false), new UTF8Encoding(false, true).GetString(bytes));
+            }
+            catch (DecoderFallbackException)
+            {
+                Encoding latin1 = Encoding.GetEncoding(28591);
+                return new EncodedText(new byte[0], latin1, latin1.GetString(bytes));
+            }
+        }
+
+        public void Write(string file, string text)
+        {
+            byte[] body = encoding.GetBytes(text);
+            byte[] all = new byte[bom.Length + body.Length];
+            Buffer.BlockCopy(bom, 0, all, 0, bom.Length);
+            Buffer.BlockCopy(body, 0, all, bom.Length, body.Length);
+            System.IO.File.WriteAllBytes(file, all);
         }
     }
 
@@ -178,11 +236,6 @@ namespace Netscoot
         {
             return Styled(relative);
         }
-
-        protected override string Token(string raw, char quote)
-        {
-            return quote + raw + quote;
-        }
     }
 
     public sealed class ScriptPath : StoredPath
@@ -200,9 +253,12 @@ namespace Netscoot
             return "." + sep + styled;
         }
 
-        protected override string Token(string raw, char quote)
+        // A script path may be quoted or bare, so it matches only as a whole token: not inside a
+        // longer path such as ..\helpers.ps1 when the path is .\helpers.ps1.
+        protected override string Replace(string text, string oldRaw, string newRaw)
         {
-            return raw;
+            string pattern = @"(?<![^\s'""(=,])" + Regex.Escape(oldRaw) + @"(?![^\s'""),;}|])";
+            return Regex.Replace(text, pattern, newRaw.Replace("$", "$$"));
         }
     }
 }
