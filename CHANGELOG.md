@@ -6,6 +6,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Every move command now returns the repository to its original state when a move fails partway.
+  Previously `Move-NativeProject`, `Move-MSBuildImport`, `Move-PowerShellScript`,
+  `Move-PowerShellModule`, `Move-Solution` and `Move-UnityAsset` could leave files at the destination
+  and references half-updated while reporting that the move had been rolled back.
+
 ### Changed
 
 - The deprecated aliases for the five renamed cmdlets (`Get-SolutionInventory`, `Sync-Solution`,
