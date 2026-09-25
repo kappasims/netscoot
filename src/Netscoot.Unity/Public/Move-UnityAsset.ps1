@@ -18,7 +18,7 @@ function Move-UnityAsset {
         When the destination needs new parent folders, each one under Assets/ (or inside a
         package) gets a folder .meta with a fresh GUID, staged with the move, so it is committed
         once instead of being generated differently on every machine. Undo-Netscoot moves the
-        asset back but leaves those new folders and their .meta files in place.
+        asset back and removes those folders and their .meta files again, if they are empty.
 
         Cross-platform and target-agnostic: asmdef includePlatforms/excludePlatforms (iOS,
         Android, etc.) are plain fields untouched by a move, so mobile layouts are preserved.
@@ -40,6 +40,10 @@ function Move-UnityAsset {
     .PARAMETER NoJournal
         Skip recording this move in the undo journal for this call, even when journaling is enabled
         (Undo-Netscoot will not see this move).
+
+    .PARAMETER FoldersToPrune
+        Set by Undo-Netscoot: the folders an earlier move created above AssetPath. After this move,
+        each one that is empty is removed with its folder .meta.
 
     .OUTPUTS
         Netscoot.UnityMoveResult
@@ -65,7 +69,9 @@ function Move-UnityAsset {
         [string]$Destination,
         [string]$RepositoryRoot,
         [switch]$Force,
-        [switch]$NoJournal
+        [switch]$NoJournal,
+        [Parameter(DontShow)]
+        [string[]]$FoldersToPrune
     )
 
     process {
@@ -129,27 +135,36 @@ function Move-UnityAsset {
 
             # Unity references resolve by GUID (carried in the .meta), so there are no
             # reference edits to confirm - moving the asset + its .meta is the whole operation.
+            # Removes, deepest first, each listed folder that sits on $Anchor's parent chain inside the
+            # repository and is empty, together with its folder .meta. A folder whose .meta is not a
+            # folder .meta is left alone.
+            $pruneFolders = {
+                param($Folders, $Anchor, $UseGit, $RepoFull)
+                $deepestFirst = @($Folders | Where-Object { (Test-PathUnder $Anchor $_) -and (Test-PathUnder $_ $RepoFull) } |
+                        Sort-Object -Property Length -Descending)
+                foreach ($d in $deepestFirst) {
+                    if (-not (Test-Path -LiteralPath $d -PathType Container) -or (Get-ChildItem -LiteralPath $d -Force)) { continue }
+                    $meta = "$d.meta"
+                    if (Test-Path -LiteralPath $meta -PathType Leaf) {
+                        if ([System.IO.File]::ReadAllText($meta) -notmatch '(?m)^folderAsset: yes\s*$') { continue }
+                        if ($UseGit -and (Test-GitTracked -Path $meta)) { Invoke-Git -RepositoryRoot $RepoFull -Arguments @('rm', '-q', '-f', '--', $meta) }
+                        else { Remove-Item -LiteralPath $meta }
+                    }
+                    Remove-Item -LiteralPath $d
+                }
+            }
             # $moveBack undoes whatever part of the move happened, so it serves both a failure inside
             # $move (keeping the move all-or-nothing) and the plan's rollback.
             $moveBack = {
-                param($UseGit, $Src, $Dst, $SrcMeta, $DstMeta, $RepoFull, $NewFolders, $FolderMetas)
+                param($UseGit, $Src, $Dst, $SrcMeta, $DstMeta, $RepoFull, $NewFolders, $PruneFolders)
                 if ((Test-Path -LiteralPath $DstMeta) -and -not (Test-Path -LiteralPath $SrcMeta)) {
                     Move-PathTracked -UseGit $UseGit -Source $DstMeta -Destination $SrcMeta -RepositoryRoot $RepoFull
                 }
                 if (Test-Path -LiteralPath $Dst) { Move-PathTracked -UseGit $UseGit -Source $Dst -Destination $Src -RepositoryRoot $RepoFull }
-                foreach ($m in @($FolderMetas)) {
-                    if (-not (Test-Path -LiteralPath $m)) { continue }
-                    if ($UseGit -and (Test-GitTracked -Path $m)) { Invoke-Git -RepositoryRoot $RepoFull -Arguments @('rm', '-q', '-f', '--', $m) }
-                    else { Remove-Item -LiteralPath $m }
-                }
-                $deepestFirst = @($NewFolders)
-                [array]::Reverse($deepestFirst)
-                foreach ($d in $deepestFirst) {
-                    if ((Test-Path -LiteralPath $d) -and -not (Get-ChildItem -LiteralPath $d -Force)) { Remove-Item -LiteralPath $d }
-                }
+                & $PruneFolders @($NewFolders) $Dst $UseGit $RepoFull
             }
             $move = {
-                param($UseGit, $Src, $Dst, $SrcMeta, $DstMeta, $HasMeta, $RepoFull, $NewFolders, $FolderMetas, $MoveBack)
+                param($UseGit, $Src, $Dst, $SrcMeta, $DstMeta, $HasMeta, $RepoFull, $NewFolders, $FolderMetas, $MoveBack, $PruneFolders)
                 try {
                     foreach ($d in @($NewFolders)) { New-Item -ItemType Directory -Path $d | Out-Null }
                     foreach ($m in @($FolderMetas)) {
@@ -160,17 +175,25 @@ function Move-UnityAsset {
                     Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $RepoFull
                     if ($HasMeta) { Move-PathTracked -UseGit $UseGit -Source $SrcMeta -Destination $DstMeta -RepositoryRoot $RepoFull }
                 } catch {
-                    & $MoveBack $UseGit $Src $Dst $SrcMeta $DstMeta $RepoFull @($NewFolders) @($FolderMetas)
+                    & $MoveBack $UseGit $Src $Dst $SrcMeta $DstMeta $RepoFull @($NewFolders) $PruneFolders
                     throw
                 }
             }
+            # Undo replays the reverse move; handing it the folders this move creates lets it prune them.
+            $undoParams = @{ AssetPath = $dst; Destination = $src; Force = [bool]$Force }
+            if ($newFolders.Count) { $undoParams['FoldersToPrune'] = $newFolders }
             Invoke-MovePlan -Caption "Move Unity asset $(Split-Path -Leaf $src)" -Items @() -Move $move `
-                -MoveArgs @($ctx.UseGit, $src, $dst, $srcMeta, $dstMeta, $hasMeta, $repoFull, $newFolders, $folderMetas, $moveBack) `
-                -Rollback $moveBack -RollbackArgs @($ctx.UseGit, $src, $dst, $srcMeta, $dstMeta, $repoFull, $newFolders, $folderMetas) `
+                -MoveArgs @($ctx.UseGit, $src, $dst, $srcMeta, $dstMeta, $hasMeta, $repoFull, $newFolders, $folderMetas, $moveBack, $pruneFolders) `
+                -Rollback $moveBack -RollbackArgs @($ctx.UseGit, $src, $dst, $srcMeta, $dstMeta, $repoFull, $newFolders, $pruneFolders) `
                 -RepositoryRoot $repoFull -Command 'Move-UnityAsset' -Engine 'unity' -Source $src -Destination $dst `
-                -UndoParams @{ AssetPath = $dst; Destination = $src; Force = [bool]$Force } -NoJournal:$NoJournal | Out-Null
+                -UndoParams $undoParams -NoJournal:$NoJournal | Out-Null
             $performed = $true
             Write-Verbose "Moved asset$(if ($hasMeta) { ' + .meta' })."
+
+            if ($FoldersToPrune) {
+                try { & $pruneFolders @($FoldersToPrune | ForEach-Object { Resolve-FullPath $_ }) $src $ctx.UseGit $repoFull }
+                catch { Write-Warning "The asset moved, but an empty folder it left could not be removed: $($_.Exception.Message)" }
+            }
         }
 
         New-MoveResult -TypeName 'Netscoot.UnityMoveResult' -Engine 'unity' -Source $src -Destination $dst `

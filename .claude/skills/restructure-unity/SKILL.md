@@ -44,8 +44,8 @@ reports which asmdefs reference it - informational only, since name/GUID refs su
 
 If the destination needs new parent folders, each one under `Assets/` (or inside a package) gets a
 folder `.meta` with a fresh GUID, staged with the move, so it is committed once rather than
-generated differently on each machine. `Undo-Netscoot` moves the asset back but leaves those new
-folders and their `.meta` files in place.
+generated differently on each machine. `Undo-Netscoot` moves the asset back and removes those
+folders and their `.meta` files again, as long as nothing else was added to them.
 
 `-Destination` follows `git mv` rules: an existing directory means move into it keeping the
 name (`./Assets/Lib` puts it at `./Assets/Lib/Tarragon`); otherwise it is the new path, a
