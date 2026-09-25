@@ -7,7 +7,7 @@ function Move-PowerShell {
     .DESCRIPTION
         Dispatches a PowerShell item to the right specialist by type (see Output for the routing):
         the script specialist fixes dot-source/call references (AST-based), the module specialist
-        reconciles the manifest. -WhatIf/-Confirm/-Verbose propagate to the specialist; -Force is
+        fixes the paths that load the module. -WhatIf/-Confirm/-Verbose propagate to the specialist; -Force is
         forwarded, and -RepositoryRoot is forwarded to the script specialist (the module specialist has
         no RepositoryRoot).
 
@@ -36,7 +36,7 @@ function Move-PowerShell {
     .EXAMPLE
         # A .ps1 routes to the script mover (fixes dot-source/call references)
         Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -WhatIf
-        # A module folder (or its .psd1) routes to the module mover (reconciles the manifest)
+        # A module folder (or its .psd1) routes to the module mover (fixes the paths that load it)
         Move-PowerShell -Path ./tools/Mayo -Destination ./modules/Mayo
         # Destination is an existing folder -> the script lands at ./shared/helpers.ps1
         Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared
