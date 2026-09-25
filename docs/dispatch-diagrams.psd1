@@ -15,7 +15,7 @@ folder of .NET projects    ->  Netscoot.TreeMoveResult
 .ps1                       ->  Netscoot.ScriptMoveResult
 .psd1  module folder       ->  Netscoot.PSModuleMoveResult
 .vcxproj                   ->  Netscoot.NativeMoveResult
-Unity asset  .meta         ->  Netscoot.UnityMoveResult
+Unity asset or folder      ->  Netscoot.UnityMoveResult
 '@
 
     'Move-DotnetFile' = @'
@@ -31,12 +31,13 @@ Unity asset  .meta         ->  Netscoot.UnityMoveResult
 
     'Resolve-MoveEngine' = @'
 .vcxproj                                            ->  native
-.asmdef  .asmref  *.meta  (or under Assets/)        ->  unity
+.asmdef  .asmref  a file with a sibling .meta       ->  unity
+under a Unity project's Assets/ or Packages/        ->  unity
 .ps1                                                ->  ps-script
 .psd1                                               ->  ps-module
 .csproj .fsproj .vbproj .sln .slnx .props .targets  ->  dotnet
-folder containing a .NET project                    ->  dotnet
-folder containing a .psd1                           ->  ps-module
+folder with a .NET project anywhere under it        ->  dotnet
+folder with a .psd1 directly in it                  ->  ps-module
 anything else                                       ->  unknown
 '@
 }

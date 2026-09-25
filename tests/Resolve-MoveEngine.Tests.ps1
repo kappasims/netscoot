@@ -36,6 +36,25 @@ Describe 'Resolve-MoveEngine' -Tag 'Integration' {
         Resolve-MoveEngine 'C:/repo/Assets/Art/logo.png' | Should -Be 'unity'
     }
 
+    It 'does not classify a NuGet packages folder outside a Unity project as unity' {
+        $root = New-EngineFixture
+        try {
+            $pkg = New-Item -ItemType Directory -Path (Join-Path $root (Join-Path 'packages' 'Some.Package'))
+            Set-Content -LiteralPath (Join-Path $pkg.FullName 'tools.ps1') -Value '#'
+            Resolve-MoveEngine (Join-Path $pkg.FullName 'tools.ps1') | Should -Be 'ps-script'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force }
+    }
+
+    It 'classifies a file under a Unity project''s Packages folder as unity' {
+        $root = New-EngineFixture
+        try {
+            New-Item -ItemType Directory -Path (Join-Path $root 'ProjectSettings') | Out-Null
+            $pkg = New-Item -ItemType Directory -Path (Join-Path $root (Join-Path 'Packages' 'com.example.tool'))
+            Set-Content -LiteralPath (Join-Path $pkg.FullName 'tools.ps1') -Value '#'
+            Resolve-MoveEngine (Join-Path $pkg.FullName 'tools.ps1') | Should -Be 'unity'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force }
+    }
+
     It 'classifies a file with a sidecar .meta as unity' {
         $root = New-EngineFixture
         try {
