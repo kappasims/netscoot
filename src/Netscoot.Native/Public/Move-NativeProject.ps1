@@ -9,7 +9,7 @@ function Move-NativeProject {
         Native projects link through MSBuild settings that a move can break:
         AdditionalIncludeDirectories / AdditionalLibraryDirectories / AdditionalDependencies,
         `<Import>` of shared .props/.targets, $(SolutionDir)-relative OutDir, and the paired
-        .vcxproj.filters. C++/CLI is Windows-only, so this cmdlet refuses to run elsewhere.
+        vcxproj.filters file. C++/CLI is Windows-only, so this cmdlet refuses to run elsewhere.
 
         It will: move the folder (git mv when tracked) with its paired .vcxproj.filters; rewrite
         the project's path in each .sln/.slnx entry, in every ProjectReference to it (native or

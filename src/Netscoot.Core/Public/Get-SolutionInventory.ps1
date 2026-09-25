@@ -10,9 +10,9 @@ function Get-SolutionInventory {
         dangling entries, this gives the complete picture without reading the files by hand. It
         parses each .sln/.slnx directly (not via `dotnet sln list`, which only returns
         CLI-buildable projects), so it also surfaces non-CLI project types (e.g. .pssproj),
-        solution folders, and loose solution items. It then compares against the managed and
-        .vcxproj projects on disk and flags any that are in no solution at all. An unreferenced
-        .pssproj is not flagged.
+        solution folders, and loose solution items. It then compares against the managed and native
+        (vcxproj) projects on disk and flags any that are in no solution at all. An unreferenced
+        PowerShell project (pssproj) is not flagged.
 
         Read-only: One record per item, so you can group, filter, or format it however you like.
 

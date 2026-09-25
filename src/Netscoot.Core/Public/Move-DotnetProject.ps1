@@ -8,8 +8,8 @@ function Move-DotnetProject {
         Enumerates the solutions that include the project, the projects that reference it,
         and the project's own references. Removes those links while the old paths still
         resolve, moves the directory (git mv when tracked), then re-adds every link so the
-        dotnet CLI recomputes fresh relative paths. The solution and project XML (.sln/.slnx,
-        .csproj) is never hand-edited. Because the CLI re-creates each solution entry, a .sln
+        dotnet CLI recomputes fresh relative paths. The solution and project XML (the .sln/.slnx
+        and the .csproj) is never hand-edited. Because the CLI re-creates each solution entry, a .sln
         entry gets a new project GUID unless the project sets `<ProjectGuid>`. The entry's
         solution folder is restored.
 
