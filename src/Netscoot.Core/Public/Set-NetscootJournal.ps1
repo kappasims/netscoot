@@ -65,8 +65,8 @@ function Set-NetscootJournal {
 
     if (-not $PSCmdlet.ShouldProcess($scope, "Set netscoot.journal = $value")) { return }
 
-    & git @gitArgs 2>$null
-    if ($LASTEXITCODE -ne 0) {
+    try { Invoke-Git -Arguments $gitArgs }
+    catch {
         $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
                 [System.InvalidOperationException]::new("Could not write $scope. Is git installed and (for local scope) is this a git repository? With no git, set `$env:NETSCOOT_JOURNAL instead."),
                 'GitConfigFailed', [System.Management.Automation.ErrorCategory]::InvalidOperation, $scope))

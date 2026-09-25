@@ -37,6 +37,26 @@ function Get-NestedWorktreePath {
     return $nested
 }
 
+function Invoke-Git {
+    # Mutating git call: runs, then throws on non-zero exit. Windows PowerShell 5.1 turns native
+    # stderr (even a warning such as a line-ending notice) into a terminating error when
+    # $ErrorActionPreference is Stop; force Continue around the call so it does not.
+    [CmdletBinding()]
+    param(
+        [string]$RepositoryRoot,
+        [Parameter(Mandatory)][string[]]$Arguments
+    )
+    $gitArgs = if ($RepositoryRoot) { @('-C', $RepositoryRoot) + $Arguments } else { $Arguments }
+    Write-Verbose "git $($gitArgs -join ' ')"
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try { & git @gitArgs 2>&1 | Write-Verbose }
+    finally { $ErrorActionPreference = $prev }
+    if ($LASTEXITCODE -ne 0) {
+        throw "git $($gitArgs -join ' ') failed with exit code $LASTEXITCODE"
+    }
+}
+
 function Move-PathTracked {
     # Move one path: git mv when tracked (preserves history), else Move-Item. Creates the
     # destination parent if needed. Shared by every move cmdlet's filesystem step.
@@ -52,9 +72,7 @@ function Move-PathTracked {
         New-Item -ItemType Directory -Path $parent -Force | Out-Null
     }
     if ($UseGit -and (Test-GitTracked -Path $Source)) {
-        Push-Location $RepositoryRoot
-        try { & git mv -- $Source $Destination; if ($LASTEXITCODE -ne 0) { throw "git mv failed: $Source -> $Destination" } }
-        finally { Pop-Location }
+        Invoke-Git -RepositoryRoot $RepositoryRoot -Arguments @('mv', '--', $Source, $Destination)
     } else {
         # No -Force on purpose: a plain Move-Item refuses an existing destination instead of
         # clobbering it. With Resolve-MoveTarget already rejecting an existing target, this keeps the
