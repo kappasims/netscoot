@@ -26,8 +26,8 @@ So the rule: **never move a Unity asset/folder without its `.meta`.** A folder's
 Before moving, audit with the read-only surface rather than scanning `.meta`/asmdef files by hand:
 `Test-UnityMetaIntegrity -Root ./Assets` (assets missing a `.meta`, orphan `.meta` whose asset is
 gone, see "Validate integrity" below) and `Resolve-MoveEngine` / `Get-NetscootCapability`. If the
-project also has a managed side (`.csproj`/`.sln`), `Test-SolutionConsistency`,
-`Get-SolutionInventory`, `Repair-SolutionReferences` (report mode), and `Sync-Solution` cover that.
+project also has a managed side (`.csproj`/`.sln`), `Test-NetscootSolutionConsistency`,
+`Get-NetscootSolutionInventory`, `Repair-NetscootSolutionReferences` (report mode), and `Sync-NetscootSolution` cover that.
 
 ## Use Move-UnityAsset
 
@@ -102,7 +102,8 @@ prerequisite is missing, tell the user the install command and let them run it.
 ## Staying current
 
 netscoot does not auto-update. Check with `Test-NetscootUpdate`, which compares the installed module
-to the latest GitHub release. Update a Gallery install with `Update-Module Netscoot`, an installer
+to the latest GitHub release on the update channel (stable unless
+`Set-NetscootUpdateChannel -Channel Beta` opted into betas). Update a Gallery install with `Update-Module Netscoot`, an installer
 install with `Update-Netscoot`, and a dev clone with `git pull` then `./build.ps1 -Task Install`. A
 SessionStart hook running `Test-NetscootUpdate -Auto` can remind automatically. It checks only when
 the update policy is Enabled, and never updates. Ask the user before adding it, since it edits their

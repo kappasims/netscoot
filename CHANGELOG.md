@@ -6,6 +6,42 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `Move-Solution` results carry `ItemsRebased`, the number of solution item paths rewritten.
+
+### Fixed
+
+- Path rewrites keep each file's encoding. A UTF-16 file (the Windows PowerShell 5.1 `Out-File`
+  default) stays UTF-16, and legacy code-page text is no longer garbled.
+- Moving `.\helpers.ps1` no longer rewrites a `..\helpers.ps1` reference in the same file.
+- `Move-Solution` rebases solution items and every project type, such as `.sqlproj` and `.wixproj`.
+  Before, only `.csproj`, `.fsproj`, `.vbproj`, `.vcxproj` and `.pssproj` entries moved with it.
+- `Repair-NetscootSolutionReferences` finds a moved `.vcxproj` instead of classifying it Missing, so
+  `-Prune` no longer removes its solution entry. `-Fix` reports it for Visual Studio.
+- `Sync-NetscootSolution` only syncs solutions that share projects, the groups `Test-NetscootSolutionConsistency`
+  compares, so a standalone solution no longer receives another solution's projects. It adds only
+  managed projects and reports a missing `.vcxproj` or `.pssproj`.
+- `Test-NetscootSolutionConsistency` no longer requires the dotnet CLI.
+- `Undo-Netscoot` finds a move made with a narrower `-RepositoryRoot`, which was journaled under
+  that folder instead of the git repository root.
+- `Repair-NetscootJournal -ClearOrphanSnapshots` keeps snapshots that another repository's
+  interrupted move needs, and any snapshot less than an hour old.
+- `Invoke-Netscoot -NoBuild` (and `git netscoot --nobuild`) works for a `.vcxproj`, and
+  `-RepositoryRoot` reaches the Unity engine.
+- `Move-DotnetProjectTree` reports `Built = false` when any project fails to build, not only the
+  last one, and warns about a `.vcxproj` it moves without updating.
+- `Resolve-MoveEngine` routes a path under `Assets/` or `Packages/` to Unity only inside a Unity
+  project, so a NuGet `packages/` folder or a web `assets/` folder no longer goes to the Unity mover.
+- `Test-UnityMetaIntegrity` skips files inside Unity-hidden folders such as `Samples~`.
+- `Test-EditorSolutionGuard` no longer calls a consolidation durable when there is no
+  `.vscode/settings.json` to confirm it.
+- `Get-NetscootCapability` reports `.slnx` support from SDK 9.0.200, where `dotnet sln` gained it.
+- `Test-NetscootUpdate` returns a `Netscoot.Update` record, and its update hint fits Gallery and
+  installer installs.
+- Update policy handling is more consistent.
+- `Unregister-NetscootGitAlias` reports its own error under Windows PowerShell 5.1.
+
 ## [3.0.0-beta5] - 2026-09-25
 
 No module changes from 3.0.0-beta4.
@@ -38,6 +74,11 @@ No module changes from 3.0.0-beta4.
   Previously `Move-NativeProject`, `Move-MSBuildImport`, `Move-PowerShellScript`,
   `Move-PowerShellModule`, `Move-Solution` and `Move-UnityAsset` could leave files at the destination
   and references half-updated while reporting that the move had been rolled back.
+- Moving a .NET project keeps it in its solution folder. It was re-added under a virtual folder that
+  mirrored its new physical path, so a deep move created empty intermediate folders and a project
+  grouped under a solution folder lost that grouping.
+- The reminder `Move-PowerShellModule` prints about dot-sourced paths shows the literal
+  `$PSScriptRoot` text again, instead of an absolute path.
 
 ### Changed
 
@@ -45,7 +86,7 @@ No module changes from 3.0.0-beta4.
   `Find-PathReference`, `Test-SolutionConsistency`, `Repair-SolutionReferences`) now warn that they
   will be removed in 4.0.
 
-## [3.0.0-beta2] - 2026-06-26
+## [3.0.0-beta2] - 2026-07-21
 
 ### Fixed
 
@@ -57,15 +98,15 @@ No module changes from 3.0.0-beta4.
 
 ## [3.0.0-beta1] - 2026-06-26
 
-Opt-in prerelease for stress-testing. `Install-Module Netscoot` stays on 2.6.x; opt in with
+Opt-in prerelease for stress-testing. `Install-Module Netscoot` stays on 2.6.x. Opt in with
 `-AllowPrerelease` (module) or the `3.0-beta` plugin branch (see [BETA.md](BETA.md)).
 
 ### Added
 
 - A **beta update channel**: `Set-NetscootUpdateChannel Beta` (and `Get-NetscootUpdateChannel`) opts
   the in-product updater into prerelease releases. `Test-NetscootUpdate` and `Update-Netscoot` are now
-  prerelease-aware - on the Beta channel they track newer beta builds and the stable release by
-  SemVer precedence; the default Stable channel only ever offers non-prerelease releases.
+  prerelease-aware. On the Beta channel they track newer beta builds and the stable release by
+  SemVer precedence, and the default Stable channel only ever offers non-prerelease releases.
 
 ### Changed
 
@@ -74,12 +115,13 @@ Opt-in prerelease for stress-testing. `Install-Module Netscoot` stays on 2.6.x; 
   `Get-NetscootSolutionInventory`, `Sync-Solution` -> `Sync-NetscootSolution`, `Find-PathReference`
   -> `Find-NetscootPathReference`, `Test-SolutionConsistency` -> `Test-NetscootSolutionConsistency`,
   `Repair-SolutionReferences` -> `Repair-NetscootSolutionReferences`. The old names continue to work
-  as deprecated aliases that emit a warning on use and will be removed in a later release; update
-  scripts to the new names.
-- **BREAKING (3.0):** every result and report object is now a real .NET type (`Netscoot.MoveResult`,
-  `Netscoot.ConsistencyResult`, and the rest) instead of a `pscustomobject` stamped with a
-  `PSTypeName`. Property access, formatting, and `$x.PSTypeNames[0]` checks are unchanged; only code
-  that tested `-is [pscustomobject]` is affected.
+  as deprecated aliases that emit a warning on use and are removed in 4.0. Update scripts to the new
+  names.
+- **BREAKING (3.0):** move, inventory and analysis results are now real .NET types
+  (`Netscoot.MoveResult`, `Netscoot.ConsistencyResult`, and the rest) instead of a `pscustomobject`
+  stamped with a `PSTypeName`. Property access, formatting, and `$x.PSTypeNames[0]` checks are
+  unchanged. Only code that tested `-is [pscustomobject]` is affected. Journal entries, the
+  update-check record and the capability tool records stay `pscustomobject`.
 - `Clear-NetscootJournal` now prompts before wiping a repository's undo journal
   (`ConfirmImpact = 'High'`, matching `Repair-NetscootJournal`). Pass `-Confirm:$false` to suppress.
 
@@ -105,8 +147,9 @@ Opt-in prerelease for stress-testing. `Install-Module Netscoot` stays on 2.6.x; 
   endpoint. They queried `/repositories/<owner>/<name>`, which is the numeric-repo-id path and 404s
   for an `owner/name` string, so every update check failed with a generic "could not get the latest
   release" and the installer's latest-version path could not resolve a release. Now uses
-  `/repos/<owner>/<name>`. (Note: the broken check shipped in earlier versions, so a self-update
-  from one of those still needs a one-time manual `Install-Module Netscoot` to land this fix.)
+  `/repos/<owner>/<name>`. The broken check shipped in earlier versions, so update once by the path
+  you installed from (`Update-Module Netscoot`, `git pull` then `./build.ps1 -Task Install`, or
+  re-running `install.ps1`) to land this fix.
 - The umbrella `Netscoot` module now owns its cmdlets. It loaded each engine globally, so the 31
   public cmdlets were owned by the engine modules: `Get-Command -Module Netscoot` returned nothing
   and `(Get-Module Netscoot).ExportedCommands` was empty (and `Test-ModuleManifest` warned that the
@@ -135,7 +178,7 @@ Opt-in prerelease for stress-testing. `Install-Module Netscoot` stays on 2.6.x; 
 
 - `Test-SolutionConsistency` no longer flags every project as "diverging" in a repository that holds
   multiple intentionally-separate solutions (a standalone client, a submodule's own solution). Only
-  solutions that share at least one project are compared with each other; a `.sln`/`.slnx` mirror
+  solutions that share at least one project are compared with each other. A `.sln`/`.slnx` mirror
   pair that genuinely drifts is still reported.
 - `Find-PathReference` no longer throws when `-RepositoryRoot` is omitted and `-Path` points at an
   already-moved (now nonexistent) path - the canonical "sweep the old identifier after a rename"
@@ -143,28 +186,7 @@ Opt-in prerelease for stress-testing. `Install-Module Netscoot` stays on 2.6.x; 
 
 ## [2.5.0] - 2026-05-29
 
-Internal test infrastructure release. No user-visible API or behavior changes from 2.4.0; the
-regression baseline this introduces will make the upcoming v3 journal-layout migration safer.
-
-### Added
-
-- Three-tier regression test suite locking down the v2 move-journal contract:
-  - `tests/JournalFormat.Tests.ps1` asserts the on-disk per-entry schema (11 fields,
-    `id` is 8 lowercase hex, status is one of `pending`/`committed`/`rolledback`, paths
-    are absolute, etc.).
-  - Extensions to `tests/Journal.Tests.ps1` lock the WAL append-order ("successful move
-    writes [pending, committed]"), the post-crash Repair-Rollback entry-removal contract,
-    the closed status taxonomy, and the compaction-never-trims-pending safety invariant.
-  - `tests/JournalSnapshot.Tests.ps1` locks the snapshot directory lifecycle - by path
-    *semantics* (`$entry.snapshot` is the canonical reference), not by path *shape*,
-    so a future relocation of snapshots into the journal partition dir still passes
-    every assertion.
-
-### Changed
-
-- `tests/WorktreeExclusion.Tests.ps1` fixture now uses `Copy-FixtureTemplate`, so the
-  4 dotnet sln/add calls in its setup run once per session instead of per `It` block.
-  Trims a few seconds off whichever CI shard the file lands in.
+No user-visible changes.
 
 ## [2.4.0] - 2026-05-29
 
@@ -172,7 +194,7 @@ regression baseline this introduces will make the upcoming v3 journal-layout mig
 
 - `Repair-SolutionReferences -Fix` / `-Prune` and `Sync-Solution` now prompt by default
   (`ConfirmImpact = 'High'`), matching `Move-Solution` and `Move-MSBuildImport`, which mutate
-  the same kind of file. Pass `-Confirm:$false` to suppress; the report-only path (no
+  the same kind of file. Pass `-Confirm:$false` to suppress the prompt. The report-only path (no
   `-Fix` / `-Prune`) is unaffected. Callers that relied on the previous no-prompt default
   need to start passing `-Confirm:$false` explicitly.
 - `Undo-Netscoot -Id` and `Repair-NetscootJournal -Id` now validate the id format at
@@ -183,40 +205,23 @@ regression baseline this introduces will make the upcoming v3 journal-layout mig
 
 - `Undo-Netscoot` and `Unregister-NetscootGitAlias` now declare their output types via
   `[OutputType()]`. Undo-Netscoot returns the nine move-result / journal-entry types it
-  produces depending on parameters; Unregister-NetscootGitAlias returns nothing (`[void]`).
-  The generated Command reference now renders an Output section for both, and `Get-Command`
-  / tab-completion see the declared types.
-
-### Fixed
-
-- The Command reference's "These share a common shape" line on `Undo-Netscoot` is no
-  longer misleading. The docs generator's field-name comparison was case-insensitive,
-  which collapsed `Netscoot.JournalEntry.engine` with `Netscoot.MoveResult.Engine` and
-  claimed both as shared. The line now correctly reports the types as heterogeneous when
-  field casing differs, while move-result-only commands (`Invoke-Netscoot`,
-  `Move-DotnetFile`) continue to show the correct common shape.
+  produces depending on parameters. Unregister-NetscootGitAlias returns nothing (`[void]`).
+  `Get-Command` and tab completion see the declared types.
 
 ## [2.3.2] - 2026-05-29
 
 ### Added
 
-- The generated Command reference now linkifies cmdlet mentions inside cmdlet help prose
-  (e.g. a reference to `Get-NetscootUpdatePolicy` from another cmdlet's help renders as a
-  link to that cmdlet's section). `Get-Help` is unchanged; this affects the README's
-  Command reference only.
 - Comment-based help `.LINK` cross-references for the natural cmdlet pairs and the
   analysis clusters (update policy, journal, solution analysis). `Get-Help` shows them
-  under RELATED LINKS, and the README renders a compact "Related" line per cmdlet.
+  under RELATED LINKS.
 
 ### Changed
 
-- `Move-PowerShellModule` reports "missing .psd1 manifest" and "destination already exists"
-  as structured non-terminating errors (FQEIDs `ManifestNotFound` and `DestinationExists`),
-  matching every other mover in the family. Previously these were bare terminating throws;
-  callers using `-ErrorAction Stop` see the same outcome.
-- The dispatch-chain trace under `-Verbose` now reads uniformly across all layers - the
-  outer dispatcher names the target cmdlet the same way the inner dispatchers do, instead
-  of emitting a different shape at the top.
+- `Move-PowerShellModule` reports its input errors as structured non-terminating errors, like the
+  other movers. Callers using `-ErrorAction Stop` see the same outcome as before.
+- The dispatch-chain trace under `-Verbose` now reads uniformly across all layers: the outer
+  dispatcher names the target cmdlet the same way the inner dispatchers do.
 
 ### Fixed
 
@@ -237,13 +242,9 @@ regression baseline this introduces will make the upcoming v3 journal-layout mig
 
 ### Changed
 
-- Internal helpers module renamed from `Netscoot.Shared` to `NetscootShared` (no dot). The
-  literal-dot wildcard `Get-Command -Module Netscoot.*` now returns exactly the 30 public cmdlets
-  (the four `Netscoot.X` engines) and never the 54 internal helpers; previously it included them
-  too because `Netscoot.Shared` matched the wildcard. Use `Get-Command -Module NetscootShared`
-  to opt-in to the plumbing. Caveat: `Get-Command -Module Netscoot*` (no literal dot) still
-  matches `NetscootShared` because `*` matches the missing dot - that's a wildcard quirk, not a
-  bug, and the canonical query for the public surface is the literal-dot form.
+- Internal helpers module renamed from `Netscoot.Shared` to `NetscootShared` (no dot), so the
+  wildcard `Get-Command -Module Netscoot.*` no longer matches the internal helpers. Use
+  `Get-Command -Module NetscootShared` to opt in to the plumbing.
 
 ## [2.3.0] - 2026-05-28
 
@@ -279,20 +280,6 @@ regression baseline this introduces will make the upcoming v3 journal-layout mig
   `Clear-NetscootJournal`, `Unregister-NetscootGitAlias`). Distinct use case from moves;
   agents now route "stop netscoot auto-updating," "wipe my undo history," "remove the git verb"
   to this skill instead of the move-focused `restructure-*` skills.
-- `restructure-dotnet` skill body now documents the full .NET-side move surface (the dispatcher
-  movers `Invoke-Netscoot`, `Move-DotnetFile`, `Move-DotnetFolder`, the multi-project
-  `Move-DotnetProjectTree`, the file movers `Move-Solution` and `Move-MSBuildImport`). Previously
-  only `Move-DotnetProject` was named, so an agent that activated the skill could miss the
-  right cmdlet for the move at hand.
-- README's Inspecting section now documents `Find-PathReference -Path <old-id>` as the canonical
-  post-refactor sanity check, with the warning string Netscoot emits as the agent-readable
-  all-clear signal.
-- New CI gate `tests/SkillCoverage.Tests.ps1`: asserts every cmdlet in the umbrella manifest's
-  `FunctionsToExport` appears in at least one `.claude/skills/*/SKILL.md`. Catches the same
-  declared-vs-delivered drift on the agent surface that `UmbrellaSurface.Tests.ps1` catches on
-  the Gallery surface. Closes a real gap: at audit time 10 of the 30 exported cmdlets had no
-  skill mention, so AI agents using netscoot in this repository couldn't discover them through
-  the skill system.
 
 ## [2.2.0] - 2026-05-28
 
@@ -303,14 +290,15 @@ regression baseline this introduces will make the upcoming v3 journal-layout mig
   for each project. Large repositories see multi-times-faster moves and inventories, with the gap widening
   as the project count grows.
 - Commands that take a path or repository root from the pipeline now accept a path string or a file/directory
-  item (`Get-Item` / `Get-ChildItem`); piping any other kind of object reports a clear input error instead
-  of binding an unexpected property. This makes one consistent pipeline contract across the module.
+  item (`Get-Item` / `Get-ChildItem`). Piping any other kind of object reports a clear input error
+  instead of binding an unexpected property. This makes one consistent pipeline contract across the
+  module.
 - Move results now have a default table view (engine, performed, source, destination), so a pipeline of
   moves renders as a table like the other result types instead of a long list.
 
 ### Fixed
 
-- Move result objects now expose their properties in a stable, documented order; the engine-specific
+- Move result objects now expose their properties in a stable, documented order. The engine-specific
   fields were previously emitted in an unpredictable order.
 
 ## [2.1.1] - 2026-05-28
@@ -324,17 +312,15 @@ regression baseline this introduces will make the upcoming v3 journal-layout mig
 
 ### Added
 
-- `Repair-NetscootJournal`: detect and recover moves interrupted mid-operation. Read-only report by
-  default; `-Rollback` reverses a half-applied move, `-Discard` forgets it, with snapshot and orphan
-  cleanup.
+- `Repair-NetscootJournal`: detect and recover moves interrupted mid-operation. It reports only by
+  default. `-Rollback` reverses a half-applied move and `-Discard` forgets it, with snapshot and
+  orphan cleanup.
 - Write-ahead (WAL) move journal: each move and its journal write are a single atomic step, so an
   interrupted move is detected on the next run rather than leaving silent inconsistency.
-- PowerShell Gallery discovery tags and CI/license badges.
 
 ### Changed
 
 - Journal reads are linear with size-capped compaction (previously slower as the journal grew).
-- Hot-path regexes are precompiled.
 
 ### Fixed
 
@@ -343,15 +329,22 @@ regression baseline this introduces will make the upcoming v3 journal-layout mig
 
 ## [2.0.0] - 2026-05-27
 
-Rebranded from DotnetMove to netscoot; first release under the new name. Highlights: a single
+Rebranded from DotnetMove to netscoot, the first release under the new name. Highlights: a single
 PowerShell Gallery package (umbrella + engines), the Enabled/Manual/Disabled update policy with
 `Get-NetscootUpdatePolicy`/`Set-NetscootUpdatePolicy` and `Test-NetscootUpdate -Auto`, the per-user
 move journal, default table views, and the public `RepoRoot` parameter renamed to `RepositoryRoot`.
 See the release notes for the full pull-request list.
 
-DotnetMove 1.x history predates the rename; see the legacy DotnetMove releases.
+DotnetMove 1.x history predates the rename. See the legacy DotnetMove releases.
 
-[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.6.1...HEAD
+[Unreleased]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta5...HEAD
+[3.0.0-beta5]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta4...v3.0.0-beta5
+[3.0.0-beta4]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta3...v3.0.0-beta4
+[3.0.0-beta3]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta2...v3.0.0-beta3
+[3.0.0-beta2]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta1...v3.0.0-beta2
+[3.0.0-beta1]: https://github.com/kappasims/netscoot/compare/v2.6.3...v3.0.0-beta1
+[2.6.3]: https://github.com/kappasims/netscoot/compare/v2.6.2...v2.6.3
+[2.6.2]: https://github.com/kappasims/netscoot/compare/v2.6.1...v2.6.2
 [2.6.1]: https://github.com/kappasims/netscoot/compare/v2.6.0...v2.6.1
 [2.6.0]: https://github.com/kappasims/netscoot/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/kappasims/netscoot/compare/v2.4.0...v2.5.0

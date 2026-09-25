@@ -6,9 +6,10 @@ function Test-NetscootUpdate {
 
     .DESCRIPTION
         netscoot does not update automatically, however it is installed (PowerShell Gallery,
-        installer, or a clone). This is the pull-based check: It GETs the latest GitHub release
-        and compares its tag (the "available" version) against the installed module's ModuleVersion
-        (the "installed" version). It prints what to do when behind, but performs no update - an
+        installer, or a clone). This is the pull-based check. On the Stable channel it GETs the
+        latest GitHub release, and on the Beta channel the newest of the recent releases, prereleases
+        included. It compares that tag (the "available" version) against the installed version,
+        prerelease label included. It prints what to do when behind, but performs no update - an
         agent or user runs it when they want to know.
 
         Needs network access to api.github.com. Honors -ErrorAction if the request fails (offline,

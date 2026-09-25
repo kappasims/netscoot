@@ -29,12 +29,12 @@ agent's shell is non-interactive, so after the user agrees, run it with `-Confir
 
 ## Analyze/audit first (read-only)
 
-Before moving, use the read-only surface rather than grepping by hand: `Find-PathReference` (the
+Before moving, use the read-only surface rather than grepping by hand: `Find-NetscootPathReference` (the
 build/CI/hook scripts that hardcode a path), `Resolve-MoveEngine` (how a path classifies), and
-`Get-NetscootCapability` (git present? platform?). `Test-SolutionConsistency`,
-`Get-SolutionInventory`, `Repair-SolutionReferences`, and `Sync-Solution` are .NET-solution tools.
-Reach for them when a PowerShell repository also carries `.csproj`/`.sln` (`Repair-SolutionReferences`
-and `Sync-Solution` need the dotnet CLI). `Get-SolutionInventory` in particular lists non-CLI project
+`Get-NetscootCapability` (git present? platform?). `Test-NetscootSolutionConsistency`,
+`Get-NetscootSolutionInventory`, `Repair-NetscootSolutionReferences`, and `Sync-NetscootSolution` are .NET-solution tools.
+Reach for them when a PowerShell repository also carries `.csproj`/`.sln` (`Repair-NetscootSolutionReferences`
+and `Sync-NetscootSolution` need the dotnet CLI). `Get-NetscootSolutionInventory` in particular lists non-CLI project
 types a PowerShell solution may include, such as a `.pssproj`, which `dotnet sln list` does not
 surface.
 
@@ -105,7 +105,8 @@ prerequisite is missing, tell the user the install command and let them run it.
 ## Staying current
 
 netscoot does not auto-update. Check with `Test-NetscootUpdate`, which compares the installed module
-to the latest GitHub release. Update a Gallery install with `Update-Module Netscoot`, an installer
+to the latest GitHub release on the update channel (stable unless
+`Set-NetscootUpdateChannel -Channel Beta` opted into betas). Update a Gallery install with `Update-Module Netscoot`, an installer
 install with `Update-Netscoot`, and a dev clone with `git pull` then `./build.ps1 -Task Install`. A
 SessionStart hook running `Test-NetscootUpdate -Auto` can remind automatically. It checks only when
 the update policy is Enabled, and never updates. Ask the user before adding it, since it edits their

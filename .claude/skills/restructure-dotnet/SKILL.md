@@ -21,7 +21,7 @@ modules or scripts see `restructure-powershell`, and for Unity assets see `restr
 
 ## Running a real move from an agent
 
-Every mover, `Sync-Solution` and `Repair-SolutionReferences -Fix/-Prune` asks for confirmation,
+Every mover, `Sync-NetscootSolution` and `Repair-NetscootSolutionReferences -Fix/-Prune` asks for confirmation,
 and an agent's shell is non-interactive, so a real run without `-Confirm:$false` fails. Preview with
 `-WhatIf`, get the user's go-ahead, then run the same command with `-Confirm:$false`.
 
@@ -30,24 +30,24 @@ and an agent's shell is non-interactive, so a real run without `-Confirm:$false`
 To understand a repository before touching it, use these. Do not parse solution/project files by
 hand.
 
-- `Test-SolutionConsistency` - projects whose membership diverges across solutions that share
+- `Test-NetscootSolutionConsistency` - projects whose membership diverges across solutions that share
   projects. `-Debug` shows the full solution/project matrix under `pwsh`. Windows PowerShell 5.1
   prompts on every debug line, so set `$DebugPreference = 'Continue'` there instead.
-- `Get-SolutionInventory` - the full contents of every solution: projects of any type (including
+- `Get-NetscootSolutionInventory` - the full contents of every solution: projects of any type (including
   non-CLI ones like `.pssproj`), solution folders, and solution items, plus managed and native
   projects on disk that no solution references. Goes beyond `dotnet sln list`, which only lists
   CLI-buildable projects.
-- `Repair-SolutionReferences` (no flags) - report dangling solution entries / `<ProjectReference>`s.
-- `Find-PathReference` - build/CI/hook scripts that hardcode a path no move reconciles.
+- `Repair-NetscootSolutionReferences` (no flags) - report dangling solution entries / `<ProjectReference>`s.
+- `Find-NetscootPathReference` - build/CI/hook scripts that hardcode a path no move reconciles.
 - `Resolve-MoveEngine` - which engine a given path classifies to.
 - `Get-NetscootCapability` - whether git and dotnet are present, plus the platform.
 - `Test-EditorSolutionGuard` - after consolidating to a single `.slnx`, checks that VS Code's C#
   Dev Kit will not silently re-mint a legacy `.sln` next to it (inspects `.vscode/settings.json`
   and `.gitignore`, and `-Strict` makes it CI-failing). Run it whenever you migrate `.sln` -> `.slnx`.
 
-`Repair-SolutionReferences` and `Sync-Solution` need the dotnet CLI. The others only read files.
+`Repair-NetscootSolutionReferences` and `Sync-NetscootSolution` need the dotnet CLI. The others only read files.
 
-To resolve a divergence that `Test-SolutionConsistency` reports, run `Sync-Solution`. It adds each
+To resolve a divergence that `Test-NetscootSolutionConsistency` reports, run `Sync-NetscootSolution`. It adds each
 managed project to the solutions missing it, within each group of solutions that share projects
 (preview with `-WhatIf`). You can also add it by hand with `dotnet sln <solution> add <project>`.
 These are the right tools when the task is "audit" or "sync the solutions," not only when moving.
@@ -100,18 +100,18 @@ repointed). Run `Move-X -WhatIf -Verbose` before a real move on anything non-tri
 These work on an existing repository without moving anything. Inspect first, then repair if needed.
 
 ```powershell
-Get-SolutionInventory     -RepositoryRoot .          # full contents of every solution + projects in none
-Test-SolutionConsistency  -RepositoryRoot .          # projects whose solution membership diverges
-Sync-Solution             -RepositoryRoot . -WhatIf  # resolve divergence: add each project where it is missing
-Repair-SolutionReferences -RepositoryRoot .          # report dangling entries (relocatable / missing / ambiguous)
-Repair-SolutionReferences -RepositoryRoot . -Fix     # re-point dangling entries at the project's new location
-Repair-SolutionReferences -RepositoryRoot . -Prune   # remove entries whose project is gone for good
-Find-PathReference -Path ./src/Tarragon/Tarragon.csproj  # build/CI/hook scripts that hardcode the path (report-only)
+Get-NetscootSolutionInventory     -RepositoryRoot .          # full contents of every solution + projects in none
+Test-NetscootSolutionConsistency  -RepositoryRoot .          # projects whose solution membership diverges
+Sync-NetscootSolution             -RepositoryRoot . -WhatIf  # resolve divergence: add each project where it is missing
+Repair-NetscootSolutionReferences -RepositoryRoot .          # report dangling entries (relocatable / missing / ambiguous)
+Repair-NetscootSolutionReferences -RepositoryRoot . -Fix     # re-point dangling entries at the project's new location
+Repair-NetscootSolutionReferences -RepositoryRoot . -Prune   # remove entries whose project is gone for good
+Find-NetscootPathReference -Path ./src/Tarragon/Tarragon.csproj  # build/CI/hook scripts that hardcode the path (report-only)
 ```
 
 `-Fix` relocates and never deletes. Removal is only `-Prune`, and only for entries whose project
 cannot be found anywhere. A relocated `.vcxproj` is reported for the user to re-point in Visual
-Studio. `Sync-Solution` only adds membership and never removes. All honor `-WhatIf`, and the
+Studio. `Sync-NetscootSolution` only adds membership and never removes. All honor `-WhatIf`, and the
 changing forms need `-Confirm:$false` when run from an agent.
 
 ## If you must do it without the module
@@ -158,7 +158,8 @@ prerequisite is missing, tell the user the install command and let them run it.
 ## Staying current
 
 netscoot does not auto-update. Check with `Test-NetscootUpdate`, which compares the installed module
-to the latest GitHub release. Update a Gallery install with `Update-Module Netscoot`, an installer
+to the latest GitHub release on the update channel (stable unless
+`Set-NetscootUpdateChannel -Channel Beta` opted into betas). Update a Gallery install with `Update-Module Netscoot`, an installer
 install with `Update-Netscoot`, and a dev clone with `git pull` then `./build.ps1 -Task Install`. A
 SessionStart hook running `Test-NetscootUpdate -Auto` can remind automatically. It checks only when
 the update policy is Enabled, and never updates. Ask the user before adding it, since it edits their

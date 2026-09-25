@@ -143,10 +143,10 @@ Describe 'Repair-NetscootSolutionReferences' -Tag 'Integration' {
             $moved = New-Item -ItemType Directory -Path (Join-Path $root (Join-Path 'new' 'Nat'))
             Set-Content -LiteralPath (Join-Path $moved.FullName 'Nat.vcxproj') -Value '<Project/>'
 
-            $r = @(Repair-SolutionReferences -RepositoryRoot $root)
+            $r = @(Repair-NetscootSolutionReferences -RepositoryRoot $root)
             $r[0].Resolution | Should -Be 'Relocatable'
 
-            Repair-SolutionReferences -RepositoryRoot $root -Fix -Prune -Confirm:$false -WarningVariable w -WarningAction SilentlyContinue | Out-Null
+            Repair-NetscootSolutionReferences -RepositoryRoot $root -Fix -Prune -Confirm:$false -WarningVariable w -WarningAction SilentlyContinue | Out-Null
             (Get-Content -LiteralPath $slnx -Raw) | Should -Match 'old/Nat/Nat\.vcxproj'
             ($w -join "`n") | Should -Match 'Visual Studio'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

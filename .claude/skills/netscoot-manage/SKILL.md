@@ -1,6 +1,6 @@
 ---
 name: netscoot-manage
-description: Use to configure netscoot itself (NOT for moving files): the auto-update policy, the per-user move journal, and the `git netscoot` alias. Triggers on "stop netscoot auto-updating," "disable updates," "set update policy," "what's the update policy," "block netscoot updates for our org," "check for netscoot updates," "update netscoot," "stop journaling moves," "disable the journal," "wipe / clear my undo history," "reset the move journal," "remove the git netscoot alias," "unregister the git verb." For actually moving / restructuring files, use restructure-dotnet / restructure-powershell / restructure-unity / restructure-native, and for analyzing / verifying refactors use netscoot-analyze.
+description: Use to configure netscoot itself (NOT for moving files): the auto-update policy and update channel, the per-user move journal, and the `git netscoot` alias. Triggers on "stop netscoot auto-updating," "disable updates," "set update policy," "what's the update policy," "block netscoot updates for our org," "check for netscoot updates," "update netscoot," "opt into netscoot betas," "switch the update channel," "stop journaling moves," "disable the journal," "wipe / clear my undo history," "reset the move journal," "remove the git netscoot alias," "unregister the git verb." For actually moving / restructuring files, use restructure-dotnet / restructure-powershell / restructure-unity / restructure-native, and for analyzing / verifying refactors use netscoot-analyze.
 ---
 
 # Netscoot: configure netscoot itself (the toolkit, not the repository)
@@ -20,6 +20,7 @@ read-only analysis use `netscoot-analyze`.
 | Wipe my undo history for this repository | `Clear-NetscootJournal` |
 | Remove the `git netscoot` alias I registered earlier | `Unregister-NetscootGitAlias [-Scope Local\|Global]` |
 | Check for or install a newer netscoot release | `Test-NetscootUpdate` / `Update-Netscoot` (Gallery installs: `Update-Module Netscoot`) |
+| Opt the updater into (or out of) prerelease beta builds | `Set-NetscootUpdateChannel -Channel Beta \| Stable -Scope User` / `Get-NetscootUpdateChannel` |
 
 ## Update policy
 
@@ -32,6 +33,16 @@ read-only analysis use `netscoot-analyze`.
 current user, and `Update-Netscoot -Force` can override it. When an org wants to block self-updates
 and centrally pin the version, use `-Scope Machine` in an elevated session, or push
 `NETSCOOT_AUTOUPDATE=0` machine-wide through Group Policy / Intune. `-Force` never overrides that.
+
+`Set-NetscootUpdateChannel -Channel Beta` opts the updater into prerelease (beta) builds, and
+`Stable` (the default) tracks only non-prerelease releases. Its default scope is `Process`, and each
+agent shell call is a new process, so pass `-Scope User` to make it stick (Windows), or add the
+printed `export` line to the shell profile (Linux, macOS). Switch back at the same scope.
+`Get-NetscootUpdateChannel` reports the resolved channel and its source (it reads
+`NETSCOOT_CHANNEL` with the same Process/User/Machine precedence as the update policy). The policy
+decides whether the updater runs, and the channel decides which releases it offers. A Gallery
+install takes betas through `Update-Module Netscoot -AllowPrerelease` instead, since
+`Update-Netscoot` replaces the module folder with an installer copy.
 
 Installs of 2.6.0 or earlier shipped a broken update endpoint, so their in-box `Test-NetscootUpdate`
 and `Update-Netscoot` cannot fetch the fix. Update those once by the install path: `Update-Module

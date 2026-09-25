@@ -32,14 +32,14 @@ nothing here can process it. Passing a `.vcproj` is rejected with a clear error.
 ## Analyze/audit first (read-only)
 
 Before moving, inspect with the read-only surface instead of parsing `.sln`/`.vcxproj` by hand:
-`Test-SolutionConsistency` (membership divergence across solutions, `-Debug` for the full matrix
-under `pwsh`), `Get-SolutionInventory` (full solution contents: it surfaces `.vcxproj` and other
+`Test-NetscootSolutionConsistency` (membership divergence across solutions, `-Debug` for the full matrix
+under `pwsh`), `Get-NetscootSolutionInventory` (full solution contents: it surfaces `.vcxproj` and other
 non-CLI project types that `dotnet sln list` omits, plus projects in no solution),
-`Repair-SolutionReferences` (no flags, to report dangling entries), `Find-PathReference`, and
+`Repair-NetscootSolutionReferences` (no flags, to report dangling entries), `Find-NetscootPathReference`, and
 `Get-NetscootCapability`.
 
-Do not use `Sync-Solution` or `dotnet sln <solution> add` for a `.vcxproj`. The dotnet CLI cannot
-load it, so `Sync-Solution` only reports a missing `.vcxproj`, and `Repair-SolutionReferences -Fix`
+Do not use `Sync-NetscootSolution` or `dotnet sln <solution> add` for a `.vcxproj`. The dotnet CLI cannot
+load it, so `Sync-NetscootSolution` only reports a missing `.vcxproj`, and `Repair-NetscootSolutionReferences -Fix`
 only reports a moved one. Add or re-point it in Visual Studio.
 
 ## Use Move-NativeProject
@@ -104,7 +104,8 @@ prerequisite is missing, tell the user the install command and let them run it.
 ## Staying current
 
 netscoot does not auto-update. Check with `Test-NetscootUpdate`, which compares the installed module
-to the latest GitHub release. Update a Gallery install with `Update-Module Netscoot`, an installer
+to the latest GitHub release on the update channel (stable unless
+`Set-NetscootUpdateChannel -Channel Beta` opted into betas). Update a Gallery install with `Update-Module Netscoot`, an installer
 install with `Update-Netscoot`, and a dev clone with `git pull` then `./build.ps1 -Task Install`. A
 SessionStart hook running `Test-NetscootUpdate -Auto` can remind automatically. It checks only when
 the update policy is Enabled, and never updates. Ask the user before adding it, since it edits their

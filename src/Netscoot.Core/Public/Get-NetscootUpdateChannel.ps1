@@ -12,8 +12,8 @@ function Get-NetscootUpdateChannel {
         The channel is stored in the `NETSCOOT_CHANNEL` environment variable, so it can be set with
         Set-NetscootUpdateChannel or pushed by an administrator (Group Policy / Intune / a profile).
         This resolves the value in precedence order: the current process, then (on Windows) the user
-        environment, then the machine environment. A value of `beta`/`preview` is Beta; anything else
-        or absent is Stable.
+        environment, then the machine environment. A value of `beta`/`preview` is Beta, and anything
+        else or absent is Stable.
 
     .OUTPUTS
         Netscoot.UpdateChannel

@@ -5,15 +5,17 @@ function Set-NetscootUpdateChannel {
 
     .DESCRIPTION
         Writes the `NETSCOOT_CHANNEL` environment variable that governs which releases the updater
-        offers (see Get-NetscootUpdateChannel). The change always takes effect in the current session;
-        the scope controls how far it persists:
-          -Scope Process (default) this session only; nothing is persisted.
+        offers (see Get-NetscootUpdateChannel). The change always takes effect in the current session,
+        and the scope controls how far it persists:
+          -Scope Process (default) this session only, with nothing persisted.
           -Scope User    persists for the current user (Windows).
-          -Scope Machine persists for all users (Windows); needs an elevated session.
+          -Scope Machine persists for all users (Windows), and needs an elevated session.
         On non-Windows, User/Machine cannot be persisted programmatically, so this sets the session
         value and prints the line to add to your shell profile.
 
-        Stable is the neutral default, represented by clearing the variable; Beta sets it to `beta`.
+        Stable is the neutral default, represented by clearing the variable at the given scope. Beta
+        sets it to `beta`. A Beta persisted at User scope still applies after a Process-scope Stable,
+        so switch back at the scope you persisted.
 
     .PARAMETER Channel
         Stable or Beta. Beta opts the updater into prerelease releases (e.g. v3.0.0-beta1).
@@ -30,8 +32,8 @@ function Set-NetscootUpdateChannel {
         Set-NetscootUpdateChannel -Channel Beta
         # Persist beta for the current user (Windows)
         Set-NetscootUpdateChannel -Channel Beta -Scope User
-        # Back to the default stable line
-        Set-NetscootUpdateChannel -Channel Stable
+        # Back to the default stable line, at the scope beta was persisted at
+        Set-NetscootUpdateChannel -Channel Stable -Scope User
 
     .LINK
         Get-NetscootUpdateChannel

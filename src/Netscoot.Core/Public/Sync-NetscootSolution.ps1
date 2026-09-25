@@ -69,7 +69,7 @@ function Sync-NetscootSolution {
             return
         }
 
-        # Sync only solutions that share at least one project, the same groups Test-SolutionConsistency
+        # Sync only solutions that share at least one project, the same groups Test-NetscootSolutionConsistency
         # compares, so intentionally-separate solutions (a client, a submodule) are left alone.
         $membership = Get-SolutionMembership -Solutions $solutions
         $clusters = @(Group-SolutionsBySharedProjects -Membership $membership | Where-Object { @($_.Solutions).Count -ge 2 })

@@ -129,13 +129,13 @@ Describe 'Pipeline-input gate (PathInputTransform)' -Tag 'Integration' {
         # These objects carry a .Project or .Path property that ByPropertyName used to bind. The
         # transform must throw on the whole-object input rather than bind its property.
 
-        It 'Test-SolutionConsistency output does NOT bind into Move-DotnetProject' {
+        It 'Test-NetscootSolutionConsistency output does NOT bind into Move-DotnetProject' {
             $rec = [pscustomobject]@{ PSTypeName = 'Netscoot.ConsistencyResult'; Project = 'src/Lib/Lib.csproj'; Severity = 'Warning' }
             { $rec | Move-DotnetProject -Destination './x' -WhatIf -ErrorAction Stop } |
                 Should -Throw -ErrorId 'ParameterArgumentTransformationError,Move-DotnetProject'
         }
 
-        It 'Get-SolutionInventory output does NOT bind into Move-DotnetProject' {
+        It 'Get-NetscootSolutionInventory output does NOT bind into Move-DotnetProject' {
             $rec = [pscustomobject]@{ PSTypeName = 'Netscoot.SolutionItem'; Solution = 'Demo.slnx'; Name = 'Lib'; Path = 'src/Lib/Lib.csproj' }
             { $rec | Move-DotnetProject -Destination './x' -WhatIf -ErrorAction Stop } |
                 Should -Throw -ErrorId 'ParameterArgumentTransformationError,Move-DotnetProject'
@@ -197,20 +197,20 @@ Describe 'Pipeline-input gate (PathInputTransform)' -Tag 'Integration' {
         # The two non-move MUTATORS (Repair/Sync) and the read-only analysis cmdlets all take their
         # root/path ByValue through the same transform: a string or a FileSystemInfo binds, any other
         # object throws. This closes the report->reconciler dual-context and gives one pipeline contract.
-        It 'Repair-SolutionReferences rejects a piped result object' {
-            Assert-GatedRejectsPipedObject -Name 'Repair-SolutionReferences'
+        It 'Repair-NetscootSolutionReferences rejects a piped result object' {
+            Assert-GatedRejectsPipedObject -Name 'Repair-NetscootSolutionReferences'
         }
-        It 'Sync-Solution rejects a piped result object' {
-            Assert-GatedRejectsPipedObject -Name 'Sync-Solution'
+        It 'Sync-NetscootSolution rejects a piped result object' {
+            Assert-GatedRejectsPipedObject -Name 'Sync-NetscootSolution'
         }
-        It 'Test-SolutionConsistency rejects a piped result object' {
-            Assert-GatedRejectsPipedObject -Name 'Test-SolutionConsistency'
+        It 'Test-NetscootSolutionConsistency rejects a piped result object' {
+            Assert-GatedRejectsPipedObject -Name 'Test-NetscootSolutionConsistency'
         }
-        It 'Get-SolutionInventory rejects a piped result object' {
-            Assert-GatedRejectsPipedObject -Name 'Get-SolutionInventory'
+        It 'Get-NetscootSolutionInventory rejects a piped result object' {
+            Assert-GatedRejectsPipedObject -Name 'Get-NetscootSolutionInventory'
         }
-        It 'Find-PathReference rejects a piped result object' {
-            Assert-GatedRejectsPipedObject -Name 'Find-PathReference'
+        It 'Find-NetscootPathReference rejects a piped result object' {
+            Assert-GatedRejectsPipedObject -Name 'Find-NetscootPathReference'
         }
         It 'Resolve-MoveEngine rejects a piped result object' {
             Assert-GatedRejectsPipedObject -Name 'Resolve-MoveEngine'
@@ -221,20 +221,20 @@ Describe 'Pipeline-input gate (PathInputTransform)' -Tag 'Integration' {
         It 'Test-EditorSolutionGuard rejects a piped result object' {
             Assert-GatedRejectsPipedObject -Name 'Test-EditorSolutionGuard'
         }
-        It 'Repair-SolutionReferences binds a piped path string (no transformation error)' {
-            Assert-GatedBindsPipedString -Name 'Repair-SolutionReferences'
+        It 'Repair-NetscootSolutionReferences binds a piped path string (no transformation error)' {
+            Assert-GatedBindsPipedString -Name 'Repair-NetscootSolutionReferences'
         }
-        It 'Sync-Solution binds a piped path string (no transformation error)' {
-            Assert-GatedBindsPipedString -Name 'Sync-Solution'
+        It 'Sync-NetscootSolution binds a piped path string (no transformation error)' {
+            Assert-GatedBindsPipedString -Name 'Sync-NetscootSolution'
         }
-        It 'Test-SolutionConsistency binds a piped path string (no transformation error)' {
-            Assert-GatedBindsPipedString -Name 'Test-SolutionConsistency'
+        It 'Test-NetscootSolutionConsistency binds a piped path string (no transformation error)' {
+            Assert-GatedBindsPipedString -Name 'Test-NetscootSolutionConsistency'
         }
-        It 'Get-SolutionInventory binds a piped path string (no transformation error)' {
-            Assert-GatedBindsPipedString -Name 'Get-SolutionInventory'
+        It 'Get-NetscootSolutionInventory binds a piped path string (no transformation error)' {
+            Assert-GatedBindsPipedString -Name 'Get-NetscootSolutionInventory'
         }
-        It 'Find-PathReference binds a piped path string (no transformation error)' {
-            Assert-GatedBindsPipedString -Name 'Find-PathReference'
+        It 'Find-NetscootPathReference binds a piped path string (no transformation error)' {
+            Assert-GatedBindsPipedString -Name 'Find-NetscootPathReference'
         }
         It 'Resolve-MoveEngine binds a piped path string (no transformation error)' {
             Assert-GatedBindsPipedString -Name 'Resolve-MoveEngine'
@@ -245,10 +245,10 @@ Describe 'Pipeline-input gate (PathInputTransform)' -Tag 'Integration' {
         It 'Test-EditorSolutionGuard binds a piped path string (no transformation error)' {
             Assert-GatedBindsPipedString -Name 'Test-EditorSolutionGuard'
         }
-        It 'Get-Item <dir> | Test-SolutionConsistency binds the directory item (no transformation error)' {
+        It 'Get-Item <dir> | Test-NetscootSolutionConsistency binds the directory item (no transformation error)' {
             $root = New-TempRoot -Prefix 'gate'
             $errs = $null
-            Get-Item -LiteralPath $root | Test-SolutionConsistency -ErrorAction SilentlyContinue -ErrorVariable errs -WarningAction SilentlyContinue
+            Get-Item -LiteralPath $root | Test-NetscootSolutionConsistency -ErrorAction SilentlyContinue -ErrorVariable errs -WarningAction SilentlyContinue
             @($errs | Where-Object { $_.FullyQualifiedErrorId -like 'ParameterArgumentTransformationError*' }).Count |
                 Should -Be 0 -Because 'a Get-Item directory must bind via its FullName'
         }

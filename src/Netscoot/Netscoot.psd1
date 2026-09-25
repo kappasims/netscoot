@@ -64,9 +64,9 @@
             ProjectUri   = 'https://github.com/kappasims/netscoot'
             LicenseUri   = 'https://github.com/kappasims/netscoot/blob/master/LICENSE'
             ReleaseNotes = 'See https://github.com/kappasims/netscoot/releases'
-            # 3.0 ships as an opt-in PRERELEASE while it is stress-tested: `Install-Module Netscoot`
-            # stays on 2.6.x stable; `-AllowPrerelease` opts into this build. Remove this line to
-            # promote 3.0.0 to stable. (ModuleVersion stays 3.0.0; the Gallery shows 3.0.0-beta1.)
+            # 3.0 ships as an opt-in prerelease while it is stress-tested. `Install-Module Netscoot`
+            # stays on 2.6.x stable, and `-AllowPrerelease` opts into this build. Remove this line to
+            # promote 3.0.0 to stable. ModuleVersion stays 3.0.0, and the Gallery shows 3.0.0-<label>.
             Prerelease   = 'beta5'
         }
     }

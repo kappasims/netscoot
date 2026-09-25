@@ -259,6 +259,7 @@
             @{ Name = 'Tag';             Type = 'string';   Note = '' }
             @{ Name = 'UpdateAvailable'; Type = 'bool';     Note = '' }
             @{ Name = 'Url';             Type = 'string';   Note = '' }
+            @{ Name = 'Channel';         Type = 'string';   Note = 'Stable | Beta, the channel the check used' }
         )
     }
 
@@ -284,6 +285,16 @@
             @{ Name = 'State';  Type = 'string'; Note = 'Enabled | Disabled | Manual' }
             @{ Name = 'Source'; Type = 'string'; Note = 'Process | User | Machine | Default' }
             @{ Name = 'Value';  Type = 'string'; Note = 'the raw NETSCOOT_AUTOUPDATE value, or $null' }
+        )
+    }
+
+    'Netscoot.UpdateChannel' = @{
+        Summary = 'The effective update channel and where it was resolved from.'
+        Array   = $false
+        Fields  = @(
+            @{ Name = 'Channel'; Type = 'string'; Note = 'Stable | Beta' }
+            @{ Name = 'Source';  Type = 'string'; Note = 'Process | User | Machine | Default' }
+            @{ Name = 'Value';   Type = 'string'; Note = 'the raw NETSCOOT_CHANNEL value, or $null' }
         )
     }
 

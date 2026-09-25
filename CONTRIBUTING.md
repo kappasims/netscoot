@@ -140,7 +140,7 @@ Move-result objects (`Netscoot.MoveResult`, `Netscoot.TreeMoveResult`, etc.) car
 `Source`/`Destination` because those record the actual on-disk locations the move acted on. A
 result emitted from a script run in one directory still names the right paths when consumed later
 from a different working directory. Every other surface (verbose plan output via `-Verbose`,
-inventory rows, repair reports, `Find-PathReference` rows) uses **repository-relative** paths so
+inventory rows, repair reports, `Find-NetscootPathReference` rows) uses **repository-relative** paths so
 the human-facing read of "where in this repository" stays short and stable across machines. Pick
 whichever matches the consumer. Scripts that need to re-locate the moved file use the absolute
 fields, and humans or agents looking at a working tree read the relative ones.
