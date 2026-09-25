@@ -1,5 +1,13 @@
 #requires -Modules Pester
 
+BeforeDiscovery {
+    $script:ElevatedWindows = $false
+    if ([System.Environment]::OSVersion.Platform -eq 'Win32NT') {
+        $id = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+        $script:ElevatedWindows = ([System.Security.Principal.WindowsPrincipal]$id).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+    }
+}
+
 BeforeAll {
     . (Join-Path $PSScriptRoot TestHelpers.ps1)
     Import-Module (Join-Path $PSScriptRoot (Join-Path '..' (Join-Path 'src' (Join-Path 'Netscoot.Core' ('Netscoot.Core.psd1'))))) -Force
@@ -68,6 +76,23 @@ Describe 'Update policy' {
         Mock -ModuleName Netscoot.Core Test-NetscootUpdate { $null }
         Update-Netscoot -Force -WarningAction SilentlyContinue | Out-Null
         Should -Invoke -ModuleName Netscoot.Core Test-NetscootUpdate -Times 1
+    }
+
+    # Writing the machine environment needs elevation, which the Windows CI runners have.
+    It 'a machine-scope Disabled wins over user and process Enabled' -Skip:(-not $script:ElevatedWindows) {
+        $prevMachine = [Environment]::GetEnvironmentVariable('NETSCOOT_AUTOUPDATE', 'Machine')
+        $prevUser = [Environment]::GetEnvironmentVariable('NETSCOOT_AUTOUPDATE', 'User')
+        try {
+            [Environment]::SetEnvironmentVariable('NETSCOOT_AUTOUPDATE', '0', 'Machine')
+            [Environment]::SetEnvironmentVariable('NETSCOOT_AUTOUPDATE', '1', 'User')
+            $env:NETSCOOT_AUTOUPDATE = '1'
+            $p = Get-NetscootUpdatePolicy
+            $p.State | Should -Be 'Disabled'
+            $p.Source | Should -Be 'Machine'
+        } finally {
+            [Environment]::SetEnvironmentVariable('NETSCOOT_AUTOUPDATE', $prevMachine, 'Machine')
+            [Environment]::SetEnvironmentVariable('NETSCOOT_AUTOUPDATE', $prevUser, 'User')
+        }
     }
 }
 
