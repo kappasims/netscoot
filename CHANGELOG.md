@@ -6,6 +6,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [3.0.0-beta5] - 2026-09-25
+
+No module changes from 3.0.0-beta4.
+
 ## [3.0.0-beta4] - 2026-09-25
 
 ### Fixed
