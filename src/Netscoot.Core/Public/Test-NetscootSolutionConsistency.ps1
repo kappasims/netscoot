@@ -60,7 +60,6 @@ function Test-NetscootSolutionConsistency {
     }
 
     process {
-        if (-not (Assert-DotnetAvailable -Cmdlet $PSCmdlet)) { return }
         if (-not $RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath (Get-Location).Path }
         $RepositoryRoot = Resolve-FullPath $RepositoryRoot
 

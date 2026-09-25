@@ -101,4 +101,41 @@ Describe 'Sync-NetscootSolution' -Tag 'Integration' {
             Test-NetscootSolutionConsistency -RepositoryRoot $root -WarningVariable w -WarningAction SilentlyContinue | Should -BeNullOrEmpty
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
+
+    It 'leaves solutions that share no project alone' {
+        $root = New-TempDir
+        try {
+            Set-Content -LiteralPath (Join-Path $root 'Client.slnx') -Value '<Solution><Project Path="Client/Client.csproj" /></Solution>'
+            Set-Content -LiteralPath (Join-Path $root 'Server.slnx') -Value '<Solution><Project Path="Server/Server.csproj" /></Solution>'
+            Mock -ModuleName Netscoot.Core Invoke-Dotnet { }
+            Sync-Solution -RepositoryRoot $root -Confirm:$false | Should -BeNullOrEmpty
+            Should -Invoke -ModuleName Netscoot.Core Invoke-Dotnet -Times 0 -Exactly
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'warns about a missing .vcxproj instead of adding it through the dotnet CLI' {
+        $root = New-TempDir
+        try {
+            Set-Content -LiteralPath (Join-Path $root 'All.slnx') -Value '<Solution><Project Path="Lib/Lib.csproj" /><Project Path="Nat/Nat.vcxproj" /></Solution>'
+            Set-Content -LiteralPath (Join-Path $root 'Some.slnx') -Value '<Solution><Project Path="Lib/Lib.csproj" /></Solution>'
+            Mock -ModuleName Netscoot.Core Invoke-Dotnet { }
+            Sync-Solution -RepositoryRoot $root -Confirm:$false -WarningVariable w -WarningAction SilentlyContinue | Out-Null
+            Should -Invoke -ModuleName Netscoot.Core Invoke-Dotnet -Times 0 -Exactly
+            ($w -join "`n") | Should -Match 'Nat\.vcxproj'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+}
+
+Describe 'Test-SolutionConsistency' {
+    It 'runs without the dotnet CLI on PATH' {
+        $root = New-TempDir
+        try {
+            Set-Content -LiteralPath (Join-Path $root 'All.slnx') -Value '<Solution><Project Path="Lib/Lib.csproj" /><Project Path="App/App.csproj" /></Solution>'
+            Set-Content -LiteralPath (Join-Path $root 'Some.slnx') -Value '<Solution><Project Path="Lib/Lib.csproj" /></Solution>'
+            Mock -ModuleName Netscoot.Core Assert-DotnetAvailable { $false }
+            $r = @(Test-SolutionConsistency -RepositoryRoot $root -WarningAction SilentlyContinue)
+            $r.Count | Should -Be 1
+            $r[0].Project | Should -Match 'App[\\/]App\.csproj'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
 }
