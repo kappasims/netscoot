@@ -6,6 +6,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [3.0.0-beta6] - 2026-09-26
+
+### Changed
+
+- **BREAKING (3.0):** move results no longer carry `SkippedCount`, which was always 0.
+
 ### Added
 
 - `Move-Solution` results carry `ItemsRebased`, the number of solution item paths rewritten.
@@ -337,7 +343,8 @@ See the release notes for the full pull-request list.
 
 DotnetMove 1.x history predates the rename. See the legacy DotnetMove releases.
 
-[Unreleased]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta5...HEAD
+[Unreleased]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta6...HEAD
+[3.0.0-beta6]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta5...v3.0.0-beta6
 [3.0.0-beta5]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta4...v3.0.0-beta5
 [3.0.0-beta4]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta3...v3.0.0-beta4
 [3.0.0-beta3]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta2...v3.0.0-beta3
