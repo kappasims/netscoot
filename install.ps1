@@ -12,7 +12,7 @@
     Gallery is simpler; this script installs from a GitHub release without the Gallery or git.
 
 .PARAMETER Version
-    Semver to install (e.g. 1.1.0). Defaults to the latest GitHub release.
+    Version to install (2.3.1 or later, e.g. 2.6.6). Defaults to the latest GitHub release.
 
 .PARAMETER InstallPath
     Target modules directory. Defaults to the CurrentUser module path for the running edition.
@@ -20,12 +20,16 @@
 .PARAMETER Repository
     owner/name of the GitHub repository. Defaults to the project repository.
 
+.PARAMETER NoJournal
+    Turn the undo journal off: sets the global git setting netscoot.journal to false, or, without
+    git, the NETSCOOT_JOURNAL environment variable. Later installs and updates keep it off.
+
 .EXAMPLE
     ./install.ps1
     Installs (or updates to) the latest release.
 
 .EXAMPLE
-    ./install.ps1 -Version 1.1.0
+    ./install.ps1 -Version 2.6.6
     Installs a specific version.
 #>
 [CmdletBinding()]
