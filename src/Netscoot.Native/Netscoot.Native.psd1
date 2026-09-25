@@ -1,6 +1,6 @@
 @{
     RootModule           = 'Netscoot.Native.psm1'
-    ModuleVersion        = '2.6.6'
+    ModuleVersion        = '2.6.7'
     GUID                 = 'a04eb714-497e-477b-99d3-ea09801d7dc5'
     Author               = 'kappasims'
     Description          = 'Windows-only extension of Netscoot for native / C++/CLI (.vcxproj) projects. Moves the project folder, updates the solutions and projects that reference it while keeping GUIDs and platform mappings, and reports the native MSBuild path settings it does not rewrite.'
