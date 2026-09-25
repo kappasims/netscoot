@@ -1,15 +1,14 @@
 {
-  // Parameter tuning only - no rule is disabled to hide a defect. These adapt two rules to the
-  // generated reference's structure; everything else runs at markdownlint defaults.
+  // Parameter tuning only. No rule is disabled to hide a defect. These adapt three rules to the
+  // generated reference's structure, and everything else runs at markdownlint defaults.
   //
   // MD013 (line-length): prose gets a sane width, but generated tables and code blocks cannot be
   // re-wrapped, so they are exempt from the length check.
   "MD013": { "line_length": 120, "tables": false, "code_blocks": false },
   // MD024 (no-duplicate-headings): every command's detail repeats the "Syntax"/"Parameters"/
-  // "Output"/"Examples" sub-headings; allow duplicates that are not siblings of each other.
+  // "Output"/"Examples" sub-headings. Allow duplicates that are not siblings of each other.
   "MD024": { "siblings_only": true },
-  // MD033 (no-inline-html): inline HTML stays banned EXCEPT <details>/<summary> - a deliberate,
-  // GitHub-supported, accessible way to collapse long reference sections. No other tags allowed
-  // (this is not a blanket squelch; everything else still fails the rule).
+  // MD033 (no-inline-html): inline HTML stays banned except <details>/<summary>, a GitHub-supported,
+  // accessible way to collapse long sections. Every other tag still fails the rule.
   "MD033": { "allowed_elements": ["details", "summary"] }
 }

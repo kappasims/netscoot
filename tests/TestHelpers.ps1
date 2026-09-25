@@ -3,9 +3,8 @@
 # Copy-FixtureTemplate builds each distinct shape once per session and hands out copies, so the
 # CLI cost is paid per shape, not per test.
 
-# The engine modules declare NetscootShared in RequiredModules; load it (by path) up front so a
-# test that imports an engine from src can resolve that dependency. Dot-source this helper before
-# importing any engine module.
+# The engine modules resolve NetscootShared's helpers at runtime from the global scope, so load it
+# (by path, -Global) up front. Dot-source this helper before importing any engine module.
 Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'NetscootShared', 'NetscootShared.psd1')) -Force -Global
 
 # Per-process list of throwaway directories to remove when the pwsh process exits, so a test session

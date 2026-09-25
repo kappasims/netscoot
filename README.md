@@ -2473,8 +2473,8 @@ Get-Item ./Assets | Test-UnityMetaIntegrity
 
 ### Output types
 
-Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several (and some
-types are also used as a field on another); whether a given command returns one or a collection is stated in that
+Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several, and some
+types are also used as a field on another. Whether a given command returns one or a collection is stated in that
 command's Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `Netscoot.*` field is itself one
 of these types.
 

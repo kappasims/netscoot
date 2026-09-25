@@ -1,7 +1,7 @@
 #requires -Version 5.1
 <#
 .SYNOPSIS
-    Build entry point for netscoot: run tests, lint, or install the modules.
+    Build entry point for netscoot: test, lint, install, generate and check the docs, release, publish.
 
 .DESCRIPTION
     Tasks:
@@ -15,9 +15,10 @@
                           cmdlets' comment-based help.
       CheckDocs         - gate the docs: fail if the README reference is stale (someone edited
                           cmdlet help without regenerating), if any tracked file carries an
-                          old-brand token, if README/skills name a cmdlet that no longer exists, or if
-                          the skills changed without a plugin version bump. Part of the Release gate
-                          and of CI.
+                          old-brand token, if README/skills name a cmdlet that no longer exists, if an
+                          exported cmdlet is missing from docs/command-categories.psd1, if
+                          markdownlint fails (when npx is on PATH), or if the skills changed without a
+                          plugin version bump. Part of the Release gate and of CI.
       Release -Version  - cut a release in one run: stamp the version into every manifest, commit
                           `release: vX.Y.Z` and push it, wait for every CI run on that commit to
                           pass (Linux and macOS included), then tag it and create the GitHub release.
@@ -184,7 +185,7 @@ function script:Invoke-AnalyzerInChildProcess {
 
 function Invoke-AnalyzeTask {
     if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) {
-        Write-Warning 'PSScriptAnalyzer not installed; skipping. (Install-Module PSScriptAnalyzer -Scope CurrentUser)'
+        Write-Warning 'PSScriptAnalyzer not installed, so analysis is skipped. CI pins 1.25.0: Install-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser'
         return
     }
     Import-Module PSScriptAnalyzer
@@ -254,7 +255,7 @@ function Invoke-InstallTask {
 . ([System.IO.Path]::Combine($PSScriptRoot, 'tools', 'Build-DocsReference.ps1'))
 
 function Assert-DocsNotStale {
-    # Release gate: fail if the docs have drifted from the code. Two checks (run with a clean tree):
+    # Release and CI gate: fail if the docs have drifted from the code. The checks below run with a clean tree.
     #   1. Stale README - regenerating the Command reference must be a no-op. If it changes, someone
     #      edited cmdlet help without running -Task Docs.
     #   2. No leftover old-brand tokens in any tracked file, and every product cmdlet the README and
@@ -276,7 +277,7 @@ function Assert-DocsNotStale {
     $docFiles = @([System.IO.Path]::Combine($root, 'README.md'))
     $docFiles += @(Get-ChildItem -Path (Join-Path $root '.claude/skills') -Recurse -Filter '*.md' -ErrorAction SilentlyContinue | ForEach-Object FullName)
 
-    # (2a) Leftover old-brand tokens in any tracked file (legacy/ and CHANGELOG.md keep the old name).
+    # (2a) Leftover old-brand tokens in any tracked file (legacy/, CHANGELOG.md and this script keep the old name).
     $tracked = @(& git -C $root ls-files)
     if ($LASTEXITCODE -ne 0) { throw 'git ls-files failed; CheckDocs must run inside the repository.' }
     foreach ($rel in $tracked) {
@@ -339,7 +340,7 @@ function Assert-DocsNotStale {
         } finally { Pop-Location }
     }
 
-    # (4) /plugin update delivers skill changes only when the plugin version changes, so any skill
+    # (4) A plugin update delivers skill changes only when the plugin version changes, so any skill
     # change since the version last changed needs a bump.
     $pluginJson = '.claude-plugin/plugin.json'
     $versioned = "$(& git -C $root log -1 --format=%H -G 'version.[[:space:]]*:' -- $pluginJson)".Trim()
@@ -392,9 +393,9 @@ function Invoke-ReleaseTask {
         if (& git -C $root status --porcelain) { throw 'Working tree is not clean; commit or stash first so the release commit is only the version bump.' }
 
         # Gate: a module release must actually change src/ (the only thing the Gallery package ships).
-        # Doc/skill/tooling changes since the last tag are NOT a module release - they reach users via
-        # the plugin (bump .claude-plugin/plugin.json + /plugin update) or just by fast-forwarding
-        # master. This guard stops accidental module-identical bumps (see CONTRIBUTING). Skipped when
+        # Doc/skill/tooling changes since the last tag are NOT a module release. They reach users from
+        # develop, skills through the plugin (bump .claude-plugin/plugin.json). This guard stops
+        # accidental module-identical bumps (see CONTRIBUTING). Skipped when
         # there is no prior tag (first release) or when overridden with -AllowEmptyModuleRelease.
         $lastTag = "$(& git -C $root describe --tags --abbrev=0 --match 'v*' 2>$null)".Trim()
         if ($lastTag -and -not $AllowEmptyModuleRelease) {
@@ -402,7 +403,7 @@ function Invoke-ReleaseTask {
             if ($LASTEXITCODE -eq 0) {
                 throw "No src/ changes since $lastTag, so a module release would be byte-identical to it. " +
                 "Skill/doc/tooling changes ship via the plugin (bump .claude-plugin/plugin.json, then users " +
-                "/plugin update) - see CONTRIBUTING 'Two release cadences'. To force a module-identical bump " +
+                "update the plugin). See CONTRIBUTING 'Two release cadences'. To force a module-identical bump " +
                 "anyway (e.g. version parity), re-run with -AllowEmptyModuleRelease."
             }
         }
@@ -508,7 +509,7 @@ function Invoke-ReleaseTask {
 function Invoke-PublishTask {
     # Assemble the SINGLE bundled netscoot package and publish it to the PowerShell Gallery. The
     # shipped package is one module folder: the umbrella at the root, with Shared + each engine as
-    # subfolders the umbrella's RootModule loads (-Global; native only on Windows, best-effort). No
+    # subfolders the umbrella's RootModule loads (Shared -Global, the engines nested, native only on Windows). No
     # separate Shared/Core/Unity/Native packages. Without -ApiKey this only stages + validates.
     $stage = Join-Path ([System.IO.Path]::GetTempPath()) ("netscoot_pkg_" + [guid]::NewGuid().ToString('N').Substring(0, 8))
     $pkg = Join-Path $stage 'Netscoot'
