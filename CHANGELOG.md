@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.6.7] - 2026-09-26
+
 ### Added
 
 - `Move-Solution` results carry `ItemsRebased`, the number of solution item paths rewritten.
@@ -300,7 +302,8 @@ See the release notes for the full pull-request list.
 
 DotnetMove 1.x history predates the rename. See the legacy DotnetMove releases.
 
-[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.6.6...HEAD
+[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.6.7...HEAD
+[2.6.7]: https://github.com/kappasims/netscoot/compare/v2.6.6...v2.6.7
 [2.6.6]: https://github.com/kappasims/netscoot/compare/v2.6.5...v2.6.6
 [2.6.5]: https://github.com/kappasims/netscoot/compare/v2.6.4...v2.6.5
 [2.6.4]: https://github.com/kappasims/netscoot/compare/v2.6.3...v2.6.4
