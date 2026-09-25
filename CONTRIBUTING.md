@@ -58,8 +58,9 @@ touches `master`.
 
 `publish.yml` reads the Gallery API key from the `PSGALLERY_API_KEY` secret of the `gallery`
 environment. Give the key the "Push only new package versions" and "Unlist package" scopes, limited
-to the `Netscoot` package, and limit the environment's deployments to `v*` tags. A prerelease, or a version below one already on the Gallery (a 2.x patch while a 3.0
-beta is listed), keeps every other version listed. Otherwise the publish unlists the older ones.
+to the `Netscoot` package, and limit the environment's deployments to `v*` tags. A prerelease, or
+a version below one already on the Gallery (a 2.x patch while a 3.0 beta is listed), keeps every
+other version listed. Otherwise the publish unlists the older ones.
 `./build.ps1 -Task Publish -ApiKey <key>` still publishes by hand from PowerShell 7.
 
 ## Two release cadences
