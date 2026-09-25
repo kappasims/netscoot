@@ -202,4 +202,17 @@ Describe 'Test-UnityMetaIntegrity' -Tag 'Integration' {
             ($probs | Where-Object Kind -eq 'MissingMeta').Path | Should -Match 'New\.cs'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
+
+    It 'ignores files inside Unity-hidden folders' {
+        $root = New-UnityFixture
+        try {
+            $assets = Join-Path $root 'Assets'
+            foreach ($hidden in 'Samples~', '.hidden') {
+                $dir = New-Item -ItemType Directory -Path (Join-Path $assets (Join-Path $hidden 'Nested'))
+                Set-Content -LiteralPath (Join-Path $dir.FullName 'x.png') -Value 'x'
+            }
+            $probs = @(Test-UnityMetaIntegrity -Root $assets -WarningAction SilentlyContinue)
+            $probs | Should -BeNullOrEmpty
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
 }

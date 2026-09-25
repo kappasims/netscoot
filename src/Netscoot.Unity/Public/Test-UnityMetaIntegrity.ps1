@@ -47,14 +47,13 @@ function Test-UnityMetaIntegrity {
         $Root = Resolve-FullPath $Root
 
         # Exclude Unity caches anchored at the scan root (not "Temp" anywhere - the OS temp
-        # dir itself contains that segment), plus .git and Unity-hidden entries.
+        # dir itself contains that segment), and anything at or under a Unity-hidden entry.
         $rootLen = $Root.TrimEnd('\', '/').Length
         $entries = Get-ChildItem -LiteralPath $Root -Recurse -Force -ErrorAction SilentlyContinue |
             Where-Object {
                 $rel = $_.FullName.Substring($rootLen)
-                $rel -notmatch '^[\\/](Library|Temp|obj)[\\/]' -and
-                $_.FullName -notmatch '[\\/]\.git[\\/]' -and
-                $_.Name -notlike '.*' -and $_.Name -notlike '*~'
+                $rel -notmatch '^[\\/](Library|Temp|obj)([\\/]|$)' -and
+                $rel -notmatch '[\\/](\.[^\\/]*|[^\\/]*~)([\\/]|$)'
             }
 
         foreach ($e in $entries) {
