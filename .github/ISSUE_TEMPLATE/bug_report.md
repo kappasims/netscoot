@@ -26,7 +26,7 @@ A clear and concise description of what you expected to happen.
 ## Output and logs
 
 If applicable, paste the command output, the error message, and any relevant
-lines from the move journal (`.netscoot/journal.ndjson`).
+move journal entries (`Undo-Netscoot -List | Format-List *`).
 
 ## Environment
 
