@@ -5,13 +5,14 @@ function Move-Solution {
         every project it references still resolves from the solution's new location.
 
     .DESCRIPTION
-        A solution stores each project as a path relative to the solution file. Moving the
-        solution changes that base directory, so every entry must be recomputed. The dotnet
-        CLI has no "rebase" command, so this rewrites the stored paths with precise,
-        formatting- and BOM-preserving edits. It replaces the exact path token captured from the
-        file (the .slnx `<Project Path="...">` or the .sln project line), not a blind regex, and
-        keeps each format's separator convention (/ for .slnx, \ for .sln). Project-to-project
-        references are unaffected by a solution move and are left alone.
+        A solution stores each project, of any project type, and each solution item as a path
+        relative to the solution file. Moving the solution changes that base directory, so every
+        stored path is recomputed. The dotnet CLI has no "rebase" command, so this rewrites the
+        stored paths in place, keeping the file's formatting and encoding. It replaces the exact
+        path token captured from the file (the .slnx `<Project Path="...">` or `<File Path="...">`,
+        or the .sln project or SolutionItems line), and keeps each format's separator convention
+        (/ for .slnx, \ for .sln). A web site project stored as a URL is left alone.
+        Project-to-project references are unaffected by a solution move and are left alone.
 
         git is used when available (else confirmed plain-move fallback via -Force). -WhatIf
         supported. dotnet is not required.
@@ -83,26 +84,34 @@ function Move-Solution {
         }
 
         $entries = @(Get-SolutionProjectEntries -SolutionFile $src)
+        $solutionItems = @(Get-SolutionItemEntries -SolutionFile $src)
         Write-MovePlan -Cmdlet $PSCmdlet -Caption "Move-Solution $name  $src -> $newPath" -Items ([ordered]@{
-                'project paths to rebase' = @($entries | ForEach-Object { $_.Raw })
+                'project paths to rebase'       = @($entries | ForEach-Object { $_.Raw })
+                'solution item paths to rebase' = @($solutionItems | ForEach-Object { $_.Raw })
             })
 
         $performed = $false
         $rebased = 0
+        $itemsRebased = 0
         $skippedCount = 0
 
-        if ($PSCmdlet.ShouldProcess("$src -> $newPath", "Move solution and rebase $($entries.Count) project path(s)")) {
+        if ($PSCmdlet.ShouldProcess("$src -> $newPath", "Move solution and rebase $($entries.Count + $solutionItems.Count) stored path(s)")) {
             $ctx = Resolve-MoveContext -Cmdlet $PSCmdlet -Force:$Force -TargetForError $src
             if (-not $ctx) { return }
             $repoFull = Get-RepositoryRoot -StartPath (Split-Path -Parent $src)
 
             # The solution-path rebases happen after the move, so they are Reattach-only items.
             $counter = @{ N = 0 }
+            $itemCounter = @{ N = 0 }
             $rebaseSb = { param($Ref, $NewFile, $Counter) if ($Ref.FollowFile($NewFile)) { $Counter.N++ } }
             $items = @()
             foreach ($e in $entries) {
                 $items += New-MoveItem -Description "rebase path: $($e.Raw) -> $($e.RawFollowing($newPath))" `
                     -Reattach $rebaseSb -ReattachArgs @($e, $newPath, $counter)
+            }
+            foreach ($e in $solutionItems) {
+                $items += New-MoveItem -Description "rebase solution item: $($e.Raw) -> $($e.RawFollowing($newPath))" `
+                    -Reattach $rebaseSb -ReattachArgs @($e, $newPath, $itemCounter)
             }
             $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 
@@ -113,12 +122,14 @@ function Move-Solution {
                 -UndoParams @{ Path = $newPath; Destination = $src; Force = [bool]$Force } -NoJournal:$NoJournal
             $performed = $true
             $rebased = $counter.N
+            $itemsRebased = $itemCounter.N
             $skippedCount = $planResult.Skipped
         }
 
         New-MoveResult -TypeName 'Netscoot.SolutionMoveResult' -Engine 'dotnet' -Source $src -Destination $newPath `
             -Performed $performed -SkippedCount $skippedCount -Extra ([ordered]@{
                 ProjectsRebased = $rebased
+                ItemsRebased    = $itemsRebased
             })
     }
 }

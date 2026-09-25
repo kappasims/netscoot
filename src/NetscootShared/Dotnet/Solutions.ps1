@@ -128,17 +128,32 @@ function Get-ProjectSolutionFolder {
 }
 
 function Get-SolutionProjectEntries {
-    # The project paths stored in a solution, as Netscoot.StoredPath (a .slnx Path attribute or a
-    # quoted .sln entry). Skips solution folders (their second field is a name, not a project path).
+    # The project paths stored in a solution, of any project type, as Netscoot.StoredPath (a .slnx
+    # Path attribute or a quoted .sln entry). Skips a web site project stored as a URL.
     [CmdletBinding()]
     [OutputType([Netscoot.StoredPath])]
     param([Parameter(Mandatory)][string]$SolutionFile)
     $full = Resolve-FullPath $SolutionFile
     $sln = Read-Solution -SolutionFile $full
     foreach ($p in $sln.Projects) {
-        if (-not $script:ProjectFileExtRegex.IsMatch($p.Stored)) { continue }
+        if ($p.Stored -match '://') { continue }
         if ($full -like '*.slnx') { [Netscoot.StoredPath]::InSlnxEntry($full, $p.Stored, $p.Abs) }
         else { [Netscoot.StoredPath]::InSolutionEntry($full, $p.Stored, $p.Abs) }
+    }
+}
+
+function Get-SolutionItemEntries {
+    # The solution items (loose files) stored in a solution, as Netscoot.StoredPath (a .slnx File
+    # Path attribute or a .sln SolutionItems line).
+    [CmdletBinding()]
+    [OutputType([Netscoot.StoredPath])]
+    param([Parameter(Mandatory)][string]$SolutionFile)
+    $full = Resolve-FullPath $SolutionFile
+    $dir = Split-Path -Parent $full
+    foreach ($item in (Read-Solution -SolutionFile $full).Items) {
+        $abs = [System.IO.Path]::GetFullPath((Join-Path $dir $item))
+        if ($full -like '*.slnx') { [Netscoot.StoredPath]::InSlnxEntry($full, $item, $abs) }
+        else { [Netscoot.StoredPath]::InSolutionItem($full, $item, $abs) }
     }
 }
 

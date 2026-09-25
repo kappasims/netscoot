@@ -148,7 +148,8 @@
             @{ Name = 'Destination';     Type = 'string'; Note = 'absolute path' }
             @{ Name = 'Performed';       Type = 'bool';   Note = 'false under -WhatIf' }
             @{ Name = 'SkippedCount';    Type = 'int';    Note = '' }
-            @{ Name = 'ProjectsRebased'; Type = 'int';    Note = 'stored paths rewritten' }
+            @{ Name = 'ProjectsRebased'; Type = 'int';    Note = 'project paths rewritten' }
+            @{ Name = 'ItemsRebased';    Type = 'int';    Note = 'solution item paths rewritten' }
         )
     }
 

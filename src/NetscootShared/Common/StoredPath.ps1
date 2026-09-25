@@ -42,6 +42,12 @@ namespace Netscoot
             return new SolutionEntryPath(file, raw, target);
         }
 
+        // A solution item on a .sln SolutionItems line, stored as "path = path".
+        public static StoredPath InSolutionItem(string file, string raw, string target)
+        {
+            return new SolutionItemPath(file, raw, target);
+        }
+
         // The path string of a PowerShell dot-source, call or Import-Module.
         public static StoredPath InScript(string file, string raw, string target)
         {
@@ -235,6 +241,29 @@ namespace Netscoot
         protected override string Format(string relative)
         {
             return Styled(relative);
+        }
+    }
+
+    public sealed class SolutionItemPath : StoredPath
+    {
+        internal SolutionItemPath(string file, string raw, string target) : base(file, raw, target) { }
+
+        protected override char DefaultSeparator
+        {
+            get { return '\\'; }
+        }
+
+        protected override string Format(string relative)
+        {
+            return Styled(relative);
+        }
+
+        protected override string Replace(string text, string oldRaw, string newRaw)
+        {
+            string old = Regex.Escape(oldRaw);
+            string pattern = @"(?m)^(\s*)" + old + @"(\s*=\s*)" + old + @"(\s*)$";
+            string escaped = newRaw.Replace("$", "$$");
+            return Regex.Replace(text, pattern, "${1}" + escaped + "${2}" + escaped + "${3}");
         }
     }
 
