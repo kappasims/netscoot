@@ -1,7 +1,7 @@
 function New-DotnetReferenceItems {
     # Build the standard reconciliation items for a managed project move: solution membership,
-    # external consumers, and the project's own references - each a detach+reattach pair so the
-    # plan engine can confirm/skip per line. The dotnet ref-op scriptblocks live here, once.
+    # external consumers, and the project's own references, each a detach+reattach pair around
+    # the move. The dotnet ref-op scriptblocks live here, once.
     [CmdletBinding()]
     param(
         [object[]]$Solutions = @(),   # objects with .FullName + .Name
