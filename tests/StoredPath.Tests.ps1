@@ -54,3 +54,42 @@ Describe 'Netscoot.StoredPath text' {
         $ref.RawFollowing((Get-RootedPath 'bin', 'Main.ps1')) | Should -BeExactly '$PSScriptRoot/../lib/Common.ps1'
     }
 }
+
+Describe 'Netscoot.StoredPath rewrite' -Tag 'Integration' {
+    BeforeAll {
+        . (Join-Path $PSScriptRoot TestHelpers.ps1)
+        $script:Dir = New-TempRoot -Prefix 'netscoot_sp'
+    }
+
+    AfterAll { Remove-Item -LiteralPath $script:Dir -Recurse -Force -ErrorAction SilentlyContinue }
+
+    It 'keeps a UTF-16 file in UTF-16 with its byte-order mark' {
+        $file = Join-Path $script:Dir 'Utf16.ps1'
+        [System.IO.File]::WriteAllText($file, ". .\lib\Common.ps1`r`n", [System.Text.UnicodeEncoding]::new($false, $true))
+        $ref = [Netscoot.StoredPath]::InScript($file, '.\lib\Common.ps1', (Join-Path $script:Dir (Join-Path 'lib' 'Common.ps1')))
+        $ref.PointAt((Join-Path $script:Dir (Join-Path 'shared' 'Common.ps1'))) | Should -BeTrue
+        $bytes = [System.IO.File]::ReadAllBytes($file)
+        $bytes[0..1] | Should -Be @(0xFF, 0xFE)
+        [System.Text.Encoding]::Unicode.GetString($bytes, 2, $bytes.Length - 2) | Should -BeExactly ". .\shared\Common.ps1`r`n"
+    }
+
+    It 'keeps legacy code-page bytes outside the rewritten path unchanged' {
+        $file = Join-Path $script:Dir 'Ansi.props'
+        $prefix = [byte[]](0x3C, 0x21, 0x2D, 0x2D, 0x20, 0xE9, 0x20, 0x2D, 0x2D, 0x3E, 0x0A)
+        $body = [System.Text.Encoding]::ASCII.GetBytes('<Import Project="..\Shared.props" />')
+        [System.IO.File]::WriteAllBytes($file, [byte[]]($prefix + $body))
+        $ref = [Netscoot.StoredPath]::InAttribute($file, 'Project', '..\Shared.props', (Join-Path (Split-Path -Parent $script:Dir) 'Shared.props'))
+        $ref.PointAt((Join-Path $script:Dir 'Shared.props')) | Should -BeTrue
+        $bytes = [System.IO.File]::ReadAllBytes($file)
+        $bytes[0..($prefix.Length - 1)] | Should -Be $prefix
+        [System.Text.Encoding]::ASCII.GetString($bytes, $prefix.Length, $bytes.Length - $prefix.Length) | Should -BeExactly '<Import Project="Shared.props" />'
+    }
+
+    It 'rewrites a script path only as a whole token, not inside a longer path' {
+        $file = Join-Path $script:Dir 'Main.ps1'
+        Set-Content -LiteralPath $file -Value ". .\helpers.ps1`n. ..\helpers.ps1" -NoNewline
+        $ref = [Netscoot.StoredPath]::InScript($file, '.\helpers.ps1', (Join-Path $script:Dir 'helpers.ps1'))
+        $ref.PointAt((Join-Path $script:Dir (Join-Path 'lib' 'helpers.ps1'))) | Should -BeTrue
+        (Get-Content -LiteralPath $file -Raw) | Should -BeExactly ". .\lib\helpers.ps1`n. ..\helpers.ps1"
+    }
+}
