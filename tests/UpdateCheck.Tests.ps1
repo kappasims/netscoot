@@ -23,6 +23,13 @@ Describe 'Test-NetscootUpdate' {
         }
     }
 
+    It 'returns a Netscoot.Update record' {
+        InModuleScope Netscoot.Core {
+            Mock Invoke-RestMethod { @{ tag_name = 'v0.0.1'; html_url = 'https://example/releases/v0.0.1' } }
+            (Test-NetscootUpdate).PSObject.TypeNames | Should -Contain 'Netscoot.Update'
+        }
+    }
+
     It 'writes a non-terminating error (not throw) when the request yields no release' {
         InModuleScope Netscoot.Core {
             # An offline / rate-limited / no-release fetch reduces (via the catch) to no usable

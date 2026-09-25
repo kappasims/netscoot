@@ -90,6 +90,7 @@ function Test-NetscootUpdate {
 
     $available = ($null -ne $latest -and $null -ne $installed -and $latest -gt $installed)
     $result = [pscustomobject]@{
+        PSTypeName      = 'Netscoot.Update'
         Installed       = $installed
         Latest          = $latest
         Tag             = $tag
@@ -99,7 +100,7 @@ function Test-NetscootUpdate {
 
     if ($available) {
         Write-Host "netscoot $tag is available (installed $installed)." -ForegroundColor Yellow
-        Write-Host "Update from your clone: git pull, then ./build.ps1 -Task Install" -ForegroundColor Yellow
+        Write-Host "Update with Update-Module Netscoot (Gallery installs) or Update-Netscoot (installer installs)." -ForegroundColor Yellow
         Write-Host $result.Url -ForegroundColor DarkGray
     } else {
         Write-Host "netscoot is up to date (installed $installed, latest $tag)." -ForegroundColor Green

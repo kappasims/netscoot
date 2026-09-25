@@ -25,7 +25,8 @@ function Update-Netscoot {
         repository.
 
     .OUTPUTS
-        Netscoot.Update - the record from Test-NetscootUpdate, so the decision is inspectable. Nothing on a failed check.
+        Netscoot.Update - the record from Test-NetscootUpdate, so the decision is inspectable. Nothing
+        when the update policy blocks the update or the check fails.
 
     .EXAMPLE
         # Update to the latest release if the installed copy is behind
