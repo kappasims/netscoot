@@ -68,7 +68,7 @@ function Find-NetscootPathReference {
 
     begin {
         if ($MyInvocation.InvocationName -eq 'Find-PathReference') {
-            Write-Warning "'Find-PathReference' is a deprecated alias for 'Find-NetscootPathReference' and will be removed in a future release. Update to 'Find-NetscootPathReference'."
+            Write-Warning "'Find-PathReference' is a deprecated alias for 'Find-NetscootPathReference' and will be removed in 4.0. Update to 'Find-NetscootPathReference'."
         }
     }
 

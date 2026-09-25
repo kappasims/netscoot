@@ -6,6 +6,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The deprecated aliases for the five renamed cmdlets (`Get-SolutionInventory`, `Sync-Solution`,
+  `Find-PathReference`, `Test-SolutionConsistency`, `Repair-SolutionReferences`) now warn that they
+  will be removed in 4.0.
+
 ## [3.0.0-beta2] - 2026-06-26
 
 ### Fixed

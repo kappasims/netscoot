@@ -47,7 +47,7 @@ function Sync-NetscootSolution {
 
     begin {
         if ($MyInvocation.InvocationName -eq 'Sync-Solution') {
-            Write-Warning "'Sync-Solution' is a deprecated alias for 'Sync-NetscootSolution' and will be removed in a future release. Update to 'Sync-NetscootSolution'."
+            Write-Warning "'Sync-Solution' is a deprecated alias for 'Sync-NetscootSolution' and will be removed in 4.0. Update to 'Sync-NetscootSolution'."
         }
     }
 

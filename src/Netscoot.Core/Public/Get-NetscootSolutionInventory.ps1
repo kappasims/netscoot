@@ -51,7 +51,7 @@ function Get-NetscootSolutionInventory {
 
     begin {
         if ($MyInvocation.InvocationName -eq 'Get-SolutionInventory') {
-            Write-Warning "'Get-SolutionInventory' is a deprecated alias for 'Get-NetscootSolutionInventory' and will be removed in a future release. Update to 'Get-NetscootSolutionInventory'."
+            Write-Warning "'Get-SolutionInventory' is a deprecated alias for 'Get-NetscootSolutionInventory' and will be removed in 4.0. Update to 'Get-NetscootSolutionInventory'."
         }
     }
 

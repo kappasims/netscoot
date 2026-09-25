@@ -55,7 +55,7 @@ function Test-NetscootSolutionConsistency {
 
     begin {
         if ($MyInvocation.InvocationName -eq 'Test-SolutionConsistency') {
-            Write-Warning "'Test-SolutionConsistency' is a deprecated alias for 'Test-NetscootSolutionConsistency' and will be removed in a future release. Update to 'Test-NetscootSolutionConsistency'."
+            Write-Warning "'Test-SolutionConsistency' is a deprecated alias for 'Test-NetscootSolutionConsistency' and will be removed in 4.0. Update to 'Test-NetscootSolutionConsistency'."
         }
     }
 

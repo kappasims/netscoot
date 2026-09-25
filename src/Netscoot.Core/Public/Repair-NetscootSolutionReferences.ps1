@@ -65,7 +65,7 @@ function Repair-NetscootSolutionReferences {
 
     begin {
         if ($MyInvocation.InvocationName -eq 'Repair-SolutionReferences') {
-            Write-Warning "'Repair-SolutionReferences' is a deprecated alias for 'Repair-NetscootSolutionReferences' and will be removed in a future release. Update to 'Repair-NetscootSolutionReferences'."
+            Write-Warning "'Repair-SolutionReferences' is a deprecated alias for 'Repair-NetscootSolutionReferences' and will be removed in 4.0. Update to 'Repair-NetscootSolutionReferences'."
         }
     }
 

@@ -11,7 +11,7 @@ on 2.6.x; you only get 3.0 by explicitly opting in below.
   `Sync-Solution` -> `Sync-NetscootSolution`, `Find-PathReference` -> `Find-NetscootPathReference`,
   `Test-SolutionConsistency` -> `Test-NetscootSolutionConsistency`, `Repair-SolutionReferences` ->
   `Repair-NetscootSolutionReferences`. The old names still work as **deprecated aliases** (they warn
-  on use), so existing scripts keep running while you migrate.
+  on use), so existing scripts keep running while you migrate. The aliases are removed in 4.0.
 - **Result and report objects are now real .NET types** (`Netscoot.MoveResult`, etc.) instead of
   `pscustomobject`. Property access and formatting are unchanged; only code that tested
   `-is [pscustomobject]` is affected.
