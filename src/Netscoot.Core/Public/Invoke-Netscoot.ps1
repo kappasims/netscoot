@@ -7,8 +7,8 @@ function Invoke-Netscoot {
 
     .DESCRIPTION
         Classifies the target with Resolve-MoveEngine, then dispatches to the namespace front door
-        that performs the appropriate file/folder move (see Output for the routing). The Unity and
-        native C++ front doors load Netscoot.Unity / Netscoot.Native on demand.
+        that performs the appropriate file/folder move (see Output for the routing). It loads
+        Netscoot.Unity or Netscoot.Native on demand for a Unity or native C++ target.
 
         "dotnet" here is the .NET-platform umbrella (CLR/CoreCLR), not just the dotnet CLI - the
         verb spans every engine. Each engine's behavior lives in its own cmdlet; this only routes.
@@ -24,13 +24,15 @@ function Invoke-Netscoot {
 
     .PARAMETER RepositoryRoot
         Repository root the engine scans for references. Defaults to the enclosing git repository root.
-        Not used by the Unity engine.
+        Not used for a PowerShell module folder.
 
     .PARAMETER NoBuild
         Skip the verifying 'dotnet build'. Only the .NET engine builds; ignored by the others.
 
     .PARAMETER Force
-        Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history. Forwarded to the engine.
+        When git is not installed, move with a plain PowerShell `Move-Item` without asking first.
+        Without -Force it asks before falling back. The plain move does not preserve git history.
+        Forwarded to the engine.
 
     .PARAMETER NoJournal
         Skip recording this move in the undo journal for this call (forwarded to the engine), even
@@ -48,7 +50,7 @@ function Invoke-Netscoot {
         Invoke-Netscoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs
         # Any supported type routes through the same call (here a PowerShell module folder)
         Invoke-Netscoot -Path ./tools/Mayo -Destination ./modules/Mayo
-        # No git in the repository? -Force falls back to a plain Move-Item (history not preserved)
+        # git not installed? -Force falls back to a plain Move-Item without asking (history not preserved)
         Invoke-Netscoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -Force
     #>
 
@@ -94,7 +96,7 @@ function Invoke-Netscoot {
 
         # Per-engine forwarding via New-ForwardArgs: every dispatcher's bound param flows through to
         # the specialist by default. -Drop strips things the target cmdlet does not accept (e.g.
-        # NoBuild for the PowerShell / Unity movers, RepositoryRoot for Unity); -Add substitutes the
+        # NoBuild for the PowerShell, Unity and native movers); -Add substitutes the
         # resolved $full for the dispatcher's raw -Path and renames the path-parameter where the
         # specialist uses a different name (Project / ModulePath / AssetPath). Forwarding -WhatIf
         # /-Confirm /-Verbose /-Debug is automatic because they appear in $PSBoundParameters when bound;
@@ -127,8 +129,8 @@ function Invoke-Netscoot {
                             'UnityEngineUnavailable', [System.Management.Automation.ErrorCategory]::NotInstalled, $full))
                     return
                 }
-                # Move-UnityAsset uses -AssetPath and accepts neither -RepositoryRoot nor -NoBuild.
-                $fwd = New-ForwardArgs $PSBoundParameters -Drop 'Path', 'RepositoryRoot', 'NoBuild' -Add @{ AssetPath = $full }
+                # Move-UnityAsset uses -AssetPath and does not accept -NoBuild.
+                $fwd = New-ForwardArgs $PSBoundParameters -Drop 'Path', 'NoBuild' -Add @{ AssetPath = $full }
                 Write-Verbose 'Routing -> Move-UnityAsset'
                 Move-UnityAsset @fwd
             }
@@ -139,8 +141,8 @@ function Invoke-Netscoot {
                             'NativeEngineUnavailable', [System.Management.Automation.ErrorCategory]::NotInstalled, $full))
                     return
                 }
-                # Move-NativeProject uses -Project.
-                $fwd = New-ForwardArgs $PSBoundParameters -Drop 'Path' -Add @{ Project = $full }
+                # Move-NativeProject uses -Project and does not accept -NoBuild.
+                $fwd = New-ForwardArgs $PSBoundParameters -Drop 'Path', 'NoBuild' -Add @{ Project = $full }
                 Write-Verbose 'Routing -> Move-NativeProject'
                 Move-NativeProject @fwd
             }

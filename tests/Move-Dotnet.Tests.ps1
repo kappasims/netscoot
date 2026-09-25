@@ -86,6 +86,32 @@ Describe 'Invoke-Netscoot (top-level cross-namespace routing)' -Tag 'Integration
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
+    It 'drops -NoBuild when routing a .vcxproj to the native engine' -Skip:(-not ($IsWindows -or $PSVersionTable.PSEdition -eq 'Desktop')) {
+        $root = New-EngineFixture
+        try {
+            Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'src', 'Netscoot.Native', 'Netscoot.Native.psd1')) -Force
+            $vcx = Join-Path $root 'Foo.vcxproj'
+            Set-Content -LiteralPath $vcx -Value '<Project/>'
+            Mock -ModuleName Netscoot.Core Move-NativeProject { }
+            Invoke-Netscoot -Path $vcx -Destination (Join-Path $root 'moved') -NoBuild
+            Should -Invoke -ModuleName Netscoot.Core Move-NativeProject -Times 1 -Exactly
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'forwards -RepositoryRoot to the Unity engine' {
+        $root = New-EngineFixture
+        try {
+            $assets = Join-Path $root 'Assets'
+            New-Item -ItemType Directory -Path $assets | Out-Null
+            $asset = Join-Path $assets 'Foo.cs'
+            Set-Content -LiteralPath $asset -Value '// c#'
+            Set-Content -LiteralPath "$asset.meta" -Value 'guid: 0'
+            Mock -ModuleName Netscoot.Core Move-UnityAsset { }
+            Invoke-Netscoot -Path $asset -Destination (Join-Path $assets 'Bar.cs') -RepositoryRoot $root -NoBuild
+            Should -Invoke -ModuleName Netscoot.Core Move-UnityAsset -Times 1 -Exactly -ParameterFilter { $RepositoryRoot -eq $root }
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
     It 'writes a non-terminating error for an unknown type' {
         $root = New-EngineFixture
         try {
