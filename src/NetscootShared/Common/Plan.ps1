@@ -250,6 +250,9 @@ function Invoke-MovePlan {
     # Write-ahead: record intent before anything reversible happens, so a crash leaves a detectable
     # 'pending' entry (carrying source/destination, the snapshot dir, and the file->index mapping for
     # content recovery).
+    # Journal under the git repository enclosing the scan root, where Undo-Netscoot looks by default,
+    # even when a mover was given a narrower -RepositoryRoot to scan.
+    if ($RepositoryRoot) { $RepositoryRoot = Get-RepositoryRoot -StartPath $RepositoryRoot }
     $journaling = $Command -and (-not $NoJournal) -and (Test-MoveJournalEnabled -RepositoryRoot $RepositoryRoot)
     $hint = if ($Command -and $UndoParams) { Format-UndoHint -Command $Command -UndoParams $UndoParams } else { $null }
     $entry = $null
