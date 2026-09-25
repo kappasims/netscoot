@@ -15,6 +15,11 @@ function Move-UnityAsset {
         moved too. asmdef references are by name/GUID (not path), so they do not need editing;
         when moving an .asmdef this reports who references it, for your awareness only.
 
+        When the destination needs new parent folders, each one under Assets/ (or inside a
+        package) gets a folder .meta with a fresh GUID, staged with the move, so it is committed
+        once instead of being generated differently on every machine. Undo-Netscoot moves the
+        asset back but leaves those new folders and their .meta files in place.
+
         Cross-platform and target-agnostic: asmdef includePlatforms/excludePlatforms (iOS,
         Android, etc.) are plain fields untouched by a move, so mobile layouts are preserved.
 
@@ -99,10 +104,22 @@ function Move-UnityAsset {
         $isAsmdef = ([System.IO.Path]::GetExtension($src) -eq '.asmdef')
         if ($isAsmdef) { $referencers = @(Get-AsmdefReferencers -AsmdefPath $src -RepositoryRoot $repoFull) }
 
+        # Parent folders the move creates. Unity gives each one under Assets/ (or inside a package)
+        # a .meta with a fresh GUID on import; creating it here means it is committed with the move
+        # instead of every machine generating a different one.
+        $newFolders = @()
+        $parent = Split-Path -Parent $dst
+        while ($parent -and -not (Test-Path -LiteralPath $parent)) { $newFolders = @($parent) + $newFolders; $parent = Split-Path -Parent $parent }
+        $folderMetas = @($newFolders | Where-Object {
+                $leaf = Split-Path -Leaf $_
+                $leaf -notlike '.*' -and $leaf -notlike '*~' -and ($_ -match '[\\/]Assets[\\/].+' -or $_ -match '[\\/]Packages[\\/][^\\/]+[\\/].+')
+            } | ForEach-Object { "$_.meta" })
+
         Write-MovePlan -Cmdlet $PSCmdlet -Caption "Move-UnityAsset $([System.IO.Path]::GetFileName($src))  $src -> $dst" -Items ([ordered]@{
                 'paired .meta moves alongside' = $hasMeta
                 'is .asmdef'                   = $isAsmdef
                 'referencing asmdefs (by name/GUID; survive the move)' = $referencers
+                'new folders getting a .meta'  = $folderMetas
             })
 
         $performed = $false
@@ -112,18 +129,44 @@ function Move-UnityAsset {
 
             # Unity references resolve by GUID (carried in the .meta), so there are no
             # reference edits to confirm - moving the asset + its .meta is the whole operation.
-            # All-or-nothing: if the .meta cannot follow, the asset goes back before the error surfaces.
+            # $moveBack undoes whatever part of the move happened, so it serves both a failure inside
+            # $move (keeping the move all-or-nothing) and the plan's rollback.
+            $moveBack = {
+                param($UseGit, $Src, $Dst, $SrcMeta, $DstMeta, $RepoFull, $NewFolders, $FolderMetas)
+                if ((Test-Path -LiteralPath $DstMeta) -and -not (Test-Path -LiteralPath $SrcMeta)) {
+                    Move-PathTracked -UseGit $UseGit -Source $DstMeta -Destination $SrcMeta -RepositoryRoot $RepoFull
+                }
+                if (Test-Path -LiteralPath $Dst) { Move-PathTracked -UseGit $UseGit -Source $Dst -Destination $Src -RepositoryRoot $RepoFull }
+                foreach ($m in @($FolderMetas)) {
+                    if (-not (Test-Path -LiteralPath $m)) { continue }
+                    if ($UseGit -and (Test-GitTracked -Path $m)) { & git -C $RepoFull rm -q -f -- $m | Out-Null }
+                    else { Remove-Item -LiteralPath $m }
+                }
+                $deepestFirst = @($NewFolders)
+                [array]::Reverse($deepestFirst)
+                foreach ($d in $deepestFirst) {
+                    if ((Test-Path -LiteralPath $d) -and -not (Get-ChildItem -LiteralPath $d -Force)) { Remove-Item -LiteralPath $d }
+                }
+            }
             $move = {
-                param($UseGit, $Src, $Dst, $SrcMeta, $DstMeta, $HasMeta, $RepoFull)
-                Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $RepoFull
-                if ($HasMeta) {
-                    try { Move-PathTracked -UseGit $UseGit -Source $SrcMeta -Destination $DstMeta -RepositoryRoot $RepoFull }
-                    catch { Move-PathTracked -UseGit $UseGit -Source $Dst -Destination $Src -RepositoryRoot $RepoFull; throw }
+                param($UseGit, $Src, $Dst, $SrcMeta, $DstMeta, $HasMeta, $RepoFull, $NewFolders, $FolderMetas, $MoveBack)
+                try {
+                    foreach ($d in @($NewFolders)) { New-Item -ItemType Directory -Path $d | Out-Null }
+                    foreach ($m in @($FolderMetas)) {
+                        $guid = [guid]::NewGuid().ToString('N')
+                        [System.IO.File]::WriteAllText($m, "fileFormatVersion: 2`nguid: $guid`nfolderAsset: yes`nDefaultImporter:`n  externalObjects: {}`n  userData: `n  assetBundleName: `n  assetBundleVariant: `n", [System.Text.UTF8Encoding]::new($false))
+                        if ($UseGit) { & git -C $RepoFull add -- $m; if ($LASTEXITCODE -ne 0) { throw "git add failed: $m" } }
+                    }
+                    Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $RepoFull
+                    if ($HasMeta) { Move-PathTracked -UseGit $UseGit -Source $SrcMeta -Destination $DstMeta -RepositoryRoot $RepoFull }
+                } catch {
+                    & $MoveBack $UseGit $Src $Dst $SrcMeta $DstMeta $RepoFull @($NewFolders) @($FolderMetas)
+                    throw
                 }
             }
             Invoke-MovePlan -Caption "Move Unity asset $(Split-Path -Leaf $src)" -Items @() -Move $move `
-                -MoveArgs @($ctx.UseGit, $src, $dst, $srcMeta, $dstMeta, $hasMeta, $repoFull) `
-                -Rollback $move -RollbackArgs @($ctx.UseGit, $dst, $src, $dstMeta, $srcMeta, $hasMeta, $repoFull) `
+                -MoveArgs @($ctx.UseGit, $src, $dst, $srcMeta, $dstMeta, $hasMeta, $repoFull, $newFolders, $folderMetas, $moveBack) `
+                -Rollback $moveBack -RollbackArgs @($ctx.UseGit, $src, $dst, $srcMeta, $dstMeta, $repoFull, $newFolders, $folderMetas) `
                 -RepositoryRoot $repoFull -Command 'Move-UnityAsset' -Engine 'unity' -Source $src -Destination $dst `
                 -UndoParams @{ AssetPath = $dst; Destination = $src; Force = [bool]$Force } -NoJournal:$NoJournal | Out-Null
             $performed = $true

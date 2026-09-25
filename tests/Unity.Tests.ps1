@@ -96,6 +96,63 @@ Describe 'Move-UnityAsset' -Tag 'Integration' {
     }
 }
 
+Describe 'Move-UnityAsset new parent folders' -Tag 'Integration' {
+    It 'creates a folder .meta for each new folder under Assets' {
+        $root = New-UnityFixture
+        try {
+            $assets = Join-Path $root 'Assets'
+            Move-UnityAsset -AssetPath (Join-Path $assets 'Foo') -Destination (Join-Path $assets (Join-Path 'Plugins' (Join-Path 'Deep' 'Foo'))) -RepositoryRoot $root -NoJournal -Confirm:$false | Out-Null
+            foreach ($meta in (Join-Path $assets 'Plugins.meta'), (Join-Path $assets (Join-Path 'Plugins' 'Deep.meta'))) {
+                $text = [System.IO.File]::ReadAllText($meta)
+                $text | Should -Match '(?m)^guid: [0-9a-f]{32}$'
+                $text | Should -Match '(?m)^folderAsset: yes$'
+            }
+            @(Test-UnityMetaIntegrity -Root $assets -WarningAction SilentlyContinue) | Should -BeNullOrEmpty
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'gives no .meta to a new package root, only to folders inside it' {
+        $root = New-UnityFixture
+        try {
+            $bar = Join-Path $root (Join-Path 'Assets' (Join-Path 'Foo' 'Bar.cs'))
+            $packages = Join-Path $root 'Packages'
+            New-Item -ItemType Directory -Path $packages | Out-Null
+            Move-UnityAsset -AssetPath $bar -Destination (Join-Path $packages (Join-Path 'com.example.tools' (Join-Path 'Runtime' 'Bar.cs'))) -RepositoryRoot $root -NoJournal -Confirm:$false -WarningAction SilentlyContinue | Out-Null
+            (Join-Path $packages 'com.example.tools.meta') | Should -Not -Exist
+            (Join-Path $packages (Join-Path 'com.example.tools' 'Runtime.meta')) | Should -Exist
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'stages the new folder .meta files with the move' {
+        $root = New-UnityFixture
+        try {
+            $assets = Join-Path $root 'Assets'
+            Move-UnityAsset -AssetPath (Join-Path $assets 'Foo') -Destination (Join-Path $assets (Join-Path 'Plugins' 'Foo')) -RepositoryRoot $root -NoJournal -Confirm:$false | Out-Null
+            (& git -C $root status --porcelain -- 'Assets/Plugins.meta') | Should -Match '^A  '
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'removes the folders and .meta files it created when the move fails' {
+        $root = New-UnityFixture
+        try {
+            $assets = Join-Path $root 'Assets'
+            $bar = Join-Path $assets (Join-Path 'Foo' 'Bar.cs')
+            Mock -ModuleName NetscootShared Test-GitAvailable { $false }
+            # Like the real Move-PathTracked, create the destination parent before moving.
+            Mock -ModuleName Netscoot.Unity Move-PathTracked {
+                if ($Source -like '*.meta') { throw 'simulated meta move failure' }
+                New-Item -ItemType Directory -Path (Split-Path -Parent $Destination) -Force | Out-Null
+                Move-Item -LiteralPath $Source -Destination $Destination
+            }
+            { Move-UnityAsset -AssetPath $bar -Destination (Join-Path $assets (Join-Path 'Plugins' (Join-Path 'Deep' 'Bar.cs'))) -RepositoryRoot $root -Force -NoJournal -Confirm:$false } |
+                Should -Throw -ExpectedMessage '*rolled back*'
+            $bar | Should -Exist
+            (Join-Path $assets 'Plugins') | Should -Not -Exist
+            (Join-Path $assets 'Plugins.meta') | Should -Not -Exist
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+}
+
 Describe 'Test-UnityMetaIntegrity' -Tag 'Integration' {
     It 'flags an orphan .meta and a missing .meta' {
         $root = New-UnityFixture

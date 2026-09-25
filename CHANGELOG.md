@@ -19,6 +19,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `Move-PowerShellScript` keeps the `/` or `\` style of the paths it rewrites, rebases the moved
   script's own `Import-Module` and `using module` paths, and reports other strings that name the
   moved script, such as a `Join-Path` argument.
+- `Move-UnityAsset` gives each new parent folder it creates under `Assets/` (or inside a package) a
+  folder `.meta`, staged with the move. Before, Unity generated those on import with a different
+  GUID on every machine, and `Test-UnityMetaIntegrity` flagged them right after the move.
 
 ## [2.6.5] - 2026-09-25
 

@@ -42,6 +42,11 @@ Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/T
 Moves the asset/folder + its `.meta` (git mv when tracked). When moving an `.asmdef` it
 reports which asmdefs reference it - informational only, since name/GUID refs survive.
 
+If the destination needs new parent folders, each one under `Assets/` (or inside a package) gets a
+folder `.meta` with a fresh GUID, staged with the move, so it is committed once rather than
+generated differently on each machine. `Undo-Netscoot` moves the asset back but leaves those new
+folders and their `.meta` files in place.
+
 `-Destination` follows `git mv` rules: an existing directory means move into it keeping the
 name (`./Assets/Lib` puts it at `./Assets/Lib/Tarragon`); otherwise it is the new path, a
 rename. The `.meta` follows the asset either way.
