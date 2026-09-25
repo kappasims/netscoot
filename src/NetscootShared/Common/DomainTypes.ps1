@@ -151,11 +151,21 @@ namespace Netscoot
         public string Text;
     }
 
+    // Compiled rather than a PowerShell `enum`, so a plain Import-Module consumer can tab-complete it.
+    // It compares equal to its name, so string filters such as -eq 'UnreferencedProject' still work.
+    public enum SolutionItemKind
+    {
+        Unknown,
+        Project,
+        SolutionFolder,
+        SolutionItem,
+        UnreferencedProject
+    }
+
     public class SolutionItem
     {
         public string Solution;
-        public object Kind;      // a Netscoot.SolutionItemKind value (typed object to avoid a
-                                 // compile-time dependency on the Core-defined enum)
+        public SolutionItemKind Kind;
         public string Type;
         public string Name;
         public string Path;

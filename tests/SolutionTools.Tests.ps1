@@ -57,6 +57,16 @@ BeforeAll {
     }
 }
 
+Describe 'Netscoot.SolutionItem' {
+    It 'types Kind as the SolutionItemKind enum' {
+        [Netscoot.SolutionItem].GetField('Kind').FieldType | Should -Be ([Netscoot.SolutionItemKind])
+    }
+
+    It 'gives SolutionItemKind an Unknown zero value' {
+        [Netscoot.SolutionItemKind]0 | Should -Be ([Netscoot.SolutionItemKind]::Unknown)
+    }
+}
+
 Describe 'Get-NetscootSolutionInventory' -Tag 'Integration' {
     It 'surfaces non-CLI projects, folders, items, and unreferenced projects' {
         $root = New-InventoryFixture
