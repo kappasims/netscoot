@@ -10,8 +10,9 @@ function Update-Netscoot {
         git, no clone. Does nothing when already current unless -Force. Honors -WhatIf/-Confirm.
 
         After it runs, reload the module in the current session with `Import-Module Netscoot -Force`.
-        Needs network access to GitHub. For Gallery installs, `Update-Module Netscoot` is the
-        simpler path. This command updates installer/clone installs in place from the GitHub release.
+        Needs network access to GitHub. For Gallery installs, use `Update-Module Netscoot` instead.
+        This command updates installer/clone installs in place from the GitHub release, and replaces
+        a Gallery install's folder with an installer copy.
 
         When the update policy is Disabled (see Set-NetscootUpdatePolicy), this refuses to update.
         -Force overrides a policy you set for yourself, never one an administrator set.

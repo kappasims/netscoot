@@ -315,7 +315,7 @@ so preview either with `-WhatIf` first.
 ```powershell
 Undo-Netscoot -List                       # what can be undone (oldest first)
 Undo-Netscoot -WhatIf                      # preview reversing the most recent move
-Undo-Netscoot                              # reverse the most recent move; call again to walk back further
+Undo-Netscoot                              # reverse the most recent move, and call again to walk back further
 Undo-Netscoot -Id a1b2c3d4                 # reverse one specific move (its id from -List)
 Undo-Netscoot -After (Get-Date).AddHours(-1)   # reverse everything from the last hour, newest first
 Undo-Netscoot -All                         # reverse every move, newest first
@@ -844,8 +844,8 @@ folder of .NET projects    ->  Netscoot.TreeMoveResult
 Unity asset or folder      ->  Netscoot.UnityMoveResult
 ```
 
-These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields. They are
-plain pscustomobjects with no shared base type. See [Output types](#output-types).
+These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields, with no
+shared base type. See [Output types](#output-types).
 
 ##### Examples
 
@@ -909,8 +909,8 @@ them.
 .props  .targets           ->  Move-MSBuildImport   ->  Netscoot.ImportMoveResult
 ```
 
-These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields. They are
-plain pscustomobjects with no shared base type. See [Output types](#output-types).
+These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields, with no
+shared base type. See [Output types](#output-types).
 
 ##### Examples
 
@@ -1240,8 +1240,8 @@ to the script specialist (the module specialist has no RepositoryRoot).
 .psd1  module folder   ->  Move-PowerShellModule  ->  Netscoot.PSModuleMoveResult
 ```
 
-These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields. They are
-plain pscustomobjects with no shared base type. See [Output types](#output-types).
+These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields, with no
+shared base type. See [Output types](#output-types).
 
 ##### Examples
 
@@ -2233,10 +2233,11 @@ Update-Netscoot [[-Repository] <string>] [-Force] [-WhatIf] [-Confirm] [<CommonP
 Checks GitHub for a newer release (via [Test-NetscootUpdate](#test-netscootupdate)) and, if the installed version is
 behind, runs the release's `install.ps1` to overwrite the modules on your module path. No git, no clone. Does nothing
 when already current unless `-Force`. Honors `-WhatIf`/`-Confirm`. After it runs, reload the module in the current
-session with `Import-Module Netscoot -Force`. Needs network access to GitHub. For Gallery installs,
-`Update-Module Netscoot` is the simpler path. This command updates installer/clone installs in place from the GitHub
-release. When the update policy is Disabled (see [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy)), this refuses to
-update. `-Force` overrides a policy you set for yourself, never one an administrator set.
+session with `Import-Module Netscoot -Force`. Needs network access to GitHub. For Gallery installs, use
+`Update-Module Netscoot` instead. This command updates installer/clone installs in place from the GitHub release, and
+replaces a Gallery install's folder with an installer copy. When the update policy is Disabled (see
+[Set-NetscootUpdatePolicy](#set-netscootupdatepolicy)), this refuses to update. `-Force` overrides a policy you set for
+yourself, never one an administrator set.
 
 ##### Parameters
 
@@ -2475,10 +2476,9 @@ Get-Item ./Assets | Test-UnityMetaIntegrity
 
 ### Output types
 
-Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several, and some
-types are also used as a field on another. Whether a given command returns one or a collection is stated in that
-command's Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `Netscoot.*` field is itself one
-of these types.
+Each type below is one object with the fields shown. A command may return a single one or several, and some types are
+also used as a field on another. Whether a given command returns one or a collection is stated in that command's Output.
+In a field, `type[]` is array-valued, `type?` may be `$null`, and a `Netscoot.*` field is itself one of these types.
 
 | Type | Represents |
 | :--- | :--- |

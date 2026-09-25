@@ -353,7 +353,7 @@ function Invoke-DocsTask {
                     [void]$sb.AppendLine()
                     if ($common.Count) {
                         $shared = ($common | ForEach-Object { $_.Name }) -join ', '
-                        [void]$sb.AppendLine((Format-Wrap "These share a common shape ($shared) and each adds its own fields. They are plain pscustomobjects with no shared base type. See [Output types](#output-types)."))
+                        [void]$sb.AppendLine((Format-Wrap "These share a common shape ($shared) and each adds its own fields, with no shared base type. See [Output types](#output-types)."))
                     } else {
                         [void]$sb.AppendLine((Format-Wrap 'These result types are heterogeneous - they share no common fields. See [Output types](#output-types).'))
                     }
@@ -419,7 +419,7 @@ function Invoke-DocsTask {
     }
     [void]$sb.AppendLine('### Output types')
     [void]$sb.AppendLine()
-    [void]$sb.AppendLine((Format-Wrap 'Each type below is one `pscustomobject` with the fields shown. A command may return a single one or several, and some types are also used as a field on another. Whether a given command returns one or a collection is stated in that command''s Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `Netscoot.*` field is itself one of these types.'))
+    [void]$sb.AppendLine((Format-Wrap 'Each type below is one object with the fields shown. A command may return a single one or several, and some types are also used as a field on another. Whether a given command returns one or a collection is stated in that command''s Output. In a field, `type[]` is array-valued, `type?` may be `$null`, and a `Netscoot.*` field is itself one of these types.'))
     [void]$sb.AppendLine()
     $sortedTypes = @($typeDefs.Keys | Sort-Object)
     [void]$sb.AppendLine('| ' + (Format-Small 'Type') + ' | ' + (Format-Small 'Represents') + ' |')
