@@ -102,8 +102,8 @@ function New-MoveResult {
 
 function Resolve-MoveContext {
     # Shared front-half of every move: resolve git usage (red guidance + ShouldContinue/abort
-    # when missing) and whether to confirm per-line. Returns { UseGit; PerLine } or $null on
-    # abort (after writing the GitMissingAborted error via the calling cmdlet).
+    # when missing). Returns { UseGit } or $null on abort (after writing the GitMissingAborted
+    # error via the calling cmdlet).
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][System.Management.Automation.PSCmdlet]$Cmdlet,
