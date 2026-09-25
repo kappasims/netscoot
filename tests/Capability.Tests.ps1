@@ -25,6 +25,16 @@ Describe 'Get-NetscootCapability' {
         $cap.DotnetSupportsSlnx | Should -BeTrue          # .NET 9+ on this machine
         $cap.Platform | Should -BeIn @('Windows', 'macOS', 'Linux')
     }
+
+    It 'reports no .slnx support for a 9.0.1xx SDK' {
+        Mock -ModuleName Netscoot.Core Get-ExternalTool { [pscustomobject]@{ Name = $Name; Present = $true; Version = '9.0.110' } }
+        (Get-NetscootCapability).DotnetSupportsSlnx | Should -BeFalse
+    }
+
+    It 'reports .slnx support for a 9.0.200 SDK' {
+        Mock -ModuleName Netscoot.Core Get-ExternalTool { [pscustomobject]@{ Name = $Name; Present = $true; Version = '9.0.200' } }
+        (Get-NetscootCapability).DotnetSupportsSlnx | Should -BeTrue
+    }
 }
 
 Describe 'Required-tool gating (dotnet)' {
