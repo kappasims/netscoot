@@ -6,8 +6,9 @@ function Get-NetscootCapability {
 
     .DESCRIPTION
         PowerShell has no manifest mechanism to declare external-CLI prerequisites, so this is a
-        runtime probe via Get-Command; dotnet is required for .NET project moves (the delegation
-        target), and git is optional (without it, moves fall back to a plain move (PowerShell `Move-Item`) with no history preserved).
+        runtime probe via Get-Command. dotnet is required for .NET project moves (the delegation
+        target). git is optional. Without it, a move asks before falling back to a plain PowerShell
+        `Move-Item`, which preserves no history, and -Force skips the question.
 
     .OUTPUTS
         Netscoot.Capability
@@ -23,10 +24,10 @@ function Get-NetscootCapability {
     $git = Get-ExternalTool -Name git
     $dotnet = Get-ExternalTool -Name dotnet
 
-    # .slnx solution support landed in the .NET 9 SDK; infer from the major version.
+    # `dotnet sln` gained .slnx support in SDK 9.0.200.
     $slnx = $false
-    if ($dotnet.Present -and $dotnet.Version -match '^(\d+)\.') {
-        $slnx = ([int]$Matches[1] -ge 9)
+    if ($dotnet.Present -and $dotnet.Version -match '^(\d+)\.(\d+)\.(\d+)') {
+        $slnx = ([int]$Matches[1] -gt 9) -or ([int]$Matches[1] -eq 9 -and [int]$Matches[3] -ge 200)
     }
 
     $platform =
