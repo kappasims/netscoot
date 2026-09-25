@@ -209,10 +209,11 @@ function Invoke-MovePlan {
     #
     # Rollback: any step that fails throws (Invoke-Dotnet throws on non-zero exit; Move-PathTracked
     # throws on a failed move). To avoid leaving a half-reconciled repository, the caller passes the files
-    # the reconciliation edits (-BackupPath) and a move-reversing scriptblock (-Rollback). On any
-    # failure this restores those files from a snapshot and reverses the move, returning the repository to
-    # its pre-move state. This is the safety net for the -Force (no-git) path, which otherwise has
-    # no git history to recover from; with git it complements (does not replace) `git restore`.
+    # the reconciliation edits (-BackupPath, at their pre-move paths) and a move-reversing scriptblock
+    # (-Rollback, mandatory). -Move must be all-or-nothing: it either completes or leaves nothing moved.
+    # On any failure this reverses a completed move and restores those files from a snapshot, returning
+    # the repository to its pre-move state. This is the safety net for the -Force (no-git) path, which
+    # otherwise has no git history to recover from; with git it complements (does not replace) `git restore`.
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -221,7 +222,7 @@ function Invoke-MovePlan {
         [Parameter(Mandatory)][scriptblock]$Move,
         [object[]]$MoveArgs = @(),
         [string[]]$BackupPath = @(),
-        [scriptblock]$Rollback,
+        [Parameter(Mandatory)][scriptblock]$Rollback,
         [object[]]$RollbackArgs = @(),
         # Write-ahead journaling. When -Command is supplied and journaling is enabled, a 'pending'
         # record is written BEFORE the transaction and a 'committed'/'rolledback' record after, so an
@@ -281,7 +282,7 @@ function Invoke-MovePlan {
         $cause = $_
         $rollbackOk = $true
         # Reverse the move first (so files return to where the snapshot expects them)...
-        if ($moved -and $Rollback) {
+        if ($moved) {
             try { $rba = @($RollbackArgs); & $Rollback @rba }
             catch { $rollbackOk = $false; Write-Warning "Rollback move-back failed: $($_.Exception.Message)" }
         }

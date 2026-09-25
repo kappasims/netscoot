@@ -13,7 +13,7 @@ Describe 'Invoke-MovePlan (transaction engine)' {
                 New-MoveItem -Description 'A' -Detach ({ $log.Add('detachA') }.GetNewClosure()) -Reattach ({ $log.Add('reattachA') }.GetNewClosure())
                 New-MoveItem -Description 'B' -Detach ({ $log.Add('detachB') }.GetNewClosure()) -Reattach ({ $log.Add('reattachB') }.GetNewClosure())
             )
-            $r = Invoke-MovePlan -Caption 't' -Items $items -Move { $log.Add('move') }
+            $r = Invoke-MovePlan -Caption 't' -Items $items -Move { $log.Add('move') } -Rollback { }
             $r.Applied | Should -Be 2
             $r.Skipped | Should -Be 0
             ($log -join ',') | Should -Be 'detachA,detachB,move,reattachA,reattachB'
@@ -25,7 +25,7 @@ Describe 'Invoke-MovePlan (transaction engine)' {
             $seen = [System.Collections.Generic.List[string]]::new()
             $sb = { param($a, $b) $seen.Add("$a|$b") }.GetNewClosure()
             $items = @( New-MoveItem -Description 'X' -Reattach $sb -ReattachArgs @('one', 'two') )
-            Invoke-MovePlan -Caption 't' -Items $items -Move { } | Out-Null
+            Invoke-MovePlan -Caption 't' -Items $items -Move { } -Rollback { } | Out-Null
             $seen[0] | Should -Be 'one|two'
         }
     }
@@ -33,9 +33,30 @@ Describe 'Invoke-MovePlan (transaction engine)' {
     It 'runs the move even with no reconciliation items' {
         InModuleScope NetscootShared {
             $ran = [ref]$false
-            $r = Invoke-MovePlan -Caption 't' -Items @() -Move ({ $ran.Value = $true }.GetNewClosure())
+            $r = Invoke-MovePlan -Caption 't' -Items @() -Move ({ $ran.Value = $true }.GetNewClosure()) -Rollback { }
             $ran.Value | Should -BeTrue
             $r.Applied | Should -Be 0
+        }
+    }
+
+    It 'reverses a completed move when a reattach fails' {
+        InModuleScope NetscootShared {
+            $log = [System.Collections.Generic.List[string]]::new()
+            $items = @( New-MoveItem -Description 'X' -Reattach { throw 'simulated reattach failure' } )
+            $move = { $log.Add('move') }.GetNewClosure()
+            $rollback = { $log.Add('rollback') }.GetNewClosure()
+            { Invoke-MovePlan -Caption 't' -Items $items -Move $move -Rollback $rollback } | Should -Throw -ExpectedMessage '*rolled back*'
+            ($log -join ',') | Should -Be 'move,rollback'
+        }
+    }
+
+    It 'does not reverse a move that itself failed' {
+        InModuleScope NetscootShared {
+            $log = [System.Collections.Generic.List[string]]::new()
+            $move = { $log.Add('move'); throw 'simulated move failure' }.GetNewClosure()
+            $rollback = { $log.Add('rollback') }.GetNewClosure()
+            { Invoke-MovePlan -Caption 't' -Items @() -Move $move -Rollback $rollback } | Should -Throw -ExpectedMessage '*rolled back*'
+            ($log -join ',') | Should -Be 'move'
         }
     }
 }

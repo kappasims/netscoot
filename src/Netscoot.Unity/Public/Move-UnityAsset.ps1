@@ -112,13 +112,18 @@ function Move-UnityAsset {
 
             # Unity references resolve by GUID (carried in the .meta), so there are no
             # reference edits to confirm - moving the asset + its .meta is the whole operation.
+            # All-or-nothing: if the .meta cannot follow, the asset goes back before the error surfaces.
             $move = {
                 param($UseGit, $Src, $Dst, $SrcMeta, $DstMeta, $HasMeta, $RepoFull)
                 Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $RepoFull
-                if ($HasMeta) { Move-PathTracked -UseGit $UseGit -Source $SrcMeta -Destination $DstMeta -RepositoryRoot $RepoFull }
+                if ($HasMeta) {
+                    try { Move-PathTracked -UseGit $UseGit -Source $SrcMeta -Destination $DstMeta -RepositoryRoot $RepoFull }
+                    catch { Move-PathTracked -UseGit $UseGit -Source $Dst -Destination $Src -RepositoryRoot $RepoFull; throw }
+                }
             }
             Invoke-MovePlan -Caption "Move Unity asset $(Split-Path -Leaf $src)" -Items @() -Move $move `
                 -MoveArgs @($ctx.UseGit, $src, $dst, $srcMeta, $dstMeta, $hasMeta, $repoFull) `
+                -Rollback $move -RollbackArgs @($ctx.UseGit, $dst, $src, $dstMeta, $srcMeta, $hasMeta, $repoFull) `
                 -RepositoryRoot $repoFull -Command 'Move-UnityAsset' -Engine 'unity' -Source $src -Destination $dst `
                 -UndoParams @{ AssetPath = $dst; Destination = $src; Force = [bool]$Force } -NoJournal:$NoJournal | Out-Null
             $performed = $true

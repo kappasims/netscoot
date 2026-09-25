@@ -137,8 +137,10 @@ function Move-NativeProject {
             $items = New-DotnetReferenceItems -Solutions $solutions -OldProj $projFull -NewProj $newProj
             $move = { param($UseGit, $Src, $Dst, $Repository) Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $Repository }
 
+            $backup = @($solutions | ForEach-Object { $_.FullName })
             $planResult = Invoke-MovePlan -Caption "Move native $projFile" -Items $items -Move $move `
                 -MoveArgs @($ctx.UseGit, $oldDir, $newDir, $repoFull) `
+                -BackupPath $backup -Rollback $move -RollbackArgs @($ctx.UseGit, $newDir, $oldDir, $repoFull) `
                 -RepositoryRoot $repoFull -Command 'Move-NativeProject' -Engine 'native' -Source $projFull -Destination $newProj `
                 -UndoParams @{ Project = $newProj; Destination = $oldDir; Force = [bool]$Force } -NoJournal:$NoJournal
             $performed = $true
