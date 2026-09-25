@@ -14,12 +14,13 @@ BeforeAll {
 }
 
 Describe 'First-party tooling drift monitor' {
-    It 'raw file-content writes live only in Netscoot.StoredPath and the journal' {
+    It 'raw file-content writes live only in the sanctioned writers' {
         $writePattern = 'WriteAllText|WriteAllLines|Set-Content|Add-Content|Out-File|\.Save\('
         # Files allowed to write content directly:
-        #   StoredPath.ps1 - IS the sanctioned in-place path rewriter.
-        #   Journal.ps1    - writes the per-user undo journal; a tool sidecar, never a solution/project file.
-        $sanctioned = @('StoredPath.ps1', 'Journal.ps1')
+        #   StoredPath.ps1      - IS the sanctioned in-place path rewriter.
+        #   Journal.ps1         - writes the per-user undo journal; a tool sidecar, never a solution/project file.
+        #   Move-UnityAsset.ps1 - creates the folder .meta Unity would generate for a new folder; never edits a file.
+        $sanctioned = @('StoredPath.ps1', 'Journal.ps1', 'Move-UnityAsset.ps1')
         $offenders = $srcFiles |
             Where-Object { (Get-Content -LiteralPath $_.FullName -Raw) -match $writePattern } |
             Where-Object { $sanctioned -notcontains $_.Name } |

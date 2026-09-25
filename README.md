@@ -180,7 +180,8 @@ Level 3, specialists, when you want one specific reconciliation:
 | `Move-PowerShellModule` | a module folder | rewrites `Import-Module`/dot-source paths into and out of the module (manifest untouched) |
 
 `Move-UnityAsset` moves the asset together with its `.meta`, so the GUIDs scenes and prefabs
-reference are preserved (nothing to rewrite). `Directory.Build.props/.targets` and
+reference are preserved (nothing to rewrite), and gives any new parent folder its own `.meta`.
+`Directory.Build.props/.targets` and
 `Directory.Packages.props` (Central Package Management) inheritance is the one thing no move can
 fix, because it changes with folder depth; the move detects when the nearest inherited file
 changes and reports it.
@@ -2465,7 +2466,10 @@ asmdef "references" entries of the form "GUID:...") resolve by that GUID, not by
 their `.meta`, Unity regenerates fresh GUIDs and every reference to them breaks. This cmdlet moves the asset (git mv
 when tracked) together with its own `.meta`; for a folder, the descendant `.meta` files travel inside it and the
 folder's sibling `.meta` is moved too. asmdef references are by name/GUID (not path), so they do not need editing; when
-moving an .asmdef this reports who references it, for your awareness only. Cross-platform and target-agnostic: asmdef
+moving an .asmdef this reports who references it, for your awareness only. When the destination needs new parent
+folders, each one under Assets/ (or inside a package) gets a folder `.meta` with a fresh GUID, staged with the move, so
+it is committed once instead of being generated differently on every machine. [Undo-Netscoot](#undo-netscoot) moves the
+asset back but leaves those new folders and their `.meta` files in place. Cross-platform and target-agnostic: asmdef
 includePlatforms/excludePlatforms (iOS, Android, etc.) are plain fields untouched by a move, so mobile layouts are
 preserved.
 
