@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Select-String *)",
+      "PowerShell(git status *)",
+      "PowerShell(git status)",
+      "PowerShell(Get-Content *)",
+      "PowerShell(git log *)",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(git diff *)",
+      "PowerShell(git diff)",
+      "PowerShell(git show *)",
+      "PowerShell(Test-Path *)",
+      "PowerShell(Get-Item *)",
+      "PowerShell(ConvertFrom-Json)",
+      "PowerShell(Out-String)",
+      "PowerShell(git branch --show-current)",
+      "PowerShell(git rev-parse *)",
+      "PowerShell(git ls-files *)"
+    ]
+  }
+}
