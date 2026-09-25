@@ -98,24 +98,25 @@ Describe 'Snapshot dir lifecycle (v2)' -Tag 'Integration' {
     # canonicalize via `realpath` on macOS, putting the dir at `/private/var/...` while the orphan
     # scanner enumerates `/var/...` - a string-equality mismatch that makes a referenced dir look
     # like an orphan. Match production exactly.
+    # -Age backdates the dir, since -ClearOrphanSnapshots keeps any snapshot less than an hour old.
     function script:New-SyntheticSnapDir {
+        param([string]$Content = 'snapshot', [timespan]$Age = [timespan]::FromHours(2))
         $d = Join-Path ([System.IO.Path]::GetTempPath()) ('netscoot_snap_' + [guid]::NewGuid().ToString('N').Substring(0, 8))
         New-Item -ItemType Directory -Path $d | Out-Null
         # Register for session-end auto-cleanup if the auto-cleanup list exists (TestHelpers).
         if (Get-Variable -Scope Global -Name NetscootTestCleanup -ErrorAction SilentlyContinue) {
             [void]$global:NetscootTestCleanup.Add($d)
         }
+        Set-Content -LiteralPath (Join-Path $d 'f0') -Value $Content
+        (Get-Item -LiteralPath $d).LastWriteTimeUtc = [datetime]::UtcNow - $Age
         $d
     }
 
     It 'Repair-NetscootJournal -ClearOrphanSnapshots removes netscoot_snap_* dirs NOT referenced by any pending entry' {
         # Three orphan snap dirs (no journal entry references them).
-        $orphan1 = New-SyntheticSnapDir
-        $orphan2 = New-SyntheticSnapDir
-        $orphan3 = New-SyntheticSnapDir
-        Set-Content -LiteralPath (Join-Path $orphan1 'f0') -Value 'orphan-1'
-        Set-Content -LiteralPath (Join-Path $orphan2 'f0') -Value 'orphan-2'
-        Set-Content -LiteralPath (Join-Path $orphan3 'f0') -Value 'orphan-3'
+        $orphan1 = New-SyntheticSnapDir -Content 'orphan-1'
+        $orphan2 = New-SyntheticSnapDir -Content 'orphan-2'
+        $orphan3 = New-SyntheticSnapDir -Content 'orphan-3'
 
         Repair-NetscootJournal -RepositoryRoot $script:Repo -ClearOrphanSnapshots -Confirm:$false | Out-Null
 
@@ -124,12 +125,36 @@ Describe 'Snapshot dir lifecycle (v2)' -Tag 'Integration' {
         Test-Path -LiteralPath $orphan3 | Should -BeFalse
     }
 
+    It '-ClearOrphanSnapshots LEAVES a snapshot less than an hour old' {
+        $recent = New-SyntheticSnapDir -Content 'in-flight' -Age ([timespan]::FromMinutes(5))
+
+        Repair-NetscootJournal -RepositoryRoot $script:Repo -ClearOrphanSnapshots -Confirm:$false | Out-Null
+
+        Test-Path -LiteralPath $recent | Should -BeTrue
+        Remove-Item -LiteralPath $recent -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
+    It '-ClearOrphanSnapshots LEAVES a snapshot referenced by another repository''s pending entry' {
+        $referenced = New-SyntheticSnapDir -Content 'other-repo'
+        $other = Join-Path ([System.IO.Path]::GetTempPath()) 'netscoot-other-repo'
+        $jp = Get-MoveJournalPath -RepositoryRoot $other
+        New-Item -ItemType Directory -Path (Split-Path -Parent $jp) -Force | Out-Null
+        $pending = @{ v = 2; id = 'snp00004'; timestamp = (Get-Date).ToUniversalTime().ToString('o'); status = 'pending'; command = 'Move-DotnetProject'; engine = 'dotnet'; source = (Join-Path $other 'gone'); destination = (Join-Path $other 'also-gone'); undo = @{ command = 'Move-DotnetProject'; params = @{} }; snapshot = $referenced; backup = @() }
+        Set-Content -LiteralPath $jp -Value (ConvertTo-Json $pending -Depth 6 -Compress) -Encoding utf8
+
+        try {
+            Repair-NetscootJournal -RepositoryRoot $script:Repo -ClearOrphanSnapshots -Confirm:$false | Out-Null
+            Test-Path -LiteralPath $referenced | Should -BeTrue
+        } finally {
+            Remove-Item -LiteralPath $jp -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $referenced -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
     It '-ClearOrphanSnapshots LEAVES snap dirs that ARE referenced by a pending entry' {
         # One pending entry referencing its own snapshot, and one orphan.
-        $referenced = New-SyntheticSnapDir
-        Set-Content -LiteralPath (Join-Path $referenced 'f0') -Value 'referenced'
-        $orphan = New-SyntheticSnapDir
-        Set-Content -LiteralPath (Join-Path $orphan 'f0') -Value 'orphan'
+        $referenced = New-SyntheticSnapDir -Content 'referenced'
+        $orphan = New-SyntheticSnapDir -Content 'orphan'
 
         $jp = Get-MoveJournalPath -RepositoryRoot $script:Repo
         New-Item -ItemType Directory -Path (Split-Path -Parent $jp) -Force | Out-Null
