@@ -15,8 +15,9 @@
                           cmdlets' comment-based help.
       CheckDocs         - gate the docs: fail if the README reference is stale (someone edited
                           cmdlet help without regenerating), if any tracked file carries an
-                          old-brand token, or if README/skills name a cmdlet that no longer exists.
-                          Part of the Release gate.
+                          old-brand token, if README/skills name a cmdlet that no longer exists, or if
+                          the skills changed without a plugin version bump. Part of the Release gate
+                          and of CI.
       Release -Version  - cut a release in one run: stamp the version into every manifest, commit
                           `release: vX.Y.Z` and push it, wait for every CI run on that commit to
                           pass (Linux and macOS included), then tag it and create the GitHub release.
@@ -336,6 +337,17 @@ function Assert-DocsNotStale {
                 throw 'markdownlint-cli2 reported violations (see above). Fix the source markdown or the comment-based help that regenerates into README.md, then re-run.'
             }
         } finally { Pop-Location }
+    }
+
+    # (4) /plugin update delivers skill changes only when the plugin version changes, so any skill
+    # change since the version last changed needs a bump.
+    $pluginJson = '.claude-plugin/plugin.json'
+    $versioned = "$(& git -C $root log -1 --format=%H -G 'version.[[:space:]]*:' -- $pluginJson)".Trim()
+    if (-not $versioned) { throw "No commit sets the version in $pluginJson. A shallow clone cannot run this check; fetch the full history." }
+    $changedSkills = @(& git -C $root diff --name-only $versioned HEAD -- .claude/skills)
+    if ($changedSkills.Count) {
+        $pluginVersion = ([System.IO.File]::ReadAllText([System.IO.Path]::Combine($root, $pluginJson)) | ConvertFrom-Json).version
+        throw "The skills changed since the plugin was versioned $pluginVersion ($($versioned.Substring(0, 7))): $($changedSkills -join ', '). Bump the version in $pluginJson so /plugin update delivers them."
     }
 
     Write-Host 'Docs are current.' -ForegroundColor Green

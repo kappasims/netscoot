@@ -81,6 +81,9 @@ what it touches - never both unless it changes both:
   1. Make the change and bump `version` in `.claude-plugin/plugin.json`.
   2. Commit and push `develop`. Once it is on `develop`, `/plugin update netscoot` picks it up.
 
+  `-Task CheckDocs`, which CI runs on every push, fails when a skill changed after the last version
+  bump.
+
   No manifest stamp, no Gallery publish, no `master` fast-forward, no full module gate. (`master` is
   only for module releases - the Gallery package and its tag.) Build/CI tooling and standalone docs
   ride along the same way: they land on `develop` and need no module version bump.

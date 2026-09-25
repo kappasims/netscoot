@@ -71,6 +71,20 @@ jobs:
         shell: pwsh
         run: ./build.ps1 -Task Test -ShardIndex ${{ matrix.shard }} -ShardCount 3
 
+  # The docs gate: README reference, brand and cmdlet references, markdownlint, and the plugin version.
+  # Windows, because the reference covers the Windows-only native engine; full history, because the
+  # plugin check finds the commit that last set the plugin version.
+  docs:
+    name: CheckDocs
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check docs
+        shell: pwsh
+        run: ./build.ps1 -Task CheckDocs
+
   lint:
     name: PSScriptAnalyzer
     runs-on: ubuntu-latest
