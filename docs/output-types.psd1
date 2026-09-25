@@ -112,7 +112,7 @@
     }
 
     'Netscoot.PSModuleMoveResult' = @{
-        Summary = 'Result of moving a PowerShell module folder and reconciling its manifest.'
+        Summary = 'Result of moving a PowerShell module folder and fixing the paths that load it.'
         Array   = $false
         Fields  = @(
             @{ Name = 'Engine';       Type = 'string'; Note = '' }

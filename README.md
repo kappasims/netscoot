@@ -7,9 +7,9 @@
 
 netscoot moves a project, module, or asset (.NET, PowerShell, Unity, or native C++) without breaking
 what depends on it, and rolls back if anything fails. It reconciles what the move would otherwise
-break: a .NET project's solution membership, references, and GUIDs; a PowerShell module's
-manifest; a Unity asset's `.meta` GUIDs; a
-native C++ project's solution membership (reporting the link settings it cannot safely rewrite).
+break: a .NET project's solution membership, references, and GUIDs; the paths that load a PowerShell
+script or module; a Unity asset's `.meta` GUIDs; a native C++ project's solution entries and project
+references (reporting the build settings it cannot safely rewrite).
 Visual Studio does this for a .NET project when you drag it in the GUI, whereas netscoot does it from
 the command line, everywhere Visual Studio is not: VS Code, Rider, CI, Linux, macOS, and AI agents.
 
@@ -1225,9 +1225,9 @@ Move-PowerShell [-Path] <string> -Destination <string> [-RepositoryRoot <string>
 ```
 
 Dispatches a PowerShell item to the right specialist by type (see Output for the routing): the script specialist fixes
-dot-source/call references (AST-based), the module specialist reconciles the manifest. `-WhatIf`/`-Confirm`/`-Verbose`
-propagate to the specialist; `-Force` is forwarded, and `-RepositoryRoot` is forwarded to the script specialist (the
-module specialist has no RepositoryRoot).
+dot-source/call references (AST-based), the module specialist fixes the paths that load the module.
+`-WhatIf`/`-Confirm`/`-Verbose` propagate to the specialist; `-Force` is forwarded, and `-RepositoryRoot` is forwarded
+to the script specialist (the module specialist has no RepositoryRoot).
 
 ##### Parameters
 
@@ -1257,7 +1257,7 @@ plain pscustomobjects with no shared base type. See [Output types](#output-types
 # A .ps1 routes to the script mover (fixes dot-source/call references)
 Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -WhatIf
 
-# A module folder (or its .psd1) routes to the module mover (reconciles the manifest)
+# A module folder (or its .psd1) routes to the module mover (fixes the paths that load it)
 Move-PowerShell -Path ./tools/Mayo -Destination ./modules/Mayo
 
 # Destination is an existing folder -> the script lands at ./shared/helpers.ps1
@@ -2486,7 +2486,7 @@ of these types.
 | [Netscoot.NativeMoveResult](#netscootnativemoveresult) | Result of moving a native / C++/CLI project (`.vcxproj`). |
 | [Netscoot.NativeSetting](#netscootnativesetting) | One path-bearing MSBuild setting in a moved `.vcxproj` that the dotnet CLI cannot reconcile. |
 | [Netscoot.PathReference](#netscootpathreference) | One build/CI/hook/container line that hardcodes a moved path and that no first-party tool reconciles. |
-| [Netscoot.PSModuleMoveResult](#netscootpsmodulemoveresult) | Result of moving a PowerShell module folder and reconciling its manifest. |
+| [Netscoot.PSModuleMoveResult](#netscootpsmodulemoveresult) | Result of moving a PowerShell module folder and fixing the paths that load it. |
 | [Netscoot.RepairResult](#netscootrepairresult) | One dangling solution-membership or ProjectReference entry that was (or would be) repaired. |
 | [Netscoot.ScriptMoveResult](#netscootscriptmoveresult) | Result of moving a standalone `.ps1` and fixing dot-source/call paths. |
 | [Netscoot.SolutionItem](#netscootsolutionitem) | One entry in the full contents of a solution (or a project on disk that no solution references). |
@@ -2724,7 +2724,7 @@ Netscoot.PathReference
 [ [Invoke-Netscoot](#invoke-netscoot) | [Move-PowerShell](#move-powershell) |
 [Move-PowerShellModule](#move-powershellmodule) | [Undo-Netscoot](#undo-netscoot) ]
 
-Result of moving a PowerShell module folder and reconciling its manifest.
+Result of moving a PowerShell module folder and fixing the paths that load it.
 
 ```text
 Netscoot.PSModuleMoveResult
