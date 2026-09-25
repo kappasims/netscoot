@@ -132,4 +132,23 @@ Describe 'Repair-NetscootSolutionReferences' -Tag 'Integration' {
             (Get-Content (Join-Path $root (Join-Path 'App' 'App.csproj')) -Raw) | Should -Not -Match 'Lib\.csproj'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
+
+    It 'finds a moved .vcxproj and neither prunes nor re-adds it through the dotnet CLI' {
+        $root = New-TempRoot -Prefix 'netscoot_rep'
+        try {
+            Push-Location $root
+            try { & git init -q } finally { Pop-Location }
+            $slnx = Join-Path $root 'Demo.slnx'
+            Set-Content -LiteralPath $slnx -Value '<Solution><Project Path="old/Nat/Nat.vcxproj" /></Solution>'
+            $moved = New-Item -ItemType Directory -Path (Join-Path $root (Join-Path 'new' 'Nat'))
+            Set-Content -LiteralPath (Join-Path $moved.FullName 'Nat.vcxproj') -Value '<Project/>'
+
+            $r = @(Repair-SolutionReferences -RepositoryRoot $root)
+            $r[0].Resolution | Should -Be 'Relocatable'
+
+            Repair-SolutionReferences -RepositoryRoot $root -Fix -Prune -Confirm:$false -WarningVariable w -WarningAction SilentlyContinue | Out-Null
+            (Get-Content -LiteralPath $slnx -Raw) | Should -Match 'old/Nat/Nat\.vcxproj'
+            ($w -join "`n") | Should -Match 'Visual Studio'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
 }

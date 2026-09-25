@@ -16,12 +16,15 @@ function Repair-NetscootSolutionReferences {
         the one that keeps the most of the original path's trailing folders is chosen, since a moved
         project usually keeps its own folder name. Entries it cannot resolve are left untouched and
         reported, Missing (no such project anywhere) or Ambiguous (several equally-good candidates).
+        A relocatable .vcxproj is reported with its new location but not re-pointed, because the
+        dotnet CLI cannot load a native project. Re-point it in Visual Studio.
 
         With -Prune it removes the Missing entries, the genuinely deleted ones, through the dotnet
         CLI. -Prune never touches Relocatable or Ambiguous entries. -Fix and -Prune can be combined.
 
     .PARAMETER RepositoryRoot
-        Root to scan. Defaults to the enclosing git repository root.
+        Root to scan. Accepts pipeline input: a path string, or a directory item from Get-Item.
+        Defaults to the enclosing git repository root of the current directory.
 
     .PARAMETER Fix
         Re-point each dangling entry at the moved project when its new location is unambiguous.
@@ -79,10 +82,10 @@ function Repair-NetscootSolutionReferences {
         $workspace = Get-Workspace -RepositoryRoot $RepositoryRoot
         $managedProjects = @(Get-WorkspaceProjectFiles -Workspace $workspace)
 
-        # Index existing project files by leaf name, so a dangling target can be matched to where
-        # its project now lives.
+        # Index existing project files (native included) by leaf name, so a dangling target can be
+        # matched to where its project now lives.
         $byLeaf = @{}
-        foreach ($pf in $managedProjects) {
+        foreach ($pf in @(Get-WorkspaceProjectFiles -Workspace $workspace -IncludeNative)) {
             if (-not $byLeaf.ContainsKey($pf.Name)) { $byLeaf[$pf.Name] = [System.Collections.Generic.List[string]]::new() }
             $byLeaf[$pf.Name].Add($pf.FullName)
         }
@@ -153,7 +156,10 @@ function Repair-NetscootSolutionReferences {
         }
 
         foreach ($p in $problems) {
-            if ($Fix -and $p.Resolution -eq 'Relocatable') {
+            if ($Fix -and $p.Resolution -eq 'Relocatable' -and (Test-IsNativeProject $p.NewPath)) {
+                # The dotnet CLI cannot load a .vcxproj to re-add it.
+                Write-Warning "$($p.Missing) moved to $($p.NewPath). Re-point it in Visual Studio (a native project cannot be re-added through the dotnet CLI)."
+            } elseif ($Fix -and $p.Resolution -eq 'Relocatable') {
                 if ($p.Kind -eq 'Solution') {
                     if ($PSCmdlet.ShouldProcess($p.Container, "re-point $($p.Missing) -> $($p.NewPath)")) {
                         Invoke-Dotnet sln $p.Container remove $p.MissingAbs
