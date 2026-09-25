@@ -26,6 +26,7 @@
         'Get-RelativePathSafe',
         'Get-RepositoryRoot',
         'Get-SolutionContent',
+        'Get-SolutionItemEntries',
         'Get-SolutionMembership',
         'Get-SolutionProjectEntries',
         'Get-SolutionsReferencing',

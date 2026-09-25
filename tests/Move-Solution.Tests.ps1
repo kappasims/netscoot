@@ -44,4 +44,42 @@ Describe 'Move-Solution' -Tag 'Integration' {
             ($listed -join "`n") | Should -Match 'Lib\.csproj'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
+
+    It 'rebases solution items and other project types in a .sln' {
+        $root = New-TempRoot -Prefix 'netscoot_sln'
+        try {
+            $sln = Join-Path $root 'Demo.sln'
+            $text = @(
+                'Microsoft Visual Studio Solution File, Format Version 12.00'
+                'Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "Db", "db\Db.sqlproj", "{11111111-1111-1111-1111-111111111111}"'
+                'EndProject'
+                'Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{22222222-2222-2222-2222-222222222222}"'
+                "`tProjectSection(SolutionItems) = preProject"
+                "`t`tREADME.md = README.md"
+                "`tEndProjectSection"
+                'EndProject'
+            ) -join "`r`n"
+            Set-Content -LiteralPath $sln -Value $text -NoNewline
+            $r = Move-Solution -Path $sln -Destination (Join-Path $root (Join-Path 'build' 'Demo.sln')) -Force -Confirm:$false -NoJournal -WarningAction SilentlyContinue
+            $r.ProjectsRebased | Should -Be 1
+            $r.ItemsRebased | Should -Be 1
+            $moved = Get-Content -LiteralPath (Join-Path $root (Join-Path 'build' 'Demo.sln')) -Raw
+            $moved | Should -Match '"\.\.\\db\\Db\.sqlproj"'
+            $moved | Should -Match '\t\t\.\.\\README\.md = \.\.\\README\.md\r\n'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'rebases solution items and other project types in a .slnx' {
+        $root = New-TempRoot -Prefix 'netscoot_sln'
+        try {
+            $slnx = Join-Path $root 'Demo.slnx'
+            Set-Content -LiteralPath $slnx -Value '<Solution><Folder Name="/Solution Items/"><File Path="README.md" /></Folder><Project Path="db/Db.sqlproj" /></Solution>'
+            $r = Move-Solution -Path $slnx -Destination (Join-Path $root (Join-Path 'build' 'Demo.slnx')) -Force -Confirm:$false -NoJournal -WarningAction SilentlyContinue
+            $r.ProjectsRebased | Should -Be 1
+            $r.ItemsRebased | Should -Be 1
+            $moved = Get-Content -LiteralPath (Join-Path $root (Join-Path 'build' 'Demo.slnx')) -Raw
+            $moved | Should -Match '<File Path="\.\./README\.md" />'
+            $moved | Should -Match '<Project Path="\.\./db/Db\.sqlproj" />'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
 }
