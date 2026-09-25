@@ -8,10 +8,10 @@ description: Use when moving or restructuring a native C++ or C++/CLI project (.
 Purpose (full overview: the [netscoot README](https://github.com/kappasims/netscoot)): a move
 that reconciles what it can and reports the rest. netscoot moves the folder (with its paired
 `.vcxproj.filters`), updates the solution entries and `ProjectReference`s that point at it, then
-reports every relative or `$(SolutionDir)`-relative setting you must verify by hand rather than
-silently editing it.
+reports the relative or `$(SolutionDir)`-relative settings you must verify by hand rather than
+silently editing them.
 
-Native projects do not fit the dotnet-CLI delegation model that managed projects use: the dotnet
+Native projects do not fit the dotnet-CLI delegation model that managed projects use. The dotnet
 CLI cannot load a real `.vcxproj` outside Visual Studio's MSBuild. So netscoot rewrites the path in
 each `.sln`/`.slnx` entry and each `ProjectReference` in place, keeping GUIDs, platform mappings and
 solution folders. It does **not** rewrite how native projects link:
@@ -24,42 +24,47 @@ solution folders. It does **not** rewrite how native projects link:
 
 C++/CLI is Windows-only (`<CLRSupport>`, `#pragma managed`, `<Windows.h>`), so this is gated.
 
-Scope is `.vcxproj` (the MSBuild format, Visual Studio 2010 and later) - covering both pure native
-C++ and C++/CLI. The legacy `.vcproj` (pre-VS2010) is **not** supported: it predates MSBuild, so
-nothing here can process it. Passing a `.vcproj` is rejected with a clear error; convert it to
+Scope is `.vcxproj` (the MSBuild format, Visual Studio 2010 and later), covering both pure native
+C++ and C++/CLI. The legacy `.vcproj` (pre-VS2010) is **not** supported. It predates MSBuild, so
+nothing here can process it. Passing a `.vcproj` is rejected with a clear error. Convert it to
 `.vcxproj` first (open it in VS 2010+).
 
 ## Analyze/audit first (read-only)
 
 Before moving, inspect with the read-only surface instead of parsing `.sln`/`.vcxproj` by hand:
-`Test-NetscootSolutionConsistency` (membership divergence across solutions, `-Debug` for the full matrix),
-`Get-NetscootSolutionInventory` (full solution contents - it surfaces `.vcxproj` and other non-CLI project
-types that `dotnet sln list` omits, plus projects in no solution), `Repair-NetscootSolutionReferences` (no
-flags, to report dangling entries), `Find-NetscootPathReference`, and `Get-NetscootCapability`. To resolve
-a reported divergence, run `Sync-NetscootSolution` (or `dotnet sln <solution> add <project>` by hand). These
-cover solution membership for `.vcxproj` too; the native link settings are what `Move-NativeProject`
-reports separately.
+`Test-SolutionConsistency` (membership divergence across solutions, `-Debug` for the full matrix
+under `pwsh`), `Get-SolutionInventory` (full solution contents: it surfaces `.vcxproj` and other
+non-CLI project types that `dotnet sln list` omits, plus projects in no solution),
+`Repair-SolutionReferences` (no flags, to report dangling entries), `Find-PathReference`, and
+`Get-NetscootCapability`.
+
+Do not use `Sync-Solution` or `dotnet sln <solution> add` for a `.vcxproj`. The dotnet CLI cannot
+load it, so `Sync-Solution` only reports a missing `.vcxproj`, and `Repair-SolutionReferences -Fix`
+only reports a moved one. Add or re-point it in Visual Studio.
 
 ## Use Move-NativeProject
 
-`Import-Module Netscoot` loads the native engine on Windows (install it first if needed; never
+`Import-Module Netscoot` loads the native engine on Windows (install it first if needed, never
 auto-install).
 
 ```powershell
 Import-Module Netscoot
 Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo -WhatIf
+# Then, after the user agrees (the move prompts, and an agent's shell is non-interactive):
+Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo -Confirm:$false
 ```
 
 `-Destination` follows `git mv` rules: an existing directory means move into it keeping the
-folder's name (`./native` puts it at `./native/Aleppo`); otherwise it is the new folder path (a
+folder's name (`./native` puts it at `./native/Aleppo`). Otherwise it is the new folder path (a
 rename).
 
 It will: move the folder (`git mv` when tracked) including the paired `.vcxproj.filters`; update
 the project's path in every `.sln`/`.slnx` entry, in every `ProjectReference` to it (native or
-C#/C++/CLI consumers) and in its own `ProjectReference`s; and then **report every relative /
-`$(SolutionDir)`-relative native setting** it does not rewrite, in the moved project and in any
-other project whose settings point into the moved folder. The report (`UnreconciledSettings` on
-the result object, plus warnings) tells you exactly what to verify or hand-fix afterward.
+C#/C++/CLI consumers) and in its own `ProjectReference`s; and then **report the native settings it
+does not rewrite**. `UnreconciledSettings` on the result object holds the moved project's own
+relative or `$(SolutionDir)`-relative settings. A `..`-relative setting in another project that
+points into the moved folder is reported as a warning. Together they tell you what to verify or
+hand-fix afterward.
 
 ## After the move, always
 
@@ -70,11 +75,10 @@ the result object, plus warnings) tells you exactly what to verify or hand-fix a
 
 ## Undoing a move
 
-Every move is journaled (on by default) to a per-user data directory outside the working tree
-(LocalAppData on Windows, ~/Library/Application Support on macOS, ~/.local/share on Linux), so git
-never tracks it and you can reverse a move later - even in a new session - with `Undo-Netscoot`. It
-replays the inverse (moves the `.vcxproj` folder and its `.vcxproj.filters` back, re-doing solution
-membership); re-check the native link settings it reports, the same as for a forward move.
+Every move is journaled (on by default) to a per-user data directory outside the working tree, so
+git never tracks it and you can reverse a move later, even in a new session, with `Undo-Netscoot`.
+It replays the inverse (moves the `.vcxproj` folder and its `.vcxproj.filters` back, re-doing
+solution membership). Re-check the native link settings it reports, the same as for a forward move.
 
 ```powershell
 Undo-Netscoot -List     # what can be undone
@@ -82,24 +86,26 @@ Undo-Netscoot -WhatIf   # preview reversing the most recent move
 Undo-Netscoot           # reverse the most recent move (call again to walk back)
 ```
 
-A move interrupted by a crash is recoverable with `Repair-NetscootJournal`. Opt out per repository
-with `Set-NetscootJournal -Enabled $false` (`-Global` for all). See the
+`Repair-NetscootJournal` reports moves a crash interrupted (read-only by default). `-Rollback`
+restores such a move's files and moves it back, and `-Discard` forgets it and keeps the working
+tree. Both prompt, so pass `-Force` from an agent. Opt out of journaling per repository with
+`Set-NetscootJournal -Enabled $false` (`-Global` for all). See the
 [README](https://github.com/kappasims/netscoot).
 
-## The `git netscoot` verb (optional; ask first)
+## The `git netscoot` verb (optional, ask first)
 
 The same routing is also an opt-in git verb: `git netscoot <src> <dst> [--whatif]`. It needs a
-one-time alias that `Register-NetscootGitAlias` writes to the user's git config. If you suggest
-it or want to use it, prompt the user first and let them register it; do not edit their git
-config for them. Never auto-install anything (git, the dotnet SDK, or these modules): if a
+one-time alias that `Register-NetscootGitAlias` writes to git config (this repository by default,
+`-Scope Global` for the user). The alias runs `pwsh`, so it needs PowerShell 7 on PATH. If you
+suggest it or want to use it, prompt the user first and let them register it. Do not edit their git
+config for them. Never auto-install anything (git, the dotnet SDK, or these modules). If a
 prerequisite is missing, tell the user the install command and let them run it.
 
 ## Staying current
 
-netscoot does not auto-update. Check with `Test-NetscootUpdate` (compares the installed module to
-the latest GitHub release); update in place with `Update-Netscoot`, or from a dev clone with
-`git pull` then `./build.ps1 -Task Install`. (Updating from a release before 2.6.1 needs a one-time
-manual `Update-Module Netscoot` or installer re-run - those shipped a broken update endpoint; the
-in-box updater works from 2.6.1 on.) A SessionStart hook running `Test-NetscootUpdate -Auto` can
-remind automatically (gated to the update policy, never updates); ask the user before adding it,
-since it edits their settings.json.
+netscoot does not auto-update. Check with `Test-NetscootUpdate`, which compares the installed module
+to the latest GitHub release. Update a Gallery install with `Update-Module Netscoot`, an installer
+install with `Update-Netscoot`, and a dev clone with `git pull` then `./build.ps1 -Task Install`. A
+SessionStart hook running `Test-NetscootUpdate -Auto` can remind automatically. It checks only when
+the update policy is Enabled, and never updates. Ask the user before adding it, since it edits their
+settings.json.
