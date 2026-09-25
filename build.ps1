@@ -19,10 +19,13 @@
       Release -Version  - run from develop. Without -Publish (prepare): stamp the semver into every
                           manifest, gate on static analysis (required + clean) and the tests, then
                           commit `release: vX.Y.Z` and push develop so CI runs on it. With -Publish
-                          (finalize, after CI is green on all platforms): fast-forward master to that
-                          commit, tag, push, and create the GitHub release. master is protected, so it
-                          only ever receives a CI-passed commit; ModuleVersion stays equal to the tag.
-      Publish           - assemble the single bundled netscoot package, validate and smoke-import
+                          (finalize, after CI is green on all platforms): refuse unless ci.yml's Linux
+                          + macOS jobs passed on that commit, then fast-forward master to it, tag, push,
+                          and create the GitHub release. master is protected, so it only ever receives
+                          a CI-passed commit; ModuleVersion stays equal to the tag. With -Prerelease
+                          it runs from its own branch (e.g. 3.0-beta) and tags that branch instead
+                          of touching master.
+      Publish         - assemble the single bundled netscoot package, validate and smoke-import
                           it, then Publish-Module to the PowerShell Gallery (dry run without -ApiKey).
                           After a successful publish it unlists every prior version (only the new one
                           stays listed); pass -KeepOldVersions to keep the full history listed.
@@ -432,8 +435,8 @@ function Invoke-ReleaseTask {
         if ($LASTEXITCODE -ne 0) { throw "git push $branch failed" }
         $finalizeArgs = "-Version $Version" + $(if ($Prerelease) { " -Prerelease $Prerelease" } else { '' })
         Write-Host "Prepared $tag on $branch and pushed. Now wait for CI to pass on all platforms:" -ForegroundColor Yellow
-        Write-Host '  - ci.yml (Windows, Windows PowerShell 5.1, PSScriptAnalyzer) runs on the push' -ForegroundColor Yellow
-        Write-Host '  - run platforms.yml for Linux + macOS (tools/Invoke-PlatformCI.ps1)' -ForegroundColor Yellow
+        Write-Host '  - ci.yml runs Windows, Windows PowerShell 5.1, PSScriptAnalyzer, Linux and macOS on the push' -ForegroundColor Yellow
+        Write-Host '  - -Publish refuses to continue until the Linux + macOS jobs have passed' -ForegroundColor Yellow
         Write-Host "Then finalize:  ./build.ps1 -Task Release $finalizeArgs -Publish" -ForegroundColor Yellow
         return
     }
@@ -441,6 +444,19 @@ function Invoke-ReleaseTask {
     # FINALIZE: the current branch's HEAD must be the prepared release commit.
     $headSubject = "$(& git -C $root log -1 --format=%s)".Trim()
     if ($headSubject -ne "release: $tag") { throw "$branch HEAD is '$headSubject', not 'release: $tag'. Run the prepare phase first (without -Publish)." }
+
+    # Linux + macOS are not required status checks, so gate on ci.yml's test-platforms jobs here.
+    if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { throw "Release -Publish needs the GitHub CLI (gh). Install it (https://cli.github.com) and run 'gh auth login'." }
+    $sha = "$(& git -C $root rev-parse HEAD)".Trim()
+    $runs = @(& gh run list --workflow ci.yml --commit $sha --json databaseId | ConvertFrom-Json)
+    $platformJobs = @(foreach ($run in $runs) {
+        (& gh run view $run.databaseId --json jobs | ConvertFrom-Json).jobs | Where-Object { $_.name -match '^Test \((ubuntu|macos)-latest\)' }
+    })
+    $unpassed = @($platformJobs | Group-Object name | Where-Object { 'success' -notin $_.Group.conclusion } | ForEach-Object Name)
+    if (-not $platformJobs.Count -or $unpassed.Count) {
+        $detail = if ($platformJobs.Count) { "Not passed: $($unpassed -join ', ')." } else { 'No Linux/macOS jobs have run on it yet.' }
+        throw "The Linux + macOS tests have not passed on $tag ($sha). $detail Wait for ci.yml, or rerun failures with: gh run rerun <id> --failed"
+    }
 
     if ($Prerelease) {
         # Prerelease: tag THIS branch's HEAD and cut a GitHub prerelease. No master fast-forward - a

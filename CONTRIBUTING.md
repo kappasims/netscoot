@@ -26,8 +26,8 @@ path. Once it is on `$env:PSModulePath`, `Import-Module Netscoot` loads Shared a
 available engine in one call (native on Windows only).
 
 Per-push CI (`.github/workflows/ci.yml`) runs the suite on windows-latest (PowerShell 7) and
-Windows PowerShell 5.1, plus lint. Linux and macOS are on-demand (`platforms.yml`, via
-`tools/Invoke-PlatformCI.ps1`); run them before a release.
+Windows PowerShell 5.1, plus lint. Linux and macOS run automatically on a `release: vX.Y.Z` commit.
+For an ad-hoc Linux and macOS run on any branch, use `tools/Invoke-PlatformCI.ps1` (`platforms.yml`).
 
 ## Releasing
 
@@ -38,9 +38,10 @@ therefore prepared on `develop` and `master` is fast-forwarded to it. Run both f
 1. **Prepare:** `./build.ps1 -Task Release -Version X.Y.Z`. From a clean `develop`, it stamps the
    version into every manifest, gates on PSScriptAnalyzer (required + clean) and the full suite,
    then commits `release: vX.Y.Z` and pushes `develop` so CI runs on that exact commit.
-2. **Wait for green on all platforms:** `ci.yml` (Windows, Windows PowerShell 5.1, PSScriptAnalyzer)
-   runs on the push; run `platforms.yml` for Linux and macOS (`tools/Invoke-PlatformCI.ps1`).
-3. **Finalize:** `./build.ps1 -Task Release -Version X.Y.Z -Publish`. It fast-forwards `master` to
+2. **Wait for green on all platforms:** `ci.yml` runs Windows, Windows PowerShell 5.1,
+   PSScriptAnalyzer, Linux and macOS on the release commit.
+3. **Finalize:** `./build.ps1 -Task Release -Version X.Y.Z -Publish`. It refuses to continue until the
+   Linux and macOS jobs have passed on the release commit. Then it fast-forwards `master` to
    that commit (the protected push is accepted only because the checks passed on it), tags, pushes,
    creates the GitHub release, and returns you to `develop`. `master` is protected and rejects any
    commit whose CI checks are not green (admins included), so a tag can only ever sit on a
@@ -109,7 +110,7 @@ humans/agents looking at a working tree read the relative ones. The asymmetry is
 
 ```text
 build.ps1                Test / Analyze / Install / Docs / Release / Publish tasks
-.github/workflows/      ci.yml (push: Windows + PS 5.1 + lint); platforms.yml (on-demand: Linux + macOS)
+.github/workflows/      ci.yml (push: Windows + PS 5.1 + lint, plus Linux + macOS on release); platforms.yml (ad-hoc)
 src/NetscootShared/   shared helpers module (Common/ + Dotnet/); loaded by the umbrella first
 src/Netscoot/          umbrella module (loads Shared + every available engine)
 src/Netscoot.Core/     cross-platform module; Private/ = helpers, Public/ = cmdlets

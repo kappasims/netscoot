@@ -4,10 +4,11 @@
     Trigger and watch the on-demand Linux + macOS test workflow (.github/workflows/platforms.yml).
 
 .DESCRIPTION
-    Linux and macOS are not in per-push CI (which runs Windows + Windows PowerShell 5.1); run this
-    before a release to confirm them. It dispatches the workflow_dispatch run, waits for it to
-    register, then streams it to completion. Needs the GitHub CLI (gh) authenticated for this repo.
-    Exits non-zero if the run fails.
+    Linux and macOS are not in per-push CI (which runs Windows + Windows PowerShell 5.1). Use this
+    to check them on any branch before a release commit. The release commit itself runs them in
+    ci.yml. It dispatches the workflow_dispatch run, waits for it to register, then streams it to
+    completion. Needs the GitHub CLI (gh) authenticated for this repository. Exits non-zero if the
+    run fails.
 
 .PARAMETER Ref
     Branch or tag to run against. Defaults to the current branch.
