@@ -38,6 +38,7 @@
         'Group-SolutionsBySharedProjects',
         'Invoke-Dotnet',
         'Invoke-DotnetRead',
+        'Invoke-Git',
         'Invoke-MovePhase',
         'Invoke-MovePlan',
         'Move-PathTracked',

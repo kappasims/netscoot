@@ -139,7 +139,7 @@ function Move-UnityAsset {
                 if (Test-Path -LiteralPath $Dst) { Move-PathTracked -UseGit $UseGit -Source $Dst -Destination $Src -RepositoryRoot $RepoFull }
                 foreach ($m in @($FolderMetas)) {
                     if (-not (Test-Path -LiteralPath $m)) { continue }
-                    if ($UseGit -and (Test-GitTracked -Path $m)) { & git -C $RepoFull rm -q -f -- $m | Out-Null }
+                    if ($UseGit -and (Test-GitTracked -Path $m)) { Invoke-Git -RepositoryRoot $RepoFull -Arguments @('rm', '-q', '-f', '--', $m) }
                     else { Remove-Item -LiteralPath $m }
                 }
                 $deepestFirst = @($NewFolders)
@@ -155,7 +155,7 @@ function Move-UnityAsset {
                     foreach ($m in @($FolderMetas)) {
                         $guid = [guid]::NewGuid().ToString('N')
                         [System.IO.File]::WriteAllText($m, "fileFormatVersion: 2`nguid: $guid`nfolderAsset: yes`nDefaultImporter:`n  externalObjects: {}`n  userData: `n  assetBundleName: `n  assetBundleVariant: `n", [System.Text.UTF8Encoding]::new($false))
-                        if ($UseGit) { & git -C $RepoFull add -- $m; if ($LASTEXITCODE -ne 0) { throw "git add failed: $m" } }
+                        if ($UseGit) { Invoke-Git -RepositoryRoot $RepoFull -Arguments @('add', '--', $m) }
                     }
                     Move-PathTracked -UseGit $UseGit -Source $Src -Destination $Dst -RepositoryRoot $RepoFull
                     if ($HasMeta) { Move-PathTracked -UseGit $UseGit -Source $SrcMeta -Destination $DstMeta -RepositoryRoot $RepoFull }

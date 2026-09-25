@@ -59,8 +59,8 @@ function Register-NetscootGitAlias {
     $display = "git config $scopeFlag alias.netscoot '$aliasValue'"
 
     if ($PSCmdlet.ShouldProcess("git config ($Scope)", "set alias.netscoot -> $forwarder")) {
-        & git config $scopeFlag alias.netscoot $aliasValue
-        if ($LASTEXITCODE -ne 0) {
+        try { Invoke-Git -Arguments @('config', $scopeFlag, 'alias.netscoot', $aliasValue) }
+        catch {
             $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
                     [System.InvalidOperationException]::new("git config failed (exit $LASTEXITCODE). For -Scope Local you must be inside a git repository."),
                     'GitConfigFailed', [System.Management.Automation.ErrorCategory]::InvalidOperation, $display))
