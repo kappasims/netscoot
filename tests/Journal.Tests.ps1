@@ -46,6 +46,19 @@ Describe 'Move journal + Undo-Netscoot' -Tag 'Integration' {
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
+    It 'journals a move under the git repository root even when -RepositoryRoot is a subfolder' {
+        $root = New-JournalFixture
+        try {
+            $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
+            Move-DotnetProject -Project $lib -Destination (Join-Path $root (Join-Path 'src' 'Moved')) -RepositoryRoot (Join-Path $root 'src') `
+                -NoBuild -Confirm:$false -WarningAction SilentlyContinue | Out-Null
+            @(Get-MoveJournalEntries -RepositoryRoot $root).Count | Should -Be 1
+
+            Undo-Netscoot -RepositoryRoot $root -Confirm:$false -WarningAction SilentlyContinue | Out-Null
+            $lib | Should -Exist
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
     It 'does not journal when NETSCOOT_JOURNAL is off' {
         $root = New-JournalFixture
         $prev = $env:NETSCOOT_JOURNAL
