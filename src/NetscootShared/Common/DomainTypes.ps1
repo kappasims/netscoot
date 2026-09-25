@@ -62,6 +62,7 @@ namespace Netscoot
         public bool   Performed;
         public int    SkippedCount;
         public int ProjectsRebased;
+        public int ItemsRebased;
     }
 
     public class ImportMoveResult            // .props/.targets
