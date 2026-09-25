@@ -8,8 +8,10 @@ function Move-DotnetProject {
         Enumerates the solutions that include the project, the projects that reference it,
         and the project's own references. Removes those links while the old paths still
         resolve, moves the directory (git mv when tracked), then re-adds every link so the
-        dotnet CLI recomputes fresh relative paths and preserves GUIDs. The solution and
-        project XML (.sln/.slnx, .csproj) is never hand-edited.
+        dotnet CLI recomputes fresh relative paths. The solution and project XML (.sln/.slnx,
+        .csproj) is never hand-edited. Because the CLI re-creates each solution entry, a .sln
+        entry gets a new project GUID unless the project sets `<ProjectGuid>`. The entry's
+        solution folder is restored.
 
         Diagnostics follow invocation: -Verbose narrates the plan, -Debug emits the full
         solution-membership matrix, and divergence (the project living in some but not all
@@ -36,7 +38,8 @@ function Move-DotnetProject {
         Skip the verifying 'dotnet build' at the end.
 
     .PARAMETER Force
-        Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
+        When git is not installed, move with a plain PowerShell `Move-Item` without asking first.
+        Without -Force it asks before falling back. The plain move does not preserve git history.
 
     .PARAMETER NoJournal
         Skip recording this move in the undo journal for this call, even when journaling is enabled

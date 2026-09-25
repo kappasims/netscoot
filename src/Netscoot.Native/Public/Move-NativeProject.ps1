@@ -14,9 +14,10 @@ function Move-NativeProject {
         It will: move the folder (git mv when tracked) with its paired .vcxproj.filters; rewrite
         the project's path in each .sln/.slnx entry, in every ProjectReference to it (native or
         managed consumers) and in its own ProjectReferences, keeping GUIDs, platform mappings and
-        solution folders as they are; and report every relative/SolutionDir-relative native
-        setting, in the moved project or in another project pointing into its folder, for a
-        human to verify. It does not rewrite those MSBuild settings. The dotnet CLI is not used:
+        solution folders as they are; and report native settings for a human to verify: every
+        relative or SolutionDir-relative setting in the moved project (returned as
+        UnreconciledSettings), and every parent-relative (..) setting in another project that
+        points into its folder (written as warnings). It does not rewrite those MSBuild settings. The dotnet CLI is not used:
         it cannot load a .vcxproj outside Visual Studio's MSBuild.
 
     .PARAMETER Project
@@ -30,7 +31,8 @@ function Move-NativeProject {
         Root to scan for solutions. Defaults to the enclosing git repository root.
 
     .PARAMETER Force
-        Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
+        When git is not installed, move with a plain PowerShell `Move-Item` without asking first.
+        Without -Force it asks before falling back. The plain move does not preserve git history.
 
     .PARAMETER NoJournal
         Skip recording this move in the undo journal for this call, even when journaling is enabled

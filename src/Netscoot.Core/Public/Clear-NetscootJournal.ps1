@@ -5,9 +5,10 @@ function Clear-NetscootJournal {
 
     .DESCRIPTION
         Removes this repository's journal file from the per-user store (LocalAppData on Windows,
-        ~/Library/Application Support on macOS, ~/.local/share on Linux). The journal prunes itself on every write (entries older than the age
-        cap, then oldest-first past the size cap), so this is rarely needed; use it to wipe the undo
-        history outright. After clearing, Undo-Netscoot has nothing to reverse until the next move.
+        ~/Library/Application Support on macOS, `$XDG_DATA_HOME` or ~/.local/share on Linux, or
+        the folder `NETSCOOT_JOURNAL_HOME` names). The journal prunes itself when it outgrows its
+        size cap (dropping entries older than the age cap, then the oldest past the size cap), so
+        this is rarely needed. Use it to wipe the undo history outright. After clearing, Undo-Netscoot has nothing to reverse until the next move.
         It does not change whether journaling is on; use Set-NetscootJournal for that.
 
     .PARAMETER RepositoryRoot

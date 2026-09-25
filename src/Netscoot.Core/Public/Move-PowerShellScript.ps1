@@ -5,12 +5,13 @@ function Move-PowerShellScript {
         call it (and the moved script's own dot-source/call paths).
 
     .DESCRIPTION
-        Finds references via the PowerShell AST: dot-source (`. path`) and call (`& path`)
-        invocations whose path is a literal string or a $PSScriptRoot-based string resolving to
-        the moved script. It rewrites those relative paths with precise, BOM-preserving edits,
-        preserving the original style ($PSScriptRoot-prefixed or .\-relative, and the / or \
-        separator). The moved script's own dot-source, call, Import-Module and `using module`
-        paths are rebased too.
+        Finds references via the PowerShell AST: dot-source (`. path`), call (`& path`) and
+        Import-Module invocations whose path is a literal string or a $PSScriptRoot-based string
+        resolving to the moved script. A relative path is resolved against the referencing
+        script's own folder. It rewrites those paths as whole tokens, keeping each file's encoding
+        and the original style ($PSScriptRoot-prefixed or .\-relative, and the / or \ separator).
+        The moved script's own dot-source, call, Import-Module and `using module` paths are
+        rebased too.
 
         HEURISTIC LIMIT: only literal and $PSScriptRoot-based string paths are resolved and
         rewritten. A string built from other variables (e.g. one rooted at $dir), or a string
@@ -32,7 +33,8 @@ function Move-PowerShellScript {
         Root to scan for referencing scripts. Defaults to the enclosing git repository root.
 
     .PARAMETER Force
-        Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
+        When git is not installed, move with a plain PowerShell `Move-Item` without asking first.
+        Without -Force it asks before falling back. The plain move does not preserve git history.
 
     .PARAMETER NoJournal
         Skip recording this move in the undo journal for this call, even when journaling is enabled

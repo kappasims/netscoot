@@ -15,16 +15,19 @@ function Move-DotnetFile {
         The .NET file to move. Accepts pipeline input (a path string or a Get-ChildItem/Get-Item item; other object types are rejected).
 
     .PARAMETER Destination
-        New path (file or folder), following `git mv` rules; passed through to the specialist.
+        New path (file or folder), following `git mv` rules, passed through to the specialist. For a
+        project file, Destination is the project's new folder, and the whole folder moves.
 
     .PARAMETER RepositoryRoot
-        Repository root the specialist scans for references. Defaults to the enclosing git repository root.
+        Repository root the specialist scans for references. Defaults to the enclosing git repository
+        root. Not used for a solution file.
 
     .PARAMETER NoBuild
-        Skip the verifying 'dotnet build' (forwarded to the project/import specialist).
+        Skip the verifying 'dotnet build' (forwarded to Move-DotnetProject).
 
     .PARAMETER Force
-        Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
+        When git is not installed, move with a plain PowerShell `Move-Item` without asking first.
+        Without -Force it asks before falling back. The plain move does not preserve git history.
 
     .PARAMETER NoJournal
         Skip recording this move in the undo journal for this call (forwarded to the specialist),

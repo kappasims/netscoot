@@ -6,11 +6,12 @@ function Move-MSBuildImport {
 
     .DESCRIPTION
         There is no dotnet CLI for `<Import>`, so this reconciles the relative Import paths
-        directly with precise, formatting- and BOM-preserving text edits (it replaces the
-        exact `Project="<value>"` token captured from the XML, not a blind regex). It also
-        fixes the moved file's own outgoing `<Import>` paths, which break when its location
-        changes. The $(MSBuildThisFileDirectory) token is resolved/preserved; other $(...)
-        tokens are reported as unresolved rather than guessed.
+        directly with text edits that keep each file's formatting and encoding (it replaces the
+        exact `Project="<value>"` token captured from the XML). It also fixes the moved file's
+        own outgoing `<Import>` paths, which break when its location changes. The
+        $(MSBuildThisFileDirectory) token is resolved and preserved. Other $(...) tokens in the
+        moved file's own imports are reported as unresolved rather than guessed. An importer that
+        reaches the file through any token other than $(MSBuildThisFileDirectory) is not detected.
 
         Note: Directory.Build.props/.targets (and Directory.Packages.props, etc.) are imported
         by location, not an explicit `<Import>` - moving one changes inheritance scope, which
@@ -34,7 +35,8 @@ function Move-MSBuildImport {
         Root to scan for importers. Defaults to the enclosing git repository root.
 
     .PARAMETER Force
-        Proceed with a plain file move when git is unavailable instead of aborting. The plain move is a PowerShell `Move-Item` (same on every platform) and does not preserve git history.
+        When git is not installed, move with a plain PowerShell `Move-Item` without asking first.
+        Without -Force it asks before falling back. The plain move does not preserve git history.
 
     .PARAMETER NoJournal
         Skip recording this move in the undo journal for this call, even when journaling is enabled

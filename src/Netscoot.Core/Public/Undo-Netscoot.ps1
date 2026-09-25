@@ -18,8 +18,9 @@ function Undo-Netscoot {
 
         Because each reversal reconciles from the current state, undoing an older move (with -Id) while
         later moves still depend on its old location can leave references dangling. When that is
-        possible, a read-only sweep runs afterward and reports anything broken, with the command to fix
-        it.
+        possible, a read-only sweep of solution membership and ProjectReferences runs afterward and
+        reports dangling entries, with the command to fix them. Other engines' references are not
+        swept.
 
         -All and -After reverse many moves at once, so they prompt for a confirmation that
         -Confirm:$false does not silence; -Force bypasses it, and -WhatIf lists the reversals without
@@ -37,8 +38,8 @@ function Undo-Netscoot {
 
     .PARAMETER Id
         Reverse one specific move, identified by its journal id (the 8-character id from -List). If it
-        is not the most recent move, a read-only sweep afterward reports any references the
-        out-of-order reversal left dangling.
+        is not the most recent move, a read-only sweep afterward reports any solution entries and
+        ProjectReferences the out-of-order reversal left dangling.
 
     .PARAMETER After
         Reverse every move recorded strictly after this time, newest first. The time need not match
@@ -55,7 +56,8 @@ function Undo-Netscoot {
 
     .OUTPUTS
         The move-result object(s) from the reversing move(s); their type matches the original mover.
-        With -List, the journal entries. Nothing when there is nothing to undo.
+        With -List, the journal entries. When there is nothing to undo, nothing is returned and a
+        non-terminating error says why (an empty journal, journaling off, or no moves after -After).
 
     .EXAMPLE
         # See what can be undone

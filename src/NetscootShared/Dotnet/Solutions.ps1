@@ -172,8 +172,8 @@ function Get-SolutionContent {
 }
 
 function Get-SolutionMembership {
-    # For each solution, the absolute paths of every CLI-buildable project it lists
-    # (.cs/.fs/.vb/.vcxproj), derived from a single parse of each file.
+    # For each solution, the absolute paths of every project it lists (.cs/.fs/.vb/.vcx/.pssproj),
+    # derived from a single parse of each file.
     [CmdletBinding()]
     param([Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Solutions)
     $result = @()
