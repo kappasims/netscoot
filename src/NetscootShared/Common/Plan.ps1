@@ -121,7 +121,7 @@ function Resolve-MoveContext {
 function New-MoveItem {
     # Build one reconciliation item. Pass module-bound scriptblocks (not .GetNewClosure() -
     # closures rebind to the caller's scope and lose module-private functions like Invoke-Dotnet)
-    # and hand loop values in via *Args. Mark Optional for heuristic/non-load-bearing items.
+    # and hand loop values in via *Args.
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$Description,
@@ -129,7 +129,6 @@ function New-MoveItem {
         [object[]]$DetachArgs = @(),
         [scriptblock]$Reattach,
         [object[]]$ReattachArgs = @(),
-        [switch]$Optional,
         # Optional batch metadata (see New-DotnetReferenceItems). When present, Invoke-MovePlan
         # coalesces every item sharing a .Key into one dotnet spawn instead of running the
         # per-item scriptblock. Items without it run individually via Detach/Reattach as before.
@@ -140,7 +139,6 @@ function New-MoveItem {
         Description   = $Description
         Detach        = $Detach;   DetachArgs    = $DetachArgs
         Reattach      = $Reattach; ReattachArgs  = $ReattachArgs
-        Optional      = [bool]$Optional
         DetachBatch   = $DetachBatch
         ReattachBatch = $ReattachBatch
     }
