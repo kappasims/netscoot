@@ -9,7 +9,8 @@ function Move-DotnetFolder {
         A folder move always goes through Move-DotnetProjectTree: It treats every managed
         project under the folder as one co-moving set and reconciles only the references that
         cross the folder boundary (internal references ride along unchanged). If the folder
-        contains no managed projects, that specialist reports it. -WhatIf/-Confirm/-Verbose
+        contains no managed projects, that specialist reports it. A .vcxproj in the folder moves
+        with it without its references being updated, and the move warns. -WhatIf/-Confirm/-Verbose
         propagate; -Force/-RepositoryRoot/-NoBuild are forwarded.
 
     .PARAMETER Path

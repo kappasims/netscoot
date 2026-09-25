@@ -47,6 +47,28 @@ Describe 'Move-DotnetProjectTree' -Tag 'Integration' {
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
+    It 'reports Built = false when any project fails to build, not only the last one' {
+        $root = New-TreeFixture
+        try {
+            # group/Lib builds first and fails, group/Lib2 builds last and succeeds.
+            Mock -ModuleName Netscoot.Core dotnet { $global:LASTEXITCODE = if ("$args" -match '[\\/]Lib\.csproj$') { 1 } else { 0 } }
+            $r = Move-DotnetProjectTree -Path (Join-Path $root 'group') -Destination (Join-Path $root 'moved') -RepositoryRoot $root `
+                -Confirm:$false -WarningAction SilentlyContinue
+            $r.Built | Should -BeFalse
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'warns that a .vcxproj in the folder moves without its references being updated' {
+        $root = New-TreeFixture
+        try {
+            $native = New-Item -ItemType Directory -Path (Join-Path $root (Join-Path 'group' 'Native'))
+            Set-Content -LiteralPath (Join-Path $native.FullName 'Native.vcxproj') -Value '<Project/>'
+            Move-DotnetProjectTree -Path (Join-Path $root 'group') -Destination (Join-Path $root 'moved') -RepositoryRoot $root `
+                -NoBuild -Confirm:$false -WarningVariable w -WarningAction SilentlyContinue | Out-Null
+            ($w -join "`n") | Should -Match 'Native\.vcxproj moves with the folder'
+        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
     It 'refuses to move a folder into its own subtree (no mutation)' {
         $root = New-TreeFixture
         try {

@@ -13,7 +13,8 @@ function Move-DotnetProjectTree {
         references to projects outside the folder.
         References between two co-moved projects are left untouched - their relative path is
         unchanged because both move by the same delta. Everything is delegated to the dotnet
-        CLI; nothing is hand-edited.
+        CLI; nothing is hand-edited. A .vcxproj inside the folder moves with it, but its solution
+        entries and references are not updated, and the move warns about each one.
 
         Like Move-DotnetProject: dotnet is required; git is used when available (else a
         confirmed plain-move fallback via -Force / ShouldContinue); supports -WhatIf.
@@ -148,6 +149,10 @@ function Move-DotnetProjectTree {
         # source chain still resolves.
         Test-DirectoryBuildInheritance -OldDir $srcDir -NewDir $newDir -RepositoryRoot $repoFull
 
+        foreach ($n in @(Find-ProjectFiles -Root $srcDir -IncludeNative | Where-Object { Test-IsNativeProject $_.FullName })) {
+            Write-Warning "$($n.Name) moves with the folder, but its solution entries and references are not updated. Fix them in Visual Studio after the move."
+        }
+
         # Warn about references the CLI cannot reconcile on a move (non-literal path or conditional).
         foreach ($p in $moved) {
             foreach ($r in (Get-UnreconcilableReferences -ProjectFile $p -Workspace $workspace)) {
@@ -188,8 +193,11 @@ function Move-DotnetProjectTree {
             $skippedCount = $planResult.Skipped
 
             if (-not $NoBuild) {
-                foreach ($item in $plan) { & dotnet build $item.New | Out-Null }
-                $built = ($LASTEXITCODE -eq 0)
+                $built = $true
+                foreach ($item in $plan) {
+                    & dotnet build $item.New | Out-Null
+                    if ($LASTEXITCODE -ne 0) { $built = $false }
+                }
                 if (-not $built) { Write-Warning "A build failed after the tree move. Review with 'git status'; revert with 'git restore .' if needed." }
             }
         }
