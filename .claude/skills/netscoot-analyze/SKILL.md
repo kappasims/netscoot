@@ -26,46 +26,49 @@ to the project-type-specific skills (`restructure-dotnet`, `restructure-powershe
 | Does this environment have what netscoot needs? | `Get-NetscootCapability` |
 | Will my `.slnx` consolidation stay durable, or will VS Code re-create a `.sln`? | `Test-EditorSolutionGuard` |
 
-Output is structured (`pscustomobject` with `PSTypeName='Netscoot.<Kind>'`), so the agent can
-filter and assert on rows rather than parsing text. Default Format.ps1xml table views are tuned
-for the common columns; the full record is always there for `Select-Object`.
+Output is structured: each cmdlet returns typed `Netscoot.<Kind>` objects, except
+`Resolve-MoveEngine`, which returns the engine name as a string. So the agent can filter and assert
+on rows rather than parsing text. Default Format.ps1xml table views are tuned for the common
+columns, and the full record is always there for `Select-Object`.
 
 ## Canonical post-refactor sanity check
 
-When a refactor, rename, or move appears done, run
+When a refactor, rename, or move appears done, run this from the repository root:
 
 ```powershell
 Find-PathReference -Path <old identifier or path>
 ```
 
-over the OLD identifier (a moved file's old path, a renamed type, a removed namespace, an old DLL
-name in build scripts). The output is structured (`File`, `Line`, `Confidence`, `Text`) and the
-cmdlet emits the warning *"These are not auto-reconciled - review and fix them by hand."* That is
-the agent-readable signal that references survive in places the move machinery does not touch:
-build scripts, CI YAML, git hooks, container files, documentation snippets. Use it BEFORE declaring
-a rename "complete." If it returns rows, fix them by hand and re-run; a zero-row result with no
-warning is the all-clear.
+Run it over the OLD identifier (a moved file's old path, a renamed type, a removed namespace, an
+old DLL name in build scripts). The output is structured (`File`, `Line`, `Confidence`, `Text`)
+and the cmdlet emits the warning *"These are not auto-reconciled - review and fix them by hand."*
+That is the agent-readable signal that references survive in places the move machinery does not
+touch: build scripts, CI YAML, git hooks, container files, documentation snippets. Use it BEFORE
+declaring a rename "complete." If it returns rows, fix them by hand and re-run. A zero-row result
+with no warning is the all-clear.
 
-This is the canonical "did I miss anything" pattern - do not substitute an ad-hoc `Grep`.
+This is the canonical "did I miss anything" pattern, so do not substitute an ad-hoc `Grep`.
 `Find-PathReference` already knows which file kinds are candidates, applies a confidence rating, and
 excludes paths the move machinery already reconciled. By default it scans only the non-canonical
-automation file class (build/CI/hooks/containers); add `-AllFiles` to search every text file under
-the repository (caches/vendored dirs and binaries still excluded) for the thorough "search
+automation file class (build/CI/hooks/containers), which skips source files. Add `-AllFiles` to
+search every text file under the repository (caches/vendored dirs and binaries still excluded). Use
+it for a renamed type or namespace, which lives in source files, and for the thorough "search
 literally everywhere" pass when the default returns nothing but you suspect a reference survives.
 
 ## Use the installed module
 
 `Import-Module Netscoot` if available. If it is not installed, point the user at the
-[install steps](https://github.com/kappasims/netscoot) and let them run them; never auto-install.
+[install steps](https://github.com/kappasims/netscoot) and let them run them. Never auto-install.
 
 ## Cross-engine, not engine-specific
 
-These cmdlets work across all four engine families. For the actual MOVES, route by project type:
+These cmdlets cover all four engine families. `Repair-SolutionReferences` needs the dotnet CLI, and
+the others only read files. For the actual MOVES, route by project type:
 
 - `restructure-dotnet` for `.csproj`/`.fsproj`/`.vbproj` and solutions.
 - `restructure-powershell` for `.ps1` scripts and PowerShell modules.
 - `restructure-unity` for Unity assets, asmdefs, and `.meta` pairs.
 - `restructure-native` for `.vcxproj` (Windows-only).
 
-The analyzers here intentionally do NOT decide between those routes; that is `Resolve-MoveEngine`'s
+The analyzers here intentionally do NOT decide between those routes. That is `Resolve-MoveEngine`'s
 job (use it explicitly when the answer matters).

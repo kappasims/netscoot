@@ -1,6 +1,6 @@
 ---
 name: restructure-powershell
-description: Use when moving, relocating, or restructuring PowerShell code: moving a .ps1 script, relocating a PowerShell module (its folder or .psd1 manifest), or reorganizing a module layout. Triggers on "move this script," "relocate the module," "restructure the PowerShell module." Cross-platform. For .NET projects (.csproj/.sln) use restructure-dotnet; for native C++ use restructure-native.
+description: Use when moving, relocating, or restructuring PowerShell code: moving a .ps1 script, relocating a PowerShell module (its folder or .psd1 manifest), or reorganizing a module layout. Triggers on "move this script," "relocate the module," "restructure the PowerShell module." Cross-platform. For .NET projects (.csproj/.sln) use restructure-dotnet, for Unity assets use restructure-unity, and for native C++ use restructure-native.
 ---
 
 # Restructuring PowerShell code (scripts + modules, cross-platform)
@@ -10,8 +10,9 @@ that fixes what it would otherwise break. PowerShell has no Visual Studio to rec
 file, so netscoot rewrites the script paths a move breaks, changing only the path text.
 
 These cmdlets are **cross-platform** (PowerShell 7 on Windows/Linux/macOS, and Windows
-PowerShell 5.1) and need only git. The hazard is **relative references that break when a file
-moves**. Unlike a .NET project, there is no manifest/CLI that reconciles every kind:
+PowerShell 5.1). They need no dotnet CLI, and git is optional (without it, a move falls back to a
+plain `Move-Item`). The hazard is **relative references that break when a file moves**. Unlike a
+.NET project, there is no manifest/CLI that reconciles every kind:
 
 - **Scripts**: `. path` (dot-source), `& path` (call), `Import-Module <path>` and
   `using module <path>`, often `$PSScriptRoot`-relative. Move the script and those paths no longer
@@ -20,43 +21,47 @@ moves**. Unlike a .NET project, there is no manifest/CLI that reconciles every k
   and the module's own `.ps1`/`.psm1` paths to files outside it. The `.psd1` manifest's entries are
   module-relative, so a folder move leaves it valid and netscoot does not rewrite it.
 
-Use the installed `netscoot` module (`Import-Module Netscoot`; if it is not installed, point
-the user to the project's install steps and let them run them, never auto-install). The single
-front door is **`Move-PowerShell`**. It routes a `.ps1` to the script mover and a `.psd1`/module
-folder to the module mover. Always dry-run with `-WhatIf` first.
+Use the installed `netscoot` module (`Import-Module Netscoot`). If it is not installed, point the
+user to the project's install steps and let them run them. Never auto-install. The single front door
+is **`Move-PowerShell`**. It routes a `.ps1` to the script mover and a `.psd1`/module folder to the
+module mover. Always dry-run with `-WhatIf` first. A real move prompts for confirmation and an
+agent's shell is non-interactive, so after the user agrees, run it with `-Confirm:$false`.
 
 ## Analyze/audit first (read-only)
 
 Before moving, use the read-only surface rather than grepping by hand: `Find-PathReference` (the
 build/CI/hook scripts that hardcode a path), `Resolve-MoveEngine` (how a path classifies), and
 `Get-NetscootCapability` (git present? platform?). `Test-SolutionConsistency`,
-`Get-SolutionInventory`, `Repair-SolutionReferences`, and `Sync-Solution` are .NET-solution tools;
-reach for them when a PowerShell repository also carries `.csproj`/`.sln`. `Get-SolutionInventory` in
-particular lists non-CLI project types a PowerShell solution may include, such as a `.pssproj`,
-which `dotnet sln list` does not surface.
+`Get-SolutionInventory`, `Repair-SolutionReferences`, and `Sync-Solution` are .NET-solution tools.
+Reach for them when a PowerShell repository also carries `.csproj`/`.sln` (`Repair-SolutionReferences`
+and `Sync-Solution` need the dotnet CLI). `Get-SolutionInventory` in particular lists non-CLI project
+types a PowerShell solution may include, such as a `.pssproj`, which `dotnet sln list` does not
+surface.
 
 ```powershell
 Import-Module Netscoot
 
-# Script (fixes dot-source/call references via the PowerShell AST):
+# Script (fixes dot-source/call/Import-Module references via the PowerShell AST):
 Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -WhatIf
-Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1
+Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -Confirm:$false
 
 # Module (updates callers and the module's outward paths, then runs Test-ModuleManifest):
-Move-PowerShell -Path ./tools/Mayo -Destination ./modules/Mayo
+Move-PowerShell -Path ./tools/Mayo -Destination ./modules/Mayo -Confirm:$false
 ```
 
 You can also call the specialists directly: `Move-PowerShellScript` and `Move-PowerShellModule`.
 
 `-Destination` follows `git mv` rules: an existing directory means move into it keeping the
-item's name (`-Destination ./shared` puts the script at `./shared/helpers.ps1`); otherwise it is
+item's name (`-Destination ./shared` puts the script at `./shared/helpers.ps1`). Otherwise it is
 the new path, a rename (`-Destination ./shared/helpers.ps1`).
 
 ## Heuristic limit: reported, not silently guessed
 
 Script reference fixing is AST-based, so it only resolves what it can prove:
 
-- Literal and `$PSScriptRoot`-based string paths → rewritten (style preserved, including `/` or `\`).
+- Literal and `$PSScriptRoot`-based string paths → rewritten as whole tokens (style preserved,
+  including `/` or `\`, and the file's encoding kept). A relative path is resolved against the
+  referencing script's own folder.
 - A path built with **other variables** (e.g. `"$dir\x.ps1"`), or any other string naming the
   moved file (e.g. a `Join-Path` argument or a `Publish-Module -Path` value) → **reported** as a
   possible dynamic reference to verify by hand.
@@ -66,16 +71,15 @@ Treat the result as "fixed what could be proven," not "guaranteed complete."
 
 ## Do not
 
-- Rewrite the `.psd1` after a module move; its entries are module-relative and stay valid.
-- Move a `.ps1` with a plain `git mv` and assume its callers still work; references break silently.
+- Rewrite the `.psd1` after a module move. Its entries are module-relative and stay valid.
+- Move a `.ps1` with a plain `git mv` and assume its callers still work. References break silently.
 
 ## Undoing a move
 
-Every move is journaled (on by default) to a per-user data directory outside the working tree
-(LocalAppData on Windows, ~/Library/Application Support on macOS, ~/.local/share on Linux), so git
-never tracks it and you can reverse a move later - even in a new session - with `Undo-Netscoot`. It
-replays the inverse (the same move with source and destination swapped), re-reconciling references
-from the current state.
+Every move is journaled (on by default) to a per-user data directory outside the working tree, so
+git never tracks it and you can reverse a move later, even in a new session, with `Undo-Netscoot`.
+It replays the inverse (the same move with source and destination swapped), re-reconciling
+references from the current state.
 
 ```powershell
 Undo-Netscoot -List     # what can be undone
@@ -83,24 +87,26 @@ Undo-Netscoot -WhatIf   # preview reversing the most recent move
 Undo-Netscoot           # reverse the most recent move (call again to walk back)
 ```
 
-A move interrupted by a crash is recoverable with `Repair-NetscootJournal`. Opt out per repository
-with `Set-NetscootJournal -Enabled $false` (`-Global` for all). See the
+`Repair-NetscootJournal` reports moves a crash interrupted (read-only by default). `-Rollback`
+restores such a move's files and moves it back, and `-Discard` forgets it and keeps the working
+tree. Both prompt, so pass `-Force` from an agent. Opt out of journaling per repository with
+`Set-NetscootJournal -Enabled $false` (`-Global` for all). See the
 [README](https://github.com/kappasims/netscoot).
 
-## The `git netscoot` verb (optional; ask first)
+## The `git netscoot` verb (optional, ask first)
 
 The same routing is also an opt-in git verb: `git netscoot <src> <dst> [--whatif]`. It needs a
-one-time alias that `Register-NetscootGitAlias` writes to the user's git config. If you suggest
-it or want to use it, prompt the user first and let them register it; do not edit their git
-config for them. Never auto-install anything (git, the dotnet SDK, or these modules): if a
+one-time alias that `Register-NetscootGitAlias` writes to git config (this repository by default,
+`-Scope Global` for the user). The alias runs `pwsh`, so it needs PowerShell 7 on PATH. If you
+suggest it or want to use it, prompt the user first and let them register it. Do not edit their git
+config for them. Never auto-install anything (git, the dotnet SDK, or these modules). If a
 prerequisite is missing, tell the user the install command and let them run it.
 
 ## Staying current
 
-netscoot does not auto-update. Check with `Test-NetscootUpdate` (compares the installed module to
-the latest GitHub release); update in place with `Update-Netscoot`, or from a dev clone with
-`git pull` then `./build.ps1 -Task Install`. (Updating from a release before 2.6.1 needs a one-time
-manual `Update-Module Netscoot` or installer re-run - those shipped a broken update endpoint; the
-in-box updater works from 2.6.1 on.) A SessionStart hook running `Test-NetscootUpdate -Auto` can
-remind automatically (gated to the update policy, never updates); ask the user before adding it,
-since it edits their settings.json.
+netscoot does not auto-update. Check with `Test-NetscootUpdate`, which compares the installed module
+to the latest GitHub release. Update a Gallery install with `Update-Module Netscoot`, an installer
+install with `Update-Netscoot`, and a dev clone with `git pull` then `./build.ps1 -Task Install`. A
+SessionStart hook running `Test-NetscootUpdate -Auto` can remind automatically. It checks only when
+the update policy is Enabled, and never updates. Ask the user before adding it, since it edits their
+settings.json.
