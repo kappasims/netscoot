@@ -481,9 +481,9 @@ function Invoke-PublishTask {
             return
         }
 
-        # The Gallery requires TLS 1.2, which Windows PowerShell 5.1 does not enable by default.
+        # Windows PowerShell's PowerShellGet 1.x pushes through an old nuget.exe that cannot reach the Gallery over TLS 1.2.
         if ($PSVersionTable.PSEdition -eq 'Desktop') {
-            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
+            throw 'Publish needs PowerShell 7 (its PowerShellGet pushes via the dotnet CLI). Run: pwsh -NoProfile -File ./build.ps1 -Task Publish -ApiKey <key> [-Force] [-KeepOldVersions]'
         }
 
         # Capture the versions already listed on the Gallery BEFORE publishing, so we know exactly
