@@ -19,7 +19,8 @@ module layout. For installing and using netscoot, see the [README](README.md).
 
 Building and testing needs PowerShell 7+ (or Windows PowerShell 5.1), the .NET SDK (the suite
 creates and builds real projects), git, and Pester 5. `-Task Test` prints the install command for
-Pester if it is missing; nothing here auto-installs.
+Pester if it is missing; nothing here auto-installs. `-Task Docs`, `-Task CheckDocs` and `-Task Publish`
+need PowerShell 7.
 
 A test that builds fixtures in a temp directory is an integration test: its `Describe` carries
 `-Tag 'Integration'`, so `-Fast` skips it. Tests that run entirely in memory stay untagged.
