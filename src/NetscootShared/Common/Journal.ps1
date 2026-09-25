@@ -51,12 +51,15 @@ function ConvertFrom-JournalLine {
 function Read-MoveJournalState {
     # Read all lines and fold them by id (latest line per id wins), preserving first-seen order
     # (chronological). Returns the reconciled entry objects, oldest first, each tagged for display.
-    [CmdletBinding()]
-    param([Parameter(Mandatory)][string]$RepositoryRoot)
-    $path = Get-MoveJournalPath -RepositoryRoot $RepositoryRoot
-    if (-not (Test-Path -LiteralPath $path)) { return @() }
+    [CmdletBinding(DefaultParameterSetName = 'Repository')]
+    param(
+        [Parameter(Mandatory, ParameterSetName = 'Repository')][string]$RepositoryRoot,
+        [Parameter(Mandatory, ParameterSetName = 'File')][string]$Path
+    )
+    $file = if ($PSCmdlet.ParameterSetName -eq 'File') { $Path } else { Get-MoveJournalPath -RepositoryRoot $RepositoryRoot }
+    if (-not (Test-Path -LiteralPath $file)) { return @() }
     $byId = [ordered]@{}
-    foreach ($line in (Get-Content -LiteralPath $path)) {
+    foreach ($line in (Get-Content -LiteralPath $file)) {
         $o = ConvertFrom-JournalLine $line
         if (-not $o -or -not $o.id) { continue }
         # Forward-safety: skip a line written by a newer schema than we understand (e.g. after a
@@ -325,9 +328,19 @@ function Get-MoveJournalEntries {
 function Get-InterruptedMove {
     # Moves with a 'pending' record and no later outcome: interrupted by a crash, so the working tree
     # may be mid-move. Each carries source/destination and the snapshot path needed to recover.
-    [CmdletBinding()]
-    param([Parameter(Mandatory)][string]$RepositoryRoot)
-    @(Read-MoveJournalState -RepositoryRoot $RepositoryRoot | Where-Object { $_.status -eq 'pending' })
+    # -AllRepositories reads every repository's journal in the per-user store.
+    [CmdletBinding(DefaultParameterSetName = 'Repository')]
+    param(
+        [Parameter(Mandatory, ParameterSetName = 'Repository')][string]$RepositoryRoot,
+        [Parameter(Mandatory, ParameterSetName = 'All')][switch]$AllRepositories
+    )
+    $entries = if ($AllRepositories) {
+        Get-ChildItem -LiteralPath (Join-Path (Get-MoveJournalAppDataRoot) 'netscoot') -Filter '*.jsonl' -File -ErrorAction SilentlyContinue |
+            ForEach-Object { Read-MoveJournalState -Path $_.FullName }
+    } else {
+        Read-MoveJournalState -RepositoryRoot $RepositoryRoot
+    }
+    @($entries | Where-Object { $_.status -eq 'pending' })
 }
 
 function Remove-MoveJournalEntry {

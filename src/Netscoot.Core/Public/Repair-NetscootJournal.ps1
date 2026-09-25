@@ -16,7 +16,8 @@ function Repair-NetscootJournal {
           -Discard   accept the working tree as-is and just forget the interrupted entry (no file
                      changes), removing its snapshot.
         -Id limits the action to one entry (by its journal id). -ClearOrphanSnapshots deletes leftover
-        `netscoot_snap_*` recovery directories in the temp folder that no pending entry references.
+        `netscoot_snap_*` recovery directories in the temp folder that no interrupted move in any
+        repository's journal references. Snapshots less than an hour old are kept.
 
     .PARAMETER RepositoryRoot
         Repository whose journal to inspect, and the boundary every recovery is confined to. Defaults
@@ -32,10 +33,11 @@ function Repair-NetscootJournal {
         Act on only the interrupted move with this journal id.
 
     .PARAMETER Force
-        Skip the confirmation prompt (for automation).
+        Skip the confirmation prompt of -Rollback or -Discard (for automation).
 
     .PARAMETER ClearOrphanSnapshots
-        Delete temp recovery snapshots (`netscoot_snap_*`) that no pending entry references.
+        Delete temp recovery snapshots (`netscoot_snap_*`) that no interrupted move references. It
+        prompts once per snapshot. Add `-Confirm:$false` to skip the prompts.
 
     .OUTPUTS
         Netscoot.JournalEntry - the interrupted entries (report mode), or those acted on.
@@ -88,10 +90,13 @@ function Repair-NetscootJournal {
     }
 
     if ($ClearOrphanSnapshots) {
-        $referenced = @($interrupted | ForEach-Object { "$($_.snapshot)" } | Where-Object { $_ })
+        # Snapshots live in the shared temp folder, so an interrupted move in ANY repository's journal
+        # keeps its snapshot. A recent snapshot may belong to a move still running, so it is kept too.
+        $referenced = @(Get-InterruptedMove -AllRepositories | ForEach-Object { "$($_.snapshot)" } | Where-Object { $_ })
+        $cutoff = [datetime]::UtcNow.AddHours(-1)
         $tmp = [System.IO.Path]::GetTempPath()
         $orphans = @(Get-ChildItem -LiteralPath $tmp -Directory -Filter 'netscoot_snap_*' -ErrorAction SilentlyContinue |
-                Where-Object { $_.FullName -notin $referenced })
+                Where-Object { $_.FullName -notin $referenced -and $_.LastWriteTimeUtc -lt $cutoff })
         foreach ($o in $orphans) {
             if ($Force -or $PSCmdlet.ShouldProcess($o.FullName, 'delete orphan recovery snapshot')) {
                 Remove-Item -LiteralPath $o.FullName -Recurse -Force -ErrorAction SilentlyContinue
