@@ -8,7 +8,7 @@ module layout. For installing and using netscoot, see the [README](README.md).
 ```powershell
 ./build.ps1                          # run the Pester suite (imports all modules first), CI-friendly exit code
 ./build.ps1 -Fast                    # skip the 'Integration'-tagged tests that build fixtures on disk
-./build.ps1 -Task Analyze            # PSScriptAnalyzer over src/ (skipped if not installed)
+./build.ps1 -Task Analyze            # PSScriptAnalyzer over src/
 ./build.ps1 -Task Install            # copy all modules into the per-user PowerShell module path
 ./build.ps1 -Task Install -InstallPath D:\Modules
 ./build.ps1 -Task Docs               # regenerate the README Command reference section from the cmdlets' help
@@ -18,16 +18,30 @@ module layout. For installing and using netscoot, see the [README](README.md).
 ./build.ps1 -Task Publish                                   # stage + validate the single bundled package (dry run)
 ```
 
-Building and testing needs PowerShell 7+ (or Windows PowerShell 5.1), the .NET 10 SDK (the suite
-creates and builds real projects), git, and Pester 5.7.1. `-Task Test` prints the install command for
-Pester if it is missing, and nothing here auto-installs. `-Task Docs`, `-Task CheckDocs`,
-`-Task Release` and `-Task Publish` need PowerShell 7. `-Task Release` also needs the GitHub CLI
-(`gh`), signed in. CI pins PSScriptAnalyzer to 1.25.0, so install that version for a matching local
-`-Task Analyze`:
+### Prerequisites
+
+| Tool | Needed for |
+| --- | --- |
+| PowerShell 7.2 or later | every task. Docs, CheckDocs, Release and Publish run only on it |
+| Windows PowerShell 5.1 | running the suite on 5.1, which CI also does |
+| .NET 10 SDK | the tests, which create and build real projects |
+| git | the tests and Release |
+| Pester 5.7.1 | Test |
+| PSScriptAnalyzer 1.25.0 | Analyze (CI pins this version) |
+| Node.js LTS (npx) | CheckDocs and Release, which run markdownlint |
+| GitHub CLI (`gh`), signed in | Release |
+
+Nothing here installs itself. Test, Analyze, CheckDocs and Release stop with the install command
+when Pester, PSScriptAnalyzer, Node.js or `gh` is missing. To install them:
 
 ```powershell
+Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -SkipPublisherCheck
 Install-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser
+winget install OpenJS.NodeJS.LTS
+winget install GitHub.cli
 ```
+
+### Running tests
 
 To run one test file, or to run the suite under Windows PowerShell 5.1:
 
@@ -64,7 +78,7 @@ on any branch, use `tools/Invoke-PlatformCI.ps1` (`platforms.yml`).
 
 ## Releasing
 
-Releases ship from `master`, which is branch-protected: its required CI checks are enforced even
+Only maintainers cut releases. Releases ship from `master`, which is branch-protected: its required CI checks are enforced even
 for admins, so `master` only ever receives a commit that already passed CI. The release is
 therefore prepared on `develop` and `master` is fast-forwarded to it. From a clean `develop`,
 `./build.ps1 -Task Release -Version X.Y.Z` does the whole release in one run:
