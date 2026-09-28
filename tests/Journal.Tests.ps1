@@ -9,12 +9,12 @@ BeforeAll {
             $root = New-TempRoot -Prefix 'journal'
             Push-Location $root
             try {
-                & git init -q
+                Invoke-Git -RepositoryRoot $root -Arguments @('init', '-q')
                 New-ClassLibProject -Name Lib -Directory (Join-Path $root (Join-Path 'src' ('Lib'))) | Out-Null
-                & dotnet new sln -n Demo | Out-Null
-                $sln = (Get-ChildItem -LiteralPath $root -File -Filter '*.sln').FullName
-                & dotnet sln $sln add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
-                & git add -A; & git commit -qm fixture | Out-Null
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', 'slnx')
+                Invoke-Dotnet -Arguments @('sln', 'Demo.slnx', 'add', (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))))
+                Invoke-Git -RepositoryRoot $root -Arguments @('add', '-A')
+                Invoke-Git -RepositoryRoot $root -Arguments @('commit', '-qm', 'fixture')
             } finally { Pop-Location }
             return $root
         }
@@ -35,8 +35,10 @@ Describe 'Move journal + Undo-Netscoot' -Tag 'Integration' {
             (Join-Path $root (Join-Path '.git' ('netscoot'))) | Should -Not -Exist
             (Join-Path $root '.netscoot') | Should -Not -Exist
             Push-Location $root
-            try { (& git status --porcelain) -join "`n" | Should -Not -Match 'netscoot|journal' }
+            try { $status = (& git status --porcelain) -join "`n" }
             finally { Pop-Location }
+            $LASTEXITCODE | Should -Be 0
+            $status | Should -Not -Match 'netscoot|journal'
 
             Undo-Netscoot -RepositoryRoot $root -Confirm:$false | Out-Null
 
@@ -275,8 +277,9 @@ Describe 'Move journal + Undo-Netscoot' -Tag 'Integration' {
             @(Get-MoveJournalEntries -RepositoryRoot $root).Count | Should -Be 1
 
             # No moves after a future time -> non-terminating NoMovesAfter, journal unchanged.
-            Undo-Netscoot -RepositoryRoot $root -After (Get-Date).AddMinutes(5) -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
-            $errs[0].FullyQualifiedErrorId | Should -Match 'NoMovesAfter'
+            $errs = @(Undo-Netscoot -RepositoryRoot $root -After (Get-Date).AddMinutes(5) -ErrorAction Continue 2>&1 | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+            $errs.Count | Should -Be 1
+            $errs[0].FullyQualifiedErrorId | Should -BeLike 'NoMovesAfter*'
             @(Get-MoveJournalEntries -RepositoryRoot $root).Count | Should -Be 1
 
             # Everything after a past time is reversed.
@@ -293,8 +296,9 @@ Describe 'Move journal + Undo-Netscoot' -Tag 'Integration' {
             $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
             Move-DotnetProject -Project $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepositoryRoot $root -NoBuild -Confirm:$false | Out-Null
             @(Get-MoveJournalEntries -RepositoryRoot $root).Count | Should -Be 0          # off -> nothing recorded
-            Undo-Netscoot -RepositoryRoot $root -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
-            $errs[0].FullyQualifiedErrorId | Should -Match 'JournalingDisabled'
+            $errs = @(Undo-Netscoot -RepositoryRoot $root -ErrorAction Continue 2>&1 | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+            $errs.Count | Should -Be 1
+            $errs[0].FullyQualifiedErrorId | Should -BeLike 'JournalingDisabled*'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
@@ -321,8 +325,9 @@ Describe 'Move journal + Undo-Netscoot' -Tag 'Integration' {
             $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
             Move-DotnetProject -Project $lib -Destination (Join-Path $root (Join-Path 'libs' ('Lib'))) -RepositoryRoot $root -NoBuild -Confirm:$false | Out-Null
 
-            Undo-Netscoot -RepositoryRoot $root -Id 'deadbeef' -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
-            $errs[0].FullyQualifiedErrorId | Should -Match 'NoSuchEntry'
+            $errs = @(Undo-Netscoot -RepositoryRoot $root -Id 'deadbeef' -ErrorAction Continue 2>&1 | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+            $errs.Count | Should -Be 1
+            $errs[0].FullyQualifiedErrorId | Should -BeLike 'NoSuchEntry*'
             @(Get-MoveJournalEntries -RepositoryRoot $root).Count | Should -Be 1          # untouched
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -330,8 +335,9 @@ Describe 'Move journal + Undo-Netscoot' -Tag 'Integration' {
     It 'writes a non-terminating error when there is nothing to undo' {
         $root = New-JournalFixture
         try {
-            Undo-Netscoot -RepositoryRoot $root -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
-            $errs[0].FullyQualifiedErrorId | Should -Match 'EmptyJournal'
+            $errs = @(Undo-Netscoot -RepositoryRoot $root -ErrorAction Continue 2>&1 | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+            $errs.Count | Should -Be 1
+            $errs[0].FullyQualifiedErrorId | Should -BeLike 'EmptyJournal*'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 

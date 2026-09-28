@@ -21,12 +21,12 @@ function Get-NestedWorktreePath {
     if (-not (Test-GitAvailable)) { return @() }
     $rootFull = Resolve-FullPath $Root
     if (-not (Test-Path -LiteralPath $rootFull)) { return @() }
-    $lines = $null
-    Push-Location $rootFull
-    try { $lines = & git worktree list --porcelain 2>$null; $ok = ($LASTEXITCODE -eq 0) }
-    catch { $ok = $false }
-    finally { Pop-Location }
-    if (-not $ok) { return @() }
+    # A non-zero exit means $Root is not in a repository. Ignore keeps Windows PowerShell 5.1 from recording the probe's stderr as an error, and the exit code decides.
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = 'Ignore'
+    try { $lines = & git -C $rootFull worktree list --porcelain 2>$null }
+    finally { $ErrorActionPreference = $prev }
+    if ($LASTEXITCODE -ne 0) { return @() }
     $nested = @()
     foreach ($l in $lines) {
         if ($l -match '^worktree\s+(.+)$') {
@@ -75,8 +75,8 @@ function Move-PathTracked {
         Invoke-Git -RepositoryRoot $RepositoryRoot -Arguments @('mv', '--', $Source, $Destination)
     } else {
         # No -Force on purpose: a plain Move-Item refuses an existing destination instead of
-        # clobbering it. With Resolve-MoveTarget already rejecting an existing target, this keeps the
-        # non-git path non-destructive even if a tampered journal sets Force. Do NOT add -Force here.
+        # clobbering it. With the caller already rejecting an existing target before this runs, this
+        # keeps the non-git path non-destructive even if a tampered journal sets Force. Do NOT add -Force here.
         Move-Item -LiteralPath $Source -Destination $Destination
     }
 }
@@ -84,11 +84,14 @@ function Move-PathTracked {
 function Test-GitTracked {
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$Path)
-    $dir = Split-Path -Parent $Path
-    try {
-        Push-Location $dir
-        & git ls-files --error-unmatch -- $Path *> $null
-        return ($LASTEXITCODE -eq 0)
-    } catch { return $false }
-    finally { Pop-Location }
+    # A non-zero exit means untracked or outside a repository. Ignore keeps Windows PowerShell 5.1 from recording the probe's stderr as an error, and the exit code decides.
+    Push-Location (Split-Path -Parent $Path)
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = 'Ignore'
+    try { & git ls-files --error-unmatch -- $Path *> $null }
+    finally {
+        $ErrorActionPreference = $prev
+        Pop-Location
+    }
+    return ($LASTEXITCODE -eq 0)
 }

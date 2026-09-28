@@ -35,8 +35,12 @@ function Unregister-NetscootGitAlias {
 
     $scopeFlag = if ($Scope -eq 'Global') { '--global' } else { '--local' }
     if ($PSCmdlet.ShouldProcess("git config ($Scope)", 'unset alias.netscoot')) {
-        try { Invoke-Git -Arguments @('config', $scopeFlag, '--unset', 'alias.netscoot') } catch { Write-Verbose $_.Exception.Message }
-        # exit 5 = key not present; treat as already-removed (idempotent).
+        # Ignore keeps Windows PowerShell 5.1 from recording git's stderr as an error, and the exit code decides.
+        $prev = $ErrorActionPreference
+        $ErrorActionPreference = 'Ignore'
+        try { & git config $scopeFlag --unset alias.netscoot 2>$null }
+        finally { $ErrorActionPreference = $prev }
+        # Exit 5 means the alias was not set, which counts as already removed.
         if ($LASTEXITCODE -in 0, 5) {
             Write-Host "Unregistered 'git netscoot' ($Scope)." -ForegroundColor Green
         } else {

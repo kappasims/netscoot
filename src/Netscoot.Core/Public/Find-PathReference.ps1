@@ -92,7 +92,12 @@ function Find-PathReference {
         $hits = 0
         foreach ($file in (Get-PathBearingFile -RepositoryRoot $root -AdditionalGlob $AdditionalGlob -AllFiles:$AllFiles)) {
             $n = 0
-            foreach ($line in (Get-Content -LiteralPath $file.FullName -ErrorAction SilentlyContinue)) {
+            try { $lines = Get-Content -LiteralPath $file.FullName -ErrorAction Stop }
+            catch {
+                $PSCmdlet.WriteError($_)
+                continue
+            }
+            foreach ($line in $lines) {
                 $n++
                 $confidence = $null
                 if ($line.IndexOf($relFwd, $ci) -ge 0 -or ($relBack -ne $relFwd -and $line.IndexOf($relBack, $ci) -ge 0)) {

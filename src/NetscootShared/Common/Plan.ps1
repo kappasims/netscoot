@@ -296,7 +296,10 @@ function Invoke-MovePlan {
         }
         if ($rollbackOk) {
             # Cleanly reversed: mark the entry rolled back and drop the (now-moot) snapshot.
-            if ($snapDir) { Remove-Item -LiteralPath $snapDir -Recurse -Force -ErrorAction SilentlyContinue }
+            if ($snapDir) {
+                try { Remove-Item -LiteralPath $snapDir -Recurse -Force -ErrorAction Stop }
+                catch { Write-Warning "Could not remove the snapshot folder ${snapDir}: $($_.Exception.Message)" }
+            }
             if ($journaling) { Complete-MoveJournalEntry -RepositoryRoot $RepositoryRoot -Entry $entry -Status 'rolledback' }
             throw "Move failed and was rolled back to the original state. Cause: $($cause.Exception.Message)"
         }
@@ -304,7 +307,10 @@ function Invoke-MovePlan {
         # (Get-InterruptedMove) and recoverable (Repair-NetscootJournal).
         throw "Move failed AND rollback was incomplete - the repository may be in a partial state. Check git status, or run Repair-NetscootJournal to recover. Cause: $($cause.Exception.Message)"
     }
-    if ($snapDir) { Remove-Item -LiteralPath $snapDir -Recurse -Force -ErrorAction SilentlyContinue }
+    if ($snapDir) {
+        try { Remove-Item -LiteralPath $snapDir -Recurse -Force -ErrorAction Stop }
+        catch { Write-Warning "Could not remove the snapshot folder ${snapDir}: $($_.Exception.Message)" }
+    }
     if ($journaling) {
         Complete-MoveJournalEntry -RepositoryRoot $RepositoryRoot -Entry $entry -Status 'committed'
         Write-Host "Undo with: Undo-Netscoot   (replays: $hint)" -ForegroundColor DarkGray

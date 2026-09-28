@@ -64,9 +64,9 @@ function Resolve-MoveEngine {
         if ($ext -in '.csproj', '.fsproj', '.vbproj', '.sln', '.slnx', '.props', '.targets') { return 'dotnet' }
         if ($isContainer) {
             if ($underUnityTree) { return 'unity' }
-            if (Get-ChildItem -LiteralPath $full -Recurse -File -ErrorAction SilentlyContinue |
+            if (Get-TreeItem -Root $full -File |
                     Where-Object { $_.Extension -in '.csproj', '.fsproj', '.vbproj' } | Select-Object -First 1) { return 'dotnet' }
-            if (Get-ChildItem -LiteralPath $full -File -ErrorAction SilentlyContinue |
+            if (Get-ChildItem -LiteralPath $full -File |
                     Where-Object { $_.Extension -eq '.psd1' } | Select-Object -First 1) { return 'ps-module' }
             return 'unknown'
         }

@@ -27,7 +27,11 @@ BeforeAll {
 '@
         Set-Content -LiteralPath (Join-Path $app 'Program.cs') -Value 'System.Console.WriteLine("hi");' -Encoding UTF8
         Push-Location $root
-        try { & git init -q; & git add -A; & git commit -qm fixture | Out-Null } finally { Pop-Location }
+        try {
+            Invoke-Git -Arguments @('init', '-q')
+            Invoke-Git -Arguments @('add', '-A')
+            Invoke-Git -Arguments @('commit', '-qm', 'fixture')
+        } finally { Pop-Location }
         return $root
     }
 
@@ -53,7 +57,11 @@ BeforeAll {
 </Project>
 '@
         Push-Location $root
-        try { & git init -q; & git add -A; & git commit -qm fixture | Out-Null } finally { Pop-Location }
+        try {
+            Invoke-Git -Arguments @('init', '-q')
+            Invoke-Git -Arguments @('add', '-A')
+            Invoke-Git -Arguments @('commit', '-qm', 'fixture')
+        } finally { Pop-Location }
         return $root
     }
 }

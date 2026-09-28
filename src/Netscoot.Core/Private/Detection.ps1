@@ -60,7 +60,7 @@ function Get-PathBearingFile {
 
     # -Force so dot-prefixed dirs (.github, .githooks) are traversed; on Unix they are
     # "hidden" and Get-ChildItem -Recurse skips them without it.
-    $files = @(Get-ChildItem -LiteralPath $root -Recurse -File -Force -ErrorAction SilentlyContinue |
+    $files = @(Get-TreeItem -Root $root -File -Force |
             Where-Object {
                 if (Test-PathUnderAny -Path $_.FullName -Dirs $nested) { return $false }
                 if ($AllFiles) {
@@ -73,11 +73,12 @@ function Get-PathBearingFile {
     # .git/hooks/* active hooks live inside the excluded .git dir - add them explicitly.
     $gitHooks = Join-Path $root '.git/hooks'
     if (Test-Path -LiteralPath $gitHooks) {
-        $files += @(Get-ChildItem -LiteralPath $gitHooks -File -ErrorAction SilentlyContinue |
+        $files += @(Get-ChildItem -LiteralPath $gitHooks -File |
                 Where-Object { $_.Name -notlike '*.sample' })
     }
     foreach ($g in $AdditionalGlob) {
-        $files += @(Get-ChildItem -Path (Join-Path $root $g) -File -ErrorAction SilentlyContinue)
+        $files += @(Get-ChildItem -Path (Join-Path $root $g) -File -ErrorAction SilentlyContinue -ErrorVariable unmatched)
+        foreach ($e in $unmatched) { Write-Warning "-AdditionalGlob '$g' matched nothing readable: $($e.Exception.Message)" }
     }
 
     $files | Sort-Object FullName -Unique

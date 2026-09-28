@@ -11,12 +11,12 @@ BeforeAll {
             $root = New-TempRoot -Prefix 'netscoot_rb'
             Push-Location $root
             try {
-                & git init -q
+                Invoke-Git -RepositoryRoot $root -Arguments @('init', '-q')
                 New-ClassLibProject -Name Lib -Directory (Join-Path $root (Join-Path 'src' 'Lib')) | Out-Null
                 New-ConsoleProject -Name App -Directory (Join-Path $root (Join-Path 'src' 'App')) | Out-Null
-                & dotnet add (Join-Path $root (Join-Path 'src' (Join-Path 'App' 'App.csproj'))) reference (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) | Out-Null
-                & dotnet new sln -n Demo --format slnx | Out-Null
-                & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) (Join-Path $root (Join-Path 'src' (Join-Path 'App' 'App.csproj'))) | Out-Null
+                Invoke-Dotnet -Arguments @('add', (Join-Path $root (Join-Path 'src' (Join-Path 'App' 'App.csproj'))), 'reference', (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))))
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', 'slnx')
+                Invoke-Dotnet -Arguments @('sln', 'Demo.slnx', 'add', (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))), (Join-Path $root (Join-Path 'src' (Join-Path 'App' 'App.csproj'))))
             } finally { Pop-Location }
             return $root
         }
@@ -39,14 +39,12 @@ Describe 'Move-DotnetProject rolls back on a failed reattach (-Force / no-git pa
             # Force the no-git plain-move path, and make every reattach (dotnet ... add) fail so the
             # transaction throws after the detaches + move have already happened.
             Mock -ModuleName NetscootShared Test-GitAvailable { $false }
-            Mock -ModuleName NetscootShared Invoke-Dotnet {
-                if ($Arguments -contains 'add') { throw 'simulated reattach failure' }
-                & dotnet @Arguments 2>&1 | Out-Null
-                if ($LASTEXITCODE -ne 0) { throw "dotnet $($Arguments -join ' ') failed" }
-            }
+            Mock -ModuleName NetscootShared Invoke-Dotnet -ParameterFilter { $Arguments -contains 'add' } -MockWith { throw 'simulated reattach failure' }
 
             { Move-DotnetProject -Project $lib -Destination $dest -RepositoryRoot $root -NoBuild -Force -Confirm:$false } |
                 Should -Throw -ExpectedMessage '*rolled back*'
+            Should -Invoke -ModuleName NetscootShared Test-GitAvailable
+            Should -Invoke -ModuleName NetscootShared Invoke-Dotnet -ParameterFilter { $Arguments -contains 'add' }
 
             # Project is back at its original location, not at the destination.
             $lib | Should -Exist
@@ -55,7 +53,9 @@ Describe 'Move-DotnetProject rolls back on a failed reattach (-Force / no-git pa
             (Get-Content -LiteralPath $app -Raw) | Should -Match 'Lib\.csproj'
             (Get-Content -LiteralPath $app -Raw) | Should -Not -Match 'libs'
             # Solution membership restored to the original path.
-            (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n" | Should -Match 'src[\\/]Lib[\\/]Lib\.csproj'
+            $list = (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n"
+            $LASTEXITCODE | Should -Be 0
+            $list | Should -Match 'src[\\/]Lib[\\/]Lib\.csproj'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 }
@@ -88,6 +88,7 @@ Describe 'Every other mover rolls back on a failed step (-Force / no-git path)' 
 
             { Move-PowerShellScript -Path $lib -Destination (Join-Path $root (Join-Path 'shared' 'Common.ps1')) -RepositoryRoot $root -Force -Confirm:$false } |
                 Should -Throw -ExpectedMessage '*rolled back*'
+            Should -Invoke -ModuleName NetscootShared Test-GitAvailable
 
             $lib | Should -Exist
             (Join-Path $root (Join-Path 'shared' 'Common.ps1')) | Should -Not -Exist
@@ -108,6 +109,7 @@ Describe 'Every other mover rolls back on a failed step (-Force / no-git path)' 
 
             { Move-MSBuildImport -Path $props -Destination (Join-Path $root (Join-Path 'build' 'Shared.props')) -RepositoryRoot $root -Force -Confirm:$false } |
                 Should -Throw -ExpectedMessage '*rolled back*'
+            Should -Invoke -ModuleName NetscootShared Test-GitAvailable
 
             $props | Should -Exist
             (Join-Path $root (Join-Path 'build' 'Shared.props')) | Should -Not -Exist
@@ -120,13 +122,17 @@ Describe 'Every other mover rolls back on a failed step (-Force / no-git path)' 
         try {
             $lib = New-ClassLibProject -Name Lib -Directory (Join-Path $root (Join-Path 'src' 'Lib'))
             Push-Location $root
-            try { & dotnet new sln -n Demo --format slnx | Out-Null; & dotnet sln Demo.slnx add $lib | Out-Null } finally { Pop-Location }
+            try {
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', 'slnx')
+                Invoke-Dotnet -Arguments @('sln', 'Demo.slnx', 'add', $lib)
+            } finally { Pop-Location }
             $sln = Join-Path $root 'Demo.slnx'
             $before = Get-Content -LiteralPath $sln -Raw
             Mock -ModuleName NetscootShared Invoke-MovePhase -ParameterFilter { $Phase -eq 'Reattach' } -MockWith $script:FailReattachAfterEdit
 
             { Move-Solution -Path $sln -Destination (Join-Path $root (Join-Path 'build' 'Demo.slnx')) -Force -Confirm:$false } |
                 Should -Throw -ExpectedMessage '*rolled back*'
+            Should -Invoke -ModuleName NetscootShared Test-GitAvailable
 
             $sln | Should -Exist
             (Join-Path $root (Join-Path 'build' 'Demo.slnx')) | Should -Not -Exist
@@ -142,13 +148,17 @@ Describe 'Every other mover rolls back on a failed step (-Force / no-git path)' 
             $vcx = Join-Path $dir 'Calc.vcxproj'
             Set-Content -LiteralPath $vcx -Value '<?xml version="1.0" encoding="utf-8"?><Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" />'
             Push-Location $root
-            try { & dotnet new sln -n Demo --format slnx | Out-Null; & dotnet sln Demo.slnx add $vcx | Out-Null } finally { Pop-Location }
+            try {
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', 'slnx')
+                Invoke-Dotnet -Arguments @('sln', 'Demo.slnx', 'add', $vcx)
+            } finally { Pop-Location }
             $sln = Join-Path $root 'Demo.slnx'
             $before = Get-Content -LiteralPath $sln -Raw
             Mock -ModuleName NetscootShared Invoke-MovePhase -ParameterFilter { $Phase -eq 'Reattach' } -MockWith $script:FailReattachAfterEdit
 
             { Move-NativeProject -Project $vcx -Destination (Join-Path $root (Join-Path 'native' 'Calc')) -RepositoryRoot $root -Force -Confirm:$false -WarningAction SilentlyContinue } |
                 Should -Throw -ExpectedMessage '*rolled back*'
+            Should -Invoke -ModuleName NetscootShared Test-GitAvailable
 
             $vcx | Should -Exist
             (Join-Path $root (Join-Path 'native' 'Calc')) | Should -Not -Exist
@@ -164,13 +174,12 @@ Describe 'Every other mover rolls back on a failed step (-Force / no-git path)' 
             $cs = Join-Path $assets 'Foo.cs'
             Set-Content -LiteralPath $cs -Value 'public class Foo {}'
             Set-Content -LiteralPath "$cs.meta" -Value "fileFormatVersion: 2`nguid: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-            Mock -ModuleName Netscoot.Unity Move-PathTracked {
-                if ($Source -like '*.meta') { throw 'simulated meta move failure' }
-                Move-Item -LiteralPath $Source -Destination $Destination
-            }
+            Mock -ModuleName Netscoot.Unity Move-PathTracked -ParameterFilter { $Source -like '*.meta' } -MockWith { throw 'simulated meta move failure' }
 
             { Move-UnityAsset -AssetPath $cs -Destination (Join-Path $assets 'Sub') -RepositoryRoot $root -Force -Confirm:$false } |
                 Should -Throw -ExpectedMessage '*rolled back*'
+            Should -Invoke -ModuleName NetscootShared Test-GitAvailable
+            Should -Invoke -ModuleName Netscoot.Unity Move-PathTracked -ParameterFilter { $Source -like '*.meta' }
 
             $cs | Should -Exist
             "$cs.meta" | Should -Exist

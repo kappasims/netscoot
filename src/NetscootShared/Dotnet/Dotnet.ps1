@@ -61,20 +61,10 @@ function New-DotnetReferenceItems {
     return $items
 }
 
-function Invoke-DotnetRead {
-    # Read-only dotnet call: returns stdout lines, swallows stderr, never throws on it.
-    # Windows PowerShell 5.1 turns native stderr into a terminating error when
-    # $ErrorActionPreference is Stop; force Continue around the call so it does not.
-    [CmdletBinding()]
-    param([Parameter(Mandatory, ValueFromRemainingArguments)][string[]]$Arguments)
-    $prev = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
-    try { return (& dotnet @Arguments 2>$null) }
-    finally { $ErrorActionPreference = $prev }
-}
-
 function Invoke-Dotnet {
-    # Mutating dotnet call: runs, then throws on non-zero exit. Same 5.1 stderr guard.
+    # Mutating dotnet call: runs, then throws on non-zero exit. Windows PowerShell 5.1 turns native
+    # stderr into a terminating error when $ErrorActionPreference is Stop; force Continue around the
+    # call so it does not.
     [CmdletBinding()]
     param([Parameter(Mandatory, ValueFromRemainingArguments)][string[]]$Arguments)
     Write-Verbose "dotnet $($Arguments -join ' ')"

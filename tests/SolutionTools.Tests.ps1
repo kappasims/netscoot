@@ -15,8 +15,7 @@ BeforeAll {
         # A .slnx that lists a .csproj, a non-CLI .pssproj, a solution folder, and a solution item;
         # plus an on-disk .csproj that no solution references.
         $root = New-TempDir
-        Push-Location $root
-        try { & git init -q } finally { Pop-Location }
+        Invoke-Git -RepositoryRoot $root -Arguments @('init', '-q')
         $stub = "<Project Sdk=`"Microsoft.NET.Sdk`"></Project>"
         New-Item -ItemType Directory -Path (Join-Path $root 'Lib') | Out-Null
         Set-Content -LiteralPath (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) -Value $stub -Encoding UTF8
@@ -44,13 +43,13 @@ BeforeAll {
             $root = New-TempDir
             Push-Location $root
             try {
-                & git init -q
+                Invoke-Git -RepositoryRoot $root -Arguments @('init', '-q')
                 New-ClassLibProject -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
                 New-ConsoleProject -Name App -Directory (Join-Path $root 'App') | Out-Null
-                & dotnet new sln -n Both --format sln | Out-Null
-                & dotnet sln Both.sln add (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) (Join-Path $root (Join-Path 'App' 'App.csproj')) | Out-Null
-                & dotnet new sln -n Partial --format slnx | Out-Null
-                & dotnet sln Partial.slnx add (Join-Path $root (Join-Path 'App' 'App.csproj')) | Out-Null
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Both', '--format', 'sln')
+                Invoke-Dotnet -Arguments @('sln', 'Both.sln', 'add', (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')), (Join-Path $root (Join-Path 'App' 'App.csproj')))
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Partial', '--format', 'slnx')
+                Invoke-Dotnet -Arguments @('sln', 'Partial.slnx', 'add', (Join-Path $root (Join-Path 'App' 'App.csproj')))
             } finally { Pop-Location }
             return $root
         }
@@ -77,7 +76,10 @@ Describe 'Sync-Solution' -Tag 'Integration' {
         $root = New-DivergentFixture
         try {
             Sync-Solution -RepositoryRoot $root -WhatIf | Out-Null
-            (& dotnet sln (Join-Path $root 'Partial.slnx') list) -join "`n" | Should -Not -Match 'Lib[\\/]Lib\.csproj'
+            $list = (& dotnet sln (Join-Path $root 'Partial.slnx') list) -join "`n"
+            $LASTEXITCODE | Should -Be 0
+            $list | Should -Match 'App[\\/]App\.csproj'
+            $list | Should -Not -Match 'Lib[\\/]Lib\.csproj'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
@@ -86,7 +88,9 @@ Describe 'Sync-Solution' -Tag 'Integration' {
         try {
             $added = Sync-Solution -RepositoryRoot $root -Confirm:$false
             ($added.Added -join ';') | Should -Match 'Lib[\\/]Lib\.csproj'
-            (& dotnet sln (Join-Path $root 'Partial.slnx') list) -join "`n" | Should -Match 'Lib[\\/]Lib\.csproj'
+            $list = (& dotnet sln (Join-Path $root 'Partial.slnx') list) -join "`n"
+            $LASTEXITCODE | Should -Be 0
+            $list | Should -Match 'Lib[\\/]Lib\.csproj'
             # Now consistent.
             Test-SolutionConsistency -RepositoryRoot $root -WarningVariable w -WarningAction SilentlyContinue | Should -BeNullOrEmpty
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
@@ -119,13 +123,20 @@ Describe 'Sync-Solution' -Tag 'Integration' {
 Describe 'Test-SolutionConsistency' {
     It 'runs without the dotnet CLI on PATH' {
         $root = New-TempDir
+        $prevPath = $env:PATH
         try {
             Set-Content -LiteralPath (Join-Path $root 'All.slnx') -Value '<Solution><Project Path="Lib/Lib.csproj" /><Project Path="App/App.csproj" /></Solution>'
             Set-Content -LiteralPath (Join-Path $root 'Some.slnx') -Value '<Solution><Project Path="Lib/Lib.csproj" /></Solution>'
-            Mock -ModuleName Netscoot.Core Assert-DotnetAvailable { $false }
+            $dotnetDirs = @(Get-Command dotnet -CommandType Application -All | ForEach-Object { Split-Path -Parent $_.Source })
+            $sep = [System.IO.Path]::PathSeparator
+            $env:PATH = (@($env:PATH -split $sep) | Where-Object { $_ -and ($dotnetDirs -notcontains $_.TrimEnd('\', '/')) }) -join $sep
+            Test-DotnetAvailable | Should -BeFalse
             $r = @(Test-SolutionConsistency -RepositoryRoot $root -WarningAction SilentlyContinue)
             $r.Count | Should -Be 1
             $r[0].Project | Should -Match 'App[\\/]App\.csproj'
-        } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+        } finally {
+            $env:PATH = $prevPath
+            Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
+        }
     }
 }

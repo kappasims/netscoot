@@ -10,15 +10,16 @@ BeforeAll {
             $root = New-TempRoot -Prefix 'netscoot_tree'
             Push-Location $root
             try {
-                & git init -q
+                Invoke-Git -Arguments @('init', '-q')
                 New-ClassLibProject -Name Lib -Directory (Join-Path $root (Join-Path 'group' ('Lib')))  | Out-Null
                 New-ClassLibProject -Name Lib2 -Directory (Join-Path $root (Join-Path 'group' ('Lib2'))) | Out-Null
                 New-ConsoleProject -Name App -Directory (Join-Path $root 'App')          | Out-Null
-                & dotnet add (Join-Path $root (Join-Path 'group' (Join-Path 'Lib2' ('Lib2.csproj')))) reference (Join-Path $root (Join-Path 'group' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
-                & dotnet add (Join-Path $root (Join-Path 'App' ('App.csproj')))           reference (Join-Path $root (Join-Path 'group' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
-                & dotnet new sln -n Demo --format slnx | Out-Null
-                & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'group' (Join-Path 'Lib' ('Lib.csproj')))) (Join-Path $root (Join-Path 'group' (Join-Path 'Lib2' ('Lib2.csproj')))) (Join-Path $root (Join-Path 'App' ('App.csproj'))) | Out-Null
-                & git add -A; & git commit -qm fixture | Out-Null
+                Invoke-Dotnet -Arguments @('add', (Join-Path $root (Join-Path 'group' (Join-Path 'Lib2' ('Lib2.csproj')))), 'reference', (Join-Path $root (Join-Path 'group' (Join-Path 'Lib' ('Lib.csproj')))))
+                Invoke-Dotnet -Arguments @('add', (Join-Path $root (Join-Path 'App' ('App.csproj'))), 'reference', (Join-Path $root (Join-Path 'group' (Join-Path 'Lib' ('Lib.csproj')))))
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', 'slnx')
+                Invoke-Dotnet -Arguments @('sln', 'Demo.slnx', 'add', (Join-Path $root (Join-Path 'group' (Join-Path 'Lib' ('Lib.csproj')))), (Join-Path $root (Join-Path 'group' (Join-Path 'Lib2' ('Lib2.csproj')))), (Join-Path $root (Join-Path 'App' ('App.csproj'))))
+                Invoke-Git -Arguments @('add', '-A')
+                Invoke-Git -Arguments @('commit', '-qm', 'fixture')
             } finally { Pop-Location }
             return $root
         }
@@ -41,6 +42,7 @@ Describe 'Move-DotnetProjectTree' -Tag 'Integration' {
             (Get-Content (Join-Path $dest (Join-Path 'Lib2' ('Lib2.csproj'))) -Raw) | Should -Match '\.\.[\\/]Lib[\\/]Lib\.csproj'
             # Solution lists the new locations and the whole thing builds.
             $listed = & dotnet sln (Join-Path $root 'Demo.slnx') list
+            $LASTEXITCODE | Should -Be 0
             ($listed -join "`n") | Should -Match 'moved[\\/]group[\\/]Lib2'
             $bo = & dotnet build (Join-Path $root 'Demo.slnx') 2>&1
             $LASTEXITCODE | Should -Be 0 -Because ($bo -join [Environment]::NewLine)
@@ -51,10 +53,13 @@ Describe 'Move-DotnetProjectTree' -Tag 'Integration' {
         $root = New-TreeFixture
         try {
             # group/Lib builds first and fails, group/Lib2 builds last and succeeds.
-            Mock -ModuleName Netscoot.Core dotnet { $global:LASTEXITCODE = if ("$args" -match '[\\/]Lib\.csproj$') { 1 } else { 0 } }
+            Mock -ModuleName Netscoot.Core dotnet -ParameterFilter { $args[0] -eq 'build' -and $args[1] -match '[\\/]Lib\.csproj$' } { $global:LASTEXITCODE = 1 }
+            Mock -ModuleName Netscoot.Core dotnet -ParameterFilter { $args[0] -eq 'build' -and $args[1] -match '[\\/]Lib2\.csproj$' } { $global:LASTEXITCODE = 0 }
             $r = Move-DotnetProjectTree -Path (Join-Path $root 'group') -Destination (Join-Path $root 'moved') -RepositoryRoot $root `
                 -Confirm:$false -WarningAction SilentlyContinue
             $r.Built | Should -BeFalse
+            Should -Invoke -ModuleName Netscoot.Core dotnet -Times 1 -Exactly -ParameterFilter { $args[0] -eq 'build' -and $args[1] -match '[\\/]Lib\.csproj$' }
+            Should -Invoke -ModuleName Netscoot.Core dotnet -Times 1 -Exactly -ParameterFilter { $args[0] -eq 'build' -and $args[1] -match '[\\/]Lib2\.csproj$' }
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
@@ -74,9 +79,10 @@ Describe 'Move-DotnetProjectTree' -Tag 'Integration' {
         try {
             $group = Join-Path $root 'group'
             $dest = Join-Path $group 'nested'   # under the source folder
-            Move-DotnetProjectTree -Path $group -Destination $dest -RepositoryRoot $root -NoBuild -Confirm:$false `
-                -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
-            $errs[0].FullyQualifiedErrorId | Should -Match 'PathOverlap'
+            $errs = @(Move-DotnetProjectTree -Path $group -Destination $dest -RepositoryRoot $root -NoBuild -Confirm:$false `
+                    -ErrorAction Continue 2>&1 | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+            $errs.Count | Should -Be 1
+            $errs[0].FullyQualifiedErrorId | Should -BeLike 'PathOverlap*'
             (Join-Path $group (Join-Path 'Lib' ('Lib.csproj'))) | Should -Exist   # nothing moved
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -86,11 +92,12 @@ Describe 'Move-DotnetProjectTree' -Tag 'Integration' {
         New-Item -ItemType Directory -Path (Join-Path $root 'area') -Force | Out-Null
         Push-Location $root
         try {
-            & git init -q
+            Invoke-Git -Arguments @('init', '-q')
             Set-Content (Join-Path $root 'Directory.Build.props') '<Project></Project>'
             Set-Content (Join-Path $root (Join-Path 'area' ('Directory.Build.targets'))) '<Project></Project>'   # applies to area/* only
             New-ClassLibProject -Name Proj -Directory (Join-Path $root (Join-Path 'area' ('Proj'))) | Out-Null
-            & git add -A; & git commit -qm fixture | Out-Null
+            Invoke-Git -Arguments @('add', '-A')
+            Invoke-Git -Arguments @('commit', '-qm', 'fixture')
             # Moving area/Proj out of area/ drops the area Directory.Build.targets from its chain.
             Move-DotnetProjectTree -Path (Join-Path $root (Join-Path 'area' ('Proj'))) -Destination (Join-Path $root 'movedProj') `
                 -RepositoryRoot $root -NoBuild -Confirm:$false -WarningVariable w -WarningAction SilentlyContinue | Out-Null
@@ -104,11 +111,12 @@ Describe 'Move-DotnetProjectTree' -Tag 'Integration' {
         New-Item -ItemType Directory -Path (Join-Path $root 'area') -Force | Out-Null
         Push-Location $root
         try {
-            & git init -q
+            Invoke-Git -Arguments @('init', '-q')
             # CPM file applies to area/* only; moving area/Proj out of area drops it.
             Set-Content (Join-Path $root (Join-Path 'area' ('Directory.Packages.props'))) '<Project><PropertyGroup><ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally></PropertyGroup></Project>'
             New-ClassLibProject -Name Proj -Directory (Join-Path $root (Join-Path 'area' ('Proj'))) | Out-Null
-            & git add -A; & git commit -qm fixture | Out-Null
+            Invoke-Git -Arguments @('add', '-A')
+            Invoke-Git -Arguments @('commit', '-qm', 'fixture')
             Move-DotnetProjectTree -Path (Join-Path $root (Join-Path 'area' ('Proj'))) -Destination (Join-Path $root 'movedProj') `
                 -RepositoryRoot $root -NoBuild -Confirm:$false -WarningVariable w -WarningAction SilentlyContinue | Out-Null
             ($w -join "`n") | Should -Match 'inheritance changes'

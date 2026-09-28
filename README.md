@@ -57,7 +57,7 @@ point at, not for their own sake.
 
 ### Requirements
 
-- PowerShell 7+ (Windows, Linux, macOS), or Windows PowerShell 5.1.
+- PowerShell 7.2+ (Windows, Linux, macOS), or Windows PowerShell 5.1.
 - The .NET SDK (`dotnet`) on PATH for .NET project moves, and SDK 9.0.200 or later for `.slnx`
   solutions. Moving PowerShell or Unity files does not need it.
 - git is optional. With it, moves use `git mv` and keep history. Without it, a move asks before

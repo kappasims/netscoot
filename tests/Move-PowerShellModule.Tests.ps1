@@ -11,7 +11,11 @@ BeforeAll {
         Set-Content -LiteralPath (Join-Path $mod 'MyMod.psm1') -Value 'function Get-X { 1 }; Export-ModuleMember -Function Get-X' -Encoding UTF8
         New-ModuleManifest -Path (Join-Path $mod 'MyMod.psd1') -RootModule 'MyMod.psm1' -FunctionsToExport 'Get-X'
         Push-Location $root
-        try { & git init -q; & git add -A; & git commit -qm fixture | Out-Null } finally { Pop-Location }
+        try {
+            Invoke-Git -Arguments @('init', '-q')
+            Invoke-Git -Arguments @('add', '-A')
+            Invoke-Git -Arguments @('commit', '-qm', 'fixture')
+        } finally { Pop-Location }
         return $root
     }
 }
@@ -25,8 +29,7 @@ Describe 'Move-PowerShellModule' -Tag 'Integration' {
             $r = Move-PowerShellModule -ModulePath $mod -Destination $dest -Confirm:$false -WarningAction SilentlyContinue
             (Join-Path $dest 'MyMod.psd1') | Should -Exist
             $mod | Should -Not -Exist
-            (Test-ModuleManifest -Path (Join-Path $dest 'MyMod.psd1') -ErrorAction SilentlyContinue).Name | Should -Be 'MyMod'
-            # Now emits a result with the common base shape (audit #4).
+            (Test-ModuleManifest -Path (Join-Path $dest 'MyMod.psd1') -ErrorAction Stop).Name | Should -Be 'MyMod'
             $r.PSObject.TypeNames[0] | Should -Be 'Netscoot.PSModuleMoveResult'
             $r.Engine | Should -Be 'powershell'
             $r.Performed | Should -BeTrue
@@ -57,7 +60,11 @@ Describe 'Move-PowerShellModule references' -Tag 'Integration' {
             Set-Content -LiteralPath (Join-Path $root 'use.ps1') -Value "Import-Module `"`$PSScriptRoot/MyMod/MyMod.psd1`"`nGet-X"
             Set-Content -LiteralPath (Join-Path $root 'using.ps1') -Value 'using module ./MyMod/MyMod.psd1'
             Push-Location $root
-            try { & git init -q; & git add -A; & git commit -qm fixture | Out-Null } finally { Pop-Location }
+            try {
+                Invoke-Git -Arguments @('init', '-q')
+                Invoke-Git -Arguments @('add', '-A')
+                Invoke-Git -Arguments @('commit', '-qm', 'fixture')
+            } finally { Pop-Location }
             return $root
         }
     }
@@ -67,7 +74,9 @@ Describe 'Move-PowerShellModule references' -Tag 'Integration' {
         try {
             Move-PowerShellModule -ModulePath (Join-Path $root 'MyMod') -Destination (Join-Path (Join-Path $root 'modules') 'MyMod') -NoJournal -Confirm:$false -WarningAction SilentlyContinue | Out-Null
             (Get-Content -LiteralPath (Join-Path $root 'use.ps1'))[0] | Should -BeExactly 'Import-Module "$PSScriptRoot/modules/MyMod/MyMod.psd1"'
-            (& pwsh -NoProfile -File (Join-Path $root 'use.ps1')) | Should -Be 1
+            $out = & pwsh -NoProfile -File (Join-Path $root 'use.ps1')
+            $LASTEXITCODE | Should -Be 0
+            $out | Should -Be 1
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 

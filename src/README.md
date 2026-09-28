@@ -11,7 +11,7 @@ same release. Full documentation is at <https://github.com/kappasims/netscoot>.
 
 ## Requirements
 
-- PowerShell 7 on Windows, Linux or macOS, or Windows PowerShell 5.1.
+- PowerShell 7.2 or later on Windows, Linux or macOS, or Windows PowerShell 5.1.
 - The dotnet CLI for .NET projects. git is optional.
 - Native C++ (`.vcxproj`) moves are Windows-only.
 

@@ -11,15 +11,16 @@ BeforeAll {
             $root = New-TempRoot -Prefix 'netscoot'
             Push-Location $root
             try {
-                & git init -q
+                Invoke-Git -Arguments @('init', '-q')
                 New-ClassLibProject -Name Lib -Directory (Join-Path $root (Join-Path 'src' ('Lib'))) | Out-Null
                 New-ConsoleProject -Name App -Directory (Join-Path $root (Join-Path 'src' ('App'))) | Out-Null
-                & dotnet new sln -n Demo --format $Format | Out-Null
-                $sln = (Get-ChildItem -LiteralPath $root -File -Include '*.sln', '*.slnx').FullName
-                & dotnet sln $sln add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
-                & dotnet sln $sln add (Join-Path $root (Join-Path 'src' (Join-Path 'App' ('App.csproj')))) | Out-Null
-                & dotnet add (Join-Path $root (Join-Path 'src' (Join-Path 'App' ('App.csproj')))) reference (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
-                & git add -A; & git commit -qm "fixture" | Out-Null
+                Invoke-Dotnet new sln -n Demo --format $Format
+                $sln = Join-Path $root "Demo.$Format"
+                Invoke-Dotnet sln $sln add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj'))))
+                Invoke-Dotnet sln $sln add (Join-Path $root (Join-Path 'src' (Join-Path 'App' ('App.csproj'))))
+                Invoke-Dotnet add (Join-Path $root (Join-Path 'src' (Join-Path 'App' ('App.csproj')))) reference (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj'))))
+                Invoke-Git -Arguments @('add', '-A')
+                Invoke-Git -Arguments @('commit', '-qm', 'fixture')
             } finally { Pop-Location }
             return $root
         }
@@ -102,8 +103,9 @@ Describe 'Move-DotnetProject' -Tag 'Integration' {
     }
 
     It 'writes a non-terminating error (not throw) for a missing project' {
-        Move-DotnetProject -Project 'X:/does/not/exist.csproj' -Destination 'X:/y' -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
-        $errs | Should -Not -BeNullOrEmpty
+        $errs = @(Move-DotnetProject -Project 'X:/does/not/exist.csproj' -Destination 'X:/y' -ErrorAction Continue 2>&1 |
+                Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+        $errs | Should -HaveCount 1
         $errs[0].FullyQualifiedErrorId | Should -Match 'ProjectNotFound'
     }
 
@@ -132,8 +134,9 @@ Describe 'Move-DotnetProject' -Tag 'Integration' {
             $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
             New-Item -ItemType Directory -Path (Join-Path $root (Join-Path 'libs' ('Lib'))) -Force | Out-Null
             # Destination 'libs' is a dir -> resolves to libs/Lib, which already exists -> refuse.
-            Move-DotnetProject -Project $lib -Destination (Join-Path $root 'libs') -RepositoryRoot $root -NoBuild -Confirm:$false `
-                -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
+            $errs = @(Move-DotnetProject -Project $lib -Destination (Join-Path $root 'libs') -RepositoryRoot $root -NoBuild -Confirm:$false `
+                    -ErrorAction Continue 2>&1 | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+            $errs | Should -HaveCount 1
             $errs[0].FullyQualifiedErrorId | Should -Match 'DestinationExists'
             $lib | Should -Exist   # nothing moved
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
@@ -144,8 +147,9 @@ Describe 'Move-DotnetProject' -Tag 'Integration' {
         try {
             $lib = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))
             $dest = Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('nested')))   # under the source
-            Move-DotnetProject -Project $lib -Destination $dest -RepositoryRoot $root -NoBuild -Confirm:$false `
-                -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
+            $errs = @(Move-DotnetProject -Project $lib -Destination $dest -RepositoryRoot $root -NoBuild -Confirm:$false `
+                    -ErrorAction Continue 2>&1 | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+            $errs | Should -HaveCount 1
             $errs[0].FullyQualifiedErrorId | Should -Match 'PathOverlap'
             $lib | Should -Exist   # nothing moved
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

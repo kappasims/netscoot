@@ -51,8 +51,10 @@ Describe 'Move-PowerShell (front door)' -Tag 'Integration' {
         try {
             $txt = Join-Path $root 'notes.txt'
             Set-Content -LiteralPath $txt -Value 'x'
-            Move-PowerShell -Path $txt -Destination (Join-Path $root 'x.txt') -ErrorVariable errs -ErrorAction SilentlyContinue
-            $errs[0].FullyQualifiedErrorId | Should -Match 'NotAPowerShellItem'
+            $errs = @(Move-PowerShell -Path $txt -Destination (Join-Path $root 'x.txt') -ErrorAction Continue 2>&1 |
+                    Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+            $errs.Count | Should -Be 1
+            $errs[0].FullyQualifiedErrorId | Should -BeLike 'NotAPowerShellItem*'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 }

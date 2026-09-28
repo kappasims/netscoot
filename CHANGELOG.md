@@ -6,6 +6,22 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- `Update-Netscoot` installs the release from its source archive and runs nothing it downloads.
+- On macOS and Linux, netscoot needs PowerShell 7.2 or later, and says so instead of silently
+  skipping symlinked folders on older versions.
+- Failures netscoot used to pass over silently now show: a scan warns about each folder it could not
+  read, an unrecognized `NETSCOOT_JOURNAL` or `netscoot.journal` value warns, an unreadable file in
+  `Find-PathReference` is reported, and a failure to load a netscoot module stops the import with the
+  reason.
+
+### Fixed
+
+- `Repair-NetscootJournal -ClearOrphanSnapshots` no longer reports snapshots as cleared when they
+  could not be deleted.
+- Importing netscoot no longer loads a second copy of the Unity or native engine.
+
 ## [2.7.1] - 2026-09-28
 
 ### Fixed

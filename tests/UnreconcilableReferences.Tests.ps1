@@ -31,11 +31,10 @@ Describe 'Unreconcilable references (StrictMode .Count guard)' -Tag 'Integration
 '@ | Set-Content -LiteralPath $b
             InModuleScope NetscootShared -Parameters @{ A = $a; B = $b } {
                 param($A, $B)
-                {
-                    Write-UnreconcilableReferenceWarning -MovedProject $A `
-                        -AllProjects @([pscustomobject]@{ FullName = $B }) `
-                        -LiteralConsumers @() -WarningAction SilentlyContinue
-                } | Should -Not -Throw
+                Write-UnreconcilableReferenceWarning -MovedProject $A `
+                    -AllProjects @([pscustomobject]@{ FullName = $B }) `
+                    -LiteralConsumers @() -WarningVariable w -WarningAction SilentlyContinue
+                ($w -join "`n") | Should -Match 'B\.csproj has non-literal/conditional ProjectReference'
             }
         } finally {
             Remove-Item -Recurse -Force $root -ErrorAction SilentlyContinue

@@ -10,13 +10,13 @@ BeforeAll {
             $root = New-TempRoot -Prefix 'netscoot_div'
             Push-Location $root
             try {
-                & git init -q
+                Invoke-Git -Arguments @('init', '-q')
                 New-ClassLibProject -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
                 New-ConsoleProject -Name App -Directory (Join-Path $root 'App') | Out-Null
-                & dotnet new sln -n Both --format sln | Out-Null
-                & dotnet sln Both.sln add (Join-Path $root (Join-Path 'Lib' ('Lib.csproj'))) (Join-Path $root (Join-Path 'App' ('App.csproj'))) | Out-Null
-                & dotnet new sln -n Partial --format slnx | Out-Null
-                & dotnet sln Partial.slnx add (Join-Path $root (Join-Path 'App' ('App.csproj'))) | Out-Null
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Both', '--format', 'sln')
+                Invoke-Dotnet -Arguments @('sln', 'Both.sln', 'add', (Join-Path $root (Join-Path 'Lib' ('Lib.csproj'))), (Join-Path $root (Join-Path 'App' ('App.csproj'))))
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Partial', '--format', 'slnx')
+                Invoke-Dotnet -Arguments @('sln', 'Partial.slnx', 'add', (Join-Path $root (Join-Path 'App' ('App.csproj'))))
             } finally { Pop-Location }
             return $root
         }
@@ -37,9 +37,10 @@ Describe 'Test-SolutionConsistency' -Tag 'Integration' {
     It 'escalates to a non-terminating error under -Strict' {
         $root = New-DivergentRepo
         try {
-            Test-SolutionConsistency -RepositoryRoot $root -Strict -ErrorVariable errs -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
-            $errs | Should -Not -BeNullOrEmpty
-            $errs[0].FullyQualifiedErrorId | Should -Match 'SolutionDivergence'
+            $errs = @(Test-SolutionConsistency -RepositoryRoot $root -Strict -ErrorAction Continue -WarningAction SilentlyContinue 2>&1 |
+                    Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+            $errs.Count | Should -Be 1
+            $errs[0].FullyQualifiedErrorId | Should -BeLike 'SolutionDivergence*'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
@@ -100,7 +101,7 @@ EndProject
 </Solution>
 "@
             }
-            $result = @(Test-SolutionConsistency -RepositoryRoot $root -WarningVariable warns -WarningAction SilentlyContinue)
+            $result = @(Test-SolutionConsistency -RepositoryRoot $root -WarningVariable warns -WarningAction SilentlyContinue -ErrorAction Stop)
             $result | Should -BeNullOrEmpty -Because 'solutions that share no projects were never meant to agree'
             $warns | Should -BeNullOrEmpty
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

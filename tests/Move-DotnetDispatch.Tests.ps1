@@ -9,13 +9,14 @@ BeforeAll {
             $root = New-TempRoot -Prefix 'netscoot_disp'
             Push-Location $root
             try {
-                & git init -q
+                Invoke-Git -Arguments @('init', '-q')
                 New-ClassLibProject -Name Lib -Directory (Join-Path $root (Join-Path 'src' ('Lib'))) | Out-Null
-                & dotnet new sln -n Demo --format slnx | Out-Null
-                & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
+                Invoke-Dotnet new sln -n Demo --format slnx
+                Invoke-Dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj'))))
                 Set-Content -LiteralPath (Join-Path $root 'Shared.props') -Value "<Project></Project>" -Encoding UTF8
                 Set-Content -LiteralPath (Join-Path $root 'notes.txt') -Value "x" -Encoding UTF8
-                & git add -A; & git commit -qm fixture | Out-Null
+                Invoke-Git -Arguments @('add', '-A')
+                Invoke-Git -Arguments @('commit', '-qm', 'fixture')
             } finally { Pop-Location }
             return $root
         }
@@ -53,8 +54,9 @@ Describe 'Move-DotnetFile (routing)' -Tag 'Integration' {
     It 'errors on an unsupported extension' {
         $root = New-DispatchFixture
         try {
-            Move-DotnetFile -Path (Join-Path $root 'notes.txt') -Destination (Join-Path $root 'x.txt') `
-                -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
+            $errs = @(Move-DotnetFile -Path (Join-Path $root 'notes.txt') -Destination (Join-Path $root 'x.txt') `
+                    -ErrorAction Continue 2>&1 | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+            $errs | Should -HaveCount 1
             $errs[0].FullyQualifiedErrorId | Should -Match 'NotADotnetFile'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -97,8 +99,9 @@ Describe 'Invoke-Netscoot (legacy .vcproj)' -Tag 'Integration' {
         try {
             $vcproj = Join-Path $root 'Old.vcproj'
             Set-Content -LiteralPath $vcproj -Value '<VisualStudioProject></VisualStudioProject>' -Encoding UTF8
-            Invoke-Netscoot -Path $vcproj -Destination (Join-Path $root 'moved') -Confirm:$false `
-                -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
+            $errs = @(Invoke-Netscoot -Path $vcproj -Destination (Join-Path $root 'moved') -Confirm:$false `
+                    -ErrorAction Continue 2>&1 | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+            $errs | Should -HaveCount 1
             $errs[0].FullyQualifiedErrorId | Should -Match 'LegacyVcprojNotSupported'
             $vcproj | Should -Exist   # nothing moved
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

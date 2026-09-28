@@ -19,7 +19,9 @@ Describe 'Test-NetscootUpdate' {
     It 'reports up-to-date when the latest tag is not newer' {
         InModuleScope Netscoot.Core {
             Mock Invoke-RestMethod { @{ tag_name = 'v0.0.1'; html_url = 'https://example/releases/v0.0.1' } }
-            (Test-NetscootUpdate).UpdateAvailable | Should -BeFalse
+            $r = Test-NetscootUpdate -ErrorAction Stop
+            $r.Tag | Should -Be 'v0.0.1'
+            $r.UpdateAvailable | Should -BeFalse
         }
     }
 
@@ -35,8 +37,9 @@ Describe 'Test-NetscootUpdate' {
             # An offline / rate-limited / no-release fetch reduces (via the catch) to no usable
             # response; the cmdlet must report it as a non-terminating error, not throw.
             Mock Invoke-RestMethod { $null }
-            Test-NetscootUpdate -ErrorVariable err -ErrorAction SilentlyContinue | Out-Null
-            ($err.FullyQualifiedErrorId -join ';') | Should -Match 'UpdateCheckFailed'
+            $errs = @(Test-NetscootUpdate -ErrorAction Continue 2>&1 | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+            $errs.Count | Should -Be 1
+            $errs[0].FullyQualifiedErrorId | Should -BeLike 'UpdateCheckFailed*'
         }
     }
 
@@ -61,6 +64,7 @@ Describe 'Update-Netscoot' {
             Mock Test-NetscootUpdate { [pscustomobject]@{ Installed = [version]'1.1.0'; Latest = [version]'1.1.0'; Tag = 'v1.1.0'; UpdateAvailable = $false; Url = '' } }
             Mock Invoke-WebRequest {}
             Update-Netscoot | Out-Null
+            Should -Invoke Test-NetscootUpdate -Times 1 -Exactly
             Should -Invoke Invoke-WebRequest -Times 0
         }
     }
@@ -76,6 +80,10 @@ Describe 'Update-Netscoot' {
                 $Uri -eq 'https://github.com/kappasims/netscoot/archive/refs/tags/v1.1.0.zip'
             }
             Should -Invoke Invoke-WebRequest -Times 0 -ParameterFilter { $Uri -like '*install.ps1' }
+            Should -Invoke New-Item -Times 1 -Exactly
+            Should -Invoke New-Item -Times 1 -Exactly -ParameterFilter { $Path -like '*netscoot_update_*' }
+            Should -Invoke Remove-Item -Times 1 -Exactly
+            Should -Invoke Remove-Item -Times 1 -Exactly -ParameterFilter { $LiteralPath -like '*netscoot_update_*' }
         }
     }
 
@@ -101,6 +109,15 @@ Describe 'Update-Netscoot' {
             Update-Netscoot -Confirm:$false | Out-Null
             Should -Invoke Copy-Item -Times 2 -Exactly
             Should -Invoke Copy-Item -Times 0 -ParameterFilter { $LiteralPath -match 'skills|\.claude-plugin' }
+            Should -Invoke Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+                $Uri -eq 'https://github.com/kappasims/netscoot/archive/refs/tags/v1.1.0.zip'
+            }
+            Should -Invoke Expand-Archive -Times 1 -Exactly -ParameterFilter { $LiteralPath -like '*netscoot_update_*src.zip' }
+            Should -Invoke New-Item -Times 2 -Exactly
+            Should -Invoke New-Item -Times 1 -Exactly -ParameterFilter { $Path -like '*netscoot_update_*' }
+            Should -Invoke New-Item -Times 1 -Exactly -ParameterFilter { $Path -like '*Modules' }
+            Should -Invoke Remove-Item -Times 1 -Exactly
+            Should -Invoke Remove-Item -Times 1 -Exactly -ParameterFilter { $LiteralPath -like '*netscoot_update_*' }
         }
     }
 
@@ -109,6 +126,7 @@ Describe 'Update-Netscoot' {
             Mock Test-NetscootUpdate { [pscustomobject]@{ Installed = [version]'1.0.0'; Latest = [version]'1.1.0'; Tag = 'v1.1.0'; UpdateAvailable = $true; Url = '' } }
             Mock Invoke-WebRequest {}
             Update-Netscoot -WhatIf | Out-Null
+            Should -Invoke Test-NetscootUpdate -Times 1 -Exactly
             Should -Invoke Invoke-WebRequest -Times 0
         }
     }

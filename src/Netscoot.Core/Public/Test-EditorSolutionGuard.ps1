@@ -149,7 +149,7 @@ function Test-EditorSolutionGuard {
         $gitignorePath = [System.IO.Path]::Combine($root, '.gitignore')
         $hasSlnGuard = $false
         if (Test-Path -LiteralPath $gitignorePath -PathType Leaf) {
-            foreach ($line in (Get-Content -LiteralPath $gitignorePath -ErrorAction SilentlyContinue)) {
+            foreach ($line in (Get-Content -LiteralPath $gitignorePath)) {
                 $t = $line.Trim()
                 if (-not $t -or $t.StartsWith('#')) { continue }
                 if ($t -match '^/?(\*\*/)?\*\.sln$') { $hasSlnGuard = $true; break }

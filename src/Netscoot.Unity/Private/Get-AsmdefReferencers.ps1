@@ -8,7 +8,8 @@ function Get-AsmdefReferencers {
     )
     $full = Resolve-FullPath $AsmdefPath
     $name = $null
-    try { $name = (Get-Content -LiteralPath $full -Raw | ConvertFrom-Json).name } catch { Write-Verbose "could not parse asmdef name from ${full}: $_" }
+    try { $name = (Get-Content -LiteralPath $full -Raw | ConvertFrom-Json).name }
+    catch { Write-Warning "Could not parse ${full}, so referencers by name are not reported: $($_.Exception.Message)" }
     $guid = $null
     $meta = "$full.meta"
     if (Test-Path -LiteralPath $meta) {
@@ -19,7 +20,7 @@ function Get-AsmdefReferencers {
     # Exclude Unity caches anchored at the repository root (not "Temp" anywhere - the OS temp dir
     # itself contains that segment), plus .git.
     $rootLen = (Resolve-FullPath $RepositoryRoot).TrimEnd('\', '/').Length
-    $asmdefs = Get-ChildItem -LiteralPath $RepositoryRoot -Recurse -File -ErrorAction SilentlyContinue |
+    $asmdefs = Get-TreeItem -Root $RepositoryRoot -File |
         Where-Object {
             $_.Extension -eq '.asmdef' -and
             $_.FullName.Substring($rootLen) -notmatch '^[\\/](Library|Temp|obj)[\\/]' -and
@@ -27,12 +28,15 @@ function Get-AsmdefReferencers {
         }
     foreach ($a in $asmdefs) {
         if (Test-PathEqual $a.FullName $full) { continue }
-        $refs = $null
-        try { $refs = (Get-Content -LiteralPath $a.FullName -Raw | ConvertFrom-Json).references } catch { continue }
-        if (-not $refs) { continue }
-        foreach ($r in $refs) {
+        try { $asmdef = Get-Content -LiteralPath $a.FullName -Raw | ConvertFrom-Json }
+        catch {
+            Write-Warning "Could not parse $($a.FullName), so it is not checked as a referencer: $($_.Exception.Message)"
+            continue
+        }
+        if (-not $asmdef.PSObject.Properties['references']) { continue }
+        foreach ($r in $asmdef.references) {
             if (($name -and $r -eq $name) -or ($guid -and $r -eq "GUID:$guid")) {
-                $referencers += (Get-Content -LiteralPath $a.FullName -Raw | ConvertFrom-Json).name
+                $referencers += $asmdef.name
                 break
             }
         }

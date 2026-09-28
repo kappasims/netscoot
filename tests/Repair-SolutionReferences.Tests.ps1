@@ -10,12 +10,12 @@ BeforeAll {
             $root = New-TempRoot -Prefix 'netscoot_rep'
             Push-Location $root
             try {
-                & git init -q
+                Invoke-Git -RepositoryRoot $root -Arguments @('init', '-q')
                 New-ClassLibProject -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
                 New-ConsoleProject -Name App -Directory (Join-Path $root 'App') | Out-Null
-                & dotnet add (Join-Path $root (Join-Path 'App' 'App.csproj')) reference (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) | Out-Null
-                & dotnet new sln -n Demo --format slnx | Out-Null
-                & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) (Join-Path $root (Join-Path 'App' 'App.csproj')) | Out-Null
+                Invoke-Dotnet -Arguments @('add', (Join-Path $root (Join-Path 'App' 'App.csproj')), 'reference', (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')))
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', 'slnx')
+                Invoke-Dotnet -Arguments @('sln', 'Demo.slnx', 'add', (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')), (Join-Path $root (Join-Path 'App' 'App.csproj')))
             } finally { Pop-Location }
             return $root
         }
@@ -46,13 +46,13 @@ BeforeAll {
             $srcWidgets = Join-Path $root (Join-Path 'src' 'Widgets')
             Push-Location $root
             try {
-                & git init -q
+                Invoke-Git -RepositoryRoot $root -Arguments @('init', '-q')
                 New-ClassLibProject -Name Widgets -Directory $srcWidgets | Out-Null
                 New-ConsoleProject -Name App -Directory (Join-Path $root 'App') | Out-Null
-                & dotnet add (Join-Path $root (Join-Path 'App' 'App.csproj')) reference (Join-Path $srcWidgets 'Widgets.csproj') | Out-Null
+                Invoke-Dotnet -Arguments @('add', (Join-Path $root (Join-Path 'App' 'App.csproj')), 'reference', (Join-Path $srcWidgets 'Widgets.csproj'))
                 New-ClassLibProject -Name Widgets -Directory (Join-Path $root $DecoyDir) | Out-Null   # decoy, same leaf
-                & dotnet new sln -n Demo --format slnx | Out-Null
-                & dotnet sln Demo.slnx add (Join-Path $srcWidgets 'Widgets.csproj') (Join-Path $root (Join-Path 'App' 'App.csproj')) | Out-Null
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', 'slnx')
+                Invoke-Dotnet -Arguments @('sln', 'Demo.slnx', 'add', (Join-Path $srcWidgets 'Widgets.csproj'), (Join-Path $root (Join-Path 'App' 'App.csproj')))
             } finally { Pop-Location }
             return $root
         }
@@ -77,6 +77,7 @@ Describe 'Repair-SolutionReferences' -Tag 'Integration' {
             # `dotnet sln list` is what would fail if the rewrite produced a wrong path; build smoke
             # lives in Move-DotnetProject's slnx variant.
             $list = (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n"
+            $LASTEXITCODE | Should -Be 0
             $list | Should -Match 'libs[\\/]Lib[\\/]Lib\.csproj'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -97,7 +98,9 @@ Describe 'Repair-SolutionReferences' -Tag 'Integration' {
             (($probs.NewPath | Where-Object { $_ }) -join ';') | Should -Not -Match 'legacy'
 
             Repair-SolutionReferences -RepositoryRoot $root -Fix -Confirm:$false | Out-Null
-            (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n" | Should -Match 'tools[\\/]Widgets[\\/]Widgets\.csproj'
+            $list = (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n"
+            $LASTEXITCODE | Should -Be 0
+            $list | Should -Match 'tools[\\/]Widgets[\\/]Widgets\.csproj'
             # No dotnet build here either; the slnx list assertion proves the rewrite, and the
             # project-level build smoke is in Move-DotnetProject.Tests.ps1.
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
@@ -116,7 +119,9 @@ Describe 'Repair-SolutionReferences' -Tag 'Integration' {
 
             # -Fix cannot resolve a tie, so the stale src/Widgets entry remains in the solution.
             Repair-SolutionReferences -RepositoryRoot $root -Fix -Confirm:$false | Out-Null
-            (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n" | Should -Match 'src[\\/]Widgets[\\/]Widgets\.csproj'
+            $list = (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n"
+            $LASTEXITCODE | Should -Be 0
+            $list | Should -Match 'src[\\/]Widgets[\\/]Widgets\.csproj'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
@@ -125,10 +130,15 @@ Describe 'Repair-SolutionReferences' -Tag 'Integration' {
         try {
             # -Fix cannot relocate a deleted project; the entry stays.
             Repair-SolutionReferences -RepositoryRoot $root -Fix -Confirm:$false | Out-Null
-            (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n" | Should -Match 'Lib[\\/]Lib\.csproj'
+            $list = (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n"
+            $LASTEXITCODE | Should -Be 0
+            $list | Should -Match 'Lib[\\/]Lib\.csproj'
             # -Prune removes the gone entries.
             Repair-SolutionReferences -RepositoryRoot $root -Prune -Confirm:$false | Out-Null
-            (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n" | Should -Not -Match 'Lib[\\/]Lib\.csproj'
+            $list = (& dotnet sln (Join-Path $root 'Demo.slnx') list) -join "`n"
+            $LASTEXITCODE | Should -Be 0
+            $list | Should -Match 'App[\\/]App\.csproj'
+            $list | Should -Not -Match 'Lib[\\/]Lib\.csproj'
             (Get-Content (Join-Path $root (Join-Path 'App' 'App.csproj')) -Raw) | Should -Not -Match 'Lib\.csproj'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -136,8 +146,7 @@ Describe 'Repair-SolutionReferences' -Tag 'Integration' {
     It 'finds a moved .vcxproj and neither prunes nor re-adds it through the dotnet CLI' {
         $root = New-TempRoot -Prefix 'netscoot_rep'
         try {
-            Push-Location $root
-            try { & git init -q } finally { Pop-Location }
+            Invoke-Git -RepositoryRoot $root -Arguments @('init', '-q')
             $slnx = Join-Path $root 'Demo.slnx'
             Set-Content -LiteralPath $slnx -Value '<Solution><Project Path="old/Nat/Nat.vcxproj" /></Solution>'
             $moved = New-Item -ItemType Directory -Path (Join-Path $root (Join-Path 'new' 'Nat'))

@@ -17,20 +17,22 @@ BeforeAll {
             $r = New-TempRoot -Prefix 'netscoot_wt_tpl'
             Push-Location $r
             try {
-                & git init -q
-                & git config user.email t@t.test; & git config user.name test
+                Invoke-Git -Arguments @('init', '-q')
+                Invoke-Git -Arguments @('config', 'user.email', 't@t.test')
+                Invoke-Git -Arguments @('config', 'user.name', 'test')
                 New-ClassLibProject -Name Lib -Directory (Join-Path $r 'Lib') | Out-Null
-                & dotnet new sln -n Demo --format sln | Out-Null
-                & dotnet new sln -n Demo --format slnx | Out-Null
-                & dotnet sln Demo.sln add (Join-Path $r (Join-Path 'Lib' 'Lib.csproj')) | Out-Null
-                & dotnet sln Demo.slnx add (Join-Path $r (Join-Path 'Lib' 'Lib.csproj')) | Out-Null
-                & git add -A; & git commit -qm fixture | Out-Null
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', 'sln')
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', 'slnx')
+                Invoke-Dotnet -Arguments @('sln', 'Demo.sln', 'add', (Join-Path $r (Join-Path 'Lib' 'Lib.csproj')))
+                Invoke-Dotnet -Arguments @('sln', 'Demo.slnx', 'add', (Join-Path $r (Join-Path 'Lib' 'Lib.csproj')))
+                Invoke-Git -Arguments @('add', '-A')
+                Invoke-Git -Arguments @('commit', '-qm', 'fixture')
             } finally { Pop-Location }
             return $r
         }
         Push-Location $root
         try {
-            & git worktree add --quiet -b wt (Join-Path $root (Join-Path '.claude' (Join-Path 'worktrees' 'wt'))) 2>$null
+            Invoke-Git -Arguments @('worktree', 'add', '--quiet', '-b', 'wt', (Join-Path $root (Join-Path '.claude' (Join-Path 'worktrees' 'wt'))))
         } finally { Pop-Location }
         return $root
     }
@@ -52,7 +54,7 @@ Describe 'Nested worktrees are excluded from repo scans' -Tag 'Integration' {
     It 'Test-SolutionConsistency does not invent a divergence from worktree duplicates' {
         $root = New-RepoWithNestedWorktree
         try {
-            $probs = Test-SolutionConsistency -RepositoryRoot $root -WarningVariable w -WarningAction SilentlyContinue
+            $probs = Test-SolutionConsistency -RepositoryRoot $root -WarningVariable w -WarningAction SilentlyContinue -ErrorAction Stop
             $probs | Should -BeNullOrEmpty                 # both root solutions list Lib: consistent
             ($w -join "`n") | Should -Not -Match 'diverges'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

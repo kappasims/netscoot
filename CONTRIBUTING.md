@@ -18,7 +18,7 @@ module layout. For installing and using netscoot, see the [README](README.md).
 ./build.ps1 -Task Publish                                   # stage + validate the single bundled package (dry run)
 ```
 
-Building and testing needs PowerShell 7+ (or Windows PowerShell 5.1), the .NET 10 SDK (the suite
+Building and testing needs PowerShell 7.2+ (or Windows PowerShell 5.1), the .NET 10 SDK (the suite
 creates and builds real projects), git, and Pester 5.7.1. `-Task Test` prints the install command for
 Pester if it is missing, and nothing here auto-installs. `-Task Docs`, `-Task CheckDocs`,
 `-Task Release` and `-Task Publish` need PowerShell 7. `-Task Release` also needs the GitHub CLI

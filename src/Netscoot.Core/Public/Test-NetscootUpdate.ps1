@@ -65,21 +65,21 @@ function Test-NetscootUpdate {
 
     # The version of the module that exports this function (all netscoot manifests share it).
     $installed = $MyInvocation.MyCommand.Module.Version
-    if (-not $installed) { $installed = (Get-Module Netscoot.Core | Select-Object -First 1).Version }
 
     # /repos/<owner>/<name> - NOT /repositories/, which is the numeric-repo-id endpoint and 404s for
     # an owner/name string (the 404 was swallowed and surfaced as a generic "could not get release",
     # so every update check failed regardless of network state).
     $uri = "https://api.github.com/repos/$Repository/releases/latest"
     $release = $null
+    $cause = 'the response had no release tag'
     try {
         $release = Invoke-RestMethod -Uri $uri -Headers @{ 'User-Agent' = 'Netscoot'; 'Accept' = 'application/vnd.github+json' } -ErrorAction Stop
     } catch {
-        Write-Verbose "Release check request failed: $($_.Exception.Message)"   # reported by the null-check below
+        $cause = $_.Exception.Message
     }
     if ($null -eq $release -or [string]::IsNullOrWhiteSpace("$($release.tag_name)")) {
         $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
-                [System.Exception]::new("Could not get the latest release from $uri (offline, rate-limited, or no release yet)."),
+                [System.Exception]::new("Could not get the latest release from ${uri}: $cause"),
                 'UpdateCheckFailed', [System.Management.Automation.ErrorCategory]::ConnectionError, $uri))
         return
     }
