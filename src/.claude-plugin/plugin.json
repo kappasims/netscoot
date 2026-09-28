@@ -12,7 +12,6 @@
   "supportUrl": "https://github.com/kappasims/netscoot/issues",
   "privacyPolicyUrl": "https://github.com/kappasims/netscoot/blob/master/README.md#privacy-policy",
   "license": "MIT",
-  "icon": "./.claude-plugin/icon.png",
   "keywords": [
     "dotnet",
     "csproj",
