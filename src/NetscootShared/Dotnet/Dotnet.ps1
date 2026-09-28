@@ -27,36 +27,36 @@ function New-DotnetReferenceItems {
 
     # Batch metadata lets Invoke-MovePlan collapse every edge that shares one dotnet target file
     # into a single spawn (the dotnet CLI takes multiple projects per invocation). Each phase entry
-    # is { Key; Prefix; Item }: Key groups co-spawned edges, Prefix is the fixed leading args, and
+    # is { SpawnId; Prefix; Item }: SpawnId groups co-spawned edges, Prefix is the fixed leading args, and
     # Item is the one variable project token appended (one per edge) to the shared command line.
-    # Key embeds the verb so a remove and an add to the same file never merge.
+    # SpawnId embeds the verb so a remove and an add to the same file never merge.
     $items = @()
     foreach ($sln in $Solutions) {
         # Capture the folder the OLD project sits in (it is still listed at build time, before detach)
         # so the re-add restores it. A root project re-adds with --in-root; batching keeps projects that
-        # share a solution AND a target folder in one spawn (the folder is part of the batch Key).
+        # share a solution AND a target folder in one spawn (the folder is part of the batch SpawnId).
         $folder = Get-ProjectSolutionFolder -SolutionFile $sln.FullName -ProjectAbs $OldProj
         if ([string]::IsNullOrEmpty($folder)) { $folderArgs = @('--in-root'); $folderTag = 'root' }
         else { $folderArgs = @('--solution-folder', $folder); $folderTag = $folder }
         $items += New-MoveItem -Description "solution membership: $($sln.Name)$sfx" `
             -Detach $slnRemove -DetachArgs @($sln.FullName, $OldProj) `
             -Reattach $slnAdd -ReattachArgs @($sln.FullName, $NewProj, $folderArgs) `
-            -DetachBatch @{ Key = "sln|remove|$($sln.FullName)"; Prefix = @('sln', $sln.FullName, 'remove'); Item = $OldProj } `
-            -ReattachBatch @{ Key = "sln|add|$($sln.FullName)|$folderTag"; Prefix = @('sln', $sln.FullName, 'add') + $folderArgs; Item = $NewProj }
+            -DetachBatch @{ SpawnId = "sln|remove|$($sln.FullName)"; Prefix = @('sln', $sln.FullName, 'remove'); Item = $OldProj } `
+            -ReattachBatch @{ SpawnId = "sln|add|$($sln.FullName)|$folderTag"; Prefix = @('sln', $sln.FullName, 'add') + $folderArgs; Item = $NewProj }
     }
     foreach ($c in $Consumers) {
         $items += New-MoveItem -Description "consumer reference: $(Split-Path -Leaf $c)$sfx" `
             -Detach $refRemove -DetachArgs @($c, $OldProj) `
             -Reattach $refAdd -ReattachArgs @($c, $NewProj) `
-            -DetachBatch @{ Key = "ref|remove|$c"; Prefix = @('remove', $c, 'reference'); Item = $OldProj } `
-            -ReattachBatch @{ Key = "ref|add|$c"; Prefix = @('add', $c, 'reference'); Item = $NewProj }
+            -DetachBatch @{ SpawnId = "ref|remove|$c"; Prefix = @('remove', $c, 'reference'); Item = $OldProj } `
+            -ReattachBatch @{ SpawnId = "ref|add|$c"; Prefix = @('add', $c, 'reference'); Item = $NewProj }
     }
     foreach ($r in $OwnRefs) {
         $items += New-MoveItem -Description "own reference: $(Split-Path -Leaf $r.FullPath)$sfx" `
             -Detach $ownRemove -DetachArgs @($OldProj, $r.FullPath) `
             -Reattach $ownAdd -ReattachArgs @($NewProj, $r.FullPath) `
-            -DetachBatch @{ Key = "own|remove|$OldProj"; Prefix = @('remove', $OldProj, 'reference'); Item = $r.FullPath } `
-            -ReattachBatch @{ Key = "own|add|$NewProj"; Prefix = @('add', $NewProj, 'reference'); Item = $r.FullPath }
+            -DetachBatch @{ SpawnId = "own|remove|$OldProj"; Prefix = @('remove', $OldProj, 'reference'); Item = $r.FullPath } `
+            -ReattachBatch @{ SpawnId = "own|add|$NewProj"; Prefix = @('add', $NewProj, 'reference'); Item = $r.FullPath }
     }
     return $items
 }
