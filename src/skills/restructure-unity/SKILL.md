@@ -1,6 +1,7 @@
 ---
 name: restructure-unity
-description: Use when moving, relocating, or restructuring assets or folders in a Unity project (including mobile, iOS and Android). Triggers on moving a Unity asset, folder, or .asmdef, reorganizing an Assets/ or Packages/ layout, or any file move inside a Unity project. Cross-platform. Do not move Unity files without their .meta. For pure .NET/.csproj use restructure-dotnet, and for native C++ use restructure-native.
+description: >-
+  Use when moving, relocating, or restructuring assets or folders in a Unity project (including mobile, iOS and Android). Triggers on moving a Unity asset, folder, or .asmdef, reorganizing an Assets/ or Packages/ layout, or any file move inside a Unity project. Cross-platform. Do not move Unity files without their .meta. For pure .NET/.csproj use restructure-dotnet, and for native C++ use restructure-native.
 ---
 
 # Restructuring Unity projects (cross-platform, incl. mobile)
@@ -31,11 +32,11 @@ project also has a managed side (`.csproj`/`.sln`), `Test-SolutionConsistency`,
 
 ## Use Move-UnityAsset
 
-`Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"` loads the Unity engine from the netscoot module
+`Import-Module "${CLAUDE_PLUGIN_ROOT}/Netscoot/Netscoot.psd1"` loads the Unity engine from the netscoot module
 that ships with this plugin.
 
 ```powershell
-Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"
+Import-Module "${CLAUDE_PLUGIN_ROOT}/Netscoot/Netscoot.psd1"
 Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/Tarragon -WhatIf
 # Then, after the user agrees (the move prompts, and an agent's shell is non-interactive):
 Move-UnityAsset -AssetPath ./Assets/Plugins/Tarragon -Destination ./Assets/Lib/Tarragon -Confirm:$false

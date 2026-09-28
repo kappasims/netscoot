@@ -1,6 +1,7 @@
 ---
 name: restructure-native
-description: Use when moving or restructuring a native C++ or C++/CLI project (.vcxproj) in a Visual Studio solution on Windows. Triggers on moving a .vcxproj folder, relocating a native library, or restructuring a mixed managed+native solution. Windows-only. For pure managed .csproj/.fsproj/.vbproj use the restructure-dotnet skill instead.
+description: >-
+  Use when moving or restructuring a native C++ or C++/CLI project (.vcxproj) in a Visual Studio solution on Windows. Triggers on moving a .vcxproj folder, relocating a native library, or restructuring a mixed managed+native solution. Windows-only. For pure managed .csproj/.fsproj/.vbproj use the restructure-dotnet skill instead.
 ---
 
 # Restructuring native / C++ projects (.vcxproj), Windows only
@@ -44,11 +45,11 @@ only reports a moved one. Add or re-point it in Visual Studio.
 
 ## Use Move-NativeProject
 
-`Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"` loads the native engine on Windows from the
+`Import-Module "${CLAUDE_PLUGIN_ROOT}/Netscoot/Netscoot.psd1"` loads the native engine on Windows from the
 netscoot module that ships with this plugin.
 
 ```powershell
-Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"
+Import-Module "${CLAUDE_PLUGIN_ROOT}/Netscoot/Netscoot.psd1"
 Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo -WhatIf
 # Then, after the user agrees (the move prompts, and an agent's shell is non-interactive):
 Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo -Confirm:$false

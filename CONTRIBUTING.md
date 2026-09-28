@@ -37,10 +37,11 @@ powershell -NoProfile -File ./build.ps1
 ```
 
 A test that builds fixtures in a temp directory is an integration test. Its `Describe` carries
-`-Tag 'Integration'`, so `-Fast` skips it. Tests that run entirely in memory stay untagged. Two
+`-Tag 'Integration'`, so `-Fast` skips it. Tests that run entirely in memory stay untagged. Three
 untagged tests gate every run, `-Fast` included: `UmbrellaSurface.Tests.ps1` checks that every public
-engine export is in the umbrella's `FunctionsToExport`, and `SkillCoverage.Tests.ps1` checks that
-every exported cmdlet appears in a `.claude/skills/*/SKILL.md`.
+engine export is in the umbrella's `FunctionsToExport`, `SkillCoverage.Tests.ps1` checks that every
+exported cmdlet appears in a `src/skills/*/SKILL.md`, and `SkillFrontmatter.Tests.ps1` checks that
+every skill description is a folded block scalar, so the YAML always parses.
 
 `Install` copies every module (Shared, the engines, and the `netscoot` umbrella) to your module
 path. Once it is on `$env:PSModulePath`, `Import-Module Netscoot` loads Shared and every
@@ -94,19 +95,21 @@ other version listed. Otherwise the publish unlists the older ones.
 
 ## The Claude Code plugin
 
-The plugin (`.claude-plugin/` and the skills in `.claude/skills/`) carries the module it drives. Each
-skill loads `${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1`, the module from the same commit, so
-the skills and the code they describe never drift apart. The marketplace entry installs the plugin
-from `master`, so users get only released code, and a release stamps the release version into
-`plugin.json` alongside the manifests. A skill change therefore reaches users with the next release,
+The plugin is the `src/` folder: the module folders, the skills in `src/skills/`, and
+`src/.claude-plugin/plugin.json` with its icon. Each skill loads
+`${CLAUDE_PLUGIN_ROOT}/Netscoot/Netscoot.psd1`, the module from the same commit, so the skills and the
+code they describe never drift apart. Build and CI tooling, tests and docs stay outside `src/`, so
+they are not part of the plugin. The marketplace file at the repository root installs the plugin
+from `src/` on `master`, so users get only released code, and a release stamps the release version
+into `plugin.json` alongside the manifests. A skill change therefore reaches users with the next release,
 and `-Task Release` counts a skill change as a reason to release. `-Task CheckDocs` fails when the
 plugin version differs from the module version.
 
-To try skill changes before a release, start Claude Code with the clone loaded as a plugin. Its
-skills then load your working tree's `src/`:
+To try skill changes before a release, start Claude Code with the clone's `src/` loaded as a plugin.
+Its skills then load your working tree's module:
 
 ```bash
-claude --plugin-dir path/to/netscoot
+claude --plugin-dir path/to/netscoot/src
 ```
 
 Build and CI tooling and standalone docs land on `develop` and need no release.
@@ -149,9 +152,10 @@ src/Netscoot/            umbrella module (loads Shared + every available engine)
 src/Netscoot.Core/       cross-platform module: Private/ = helpers, Public/ = cmdlets
 src/Netscoot.Native/     Windows-only native module
 src/Netscoot.Unity/      cross-platform Unity module
+src/skills/              restructure-dotnet / -powershell / -unity / -native, netscoot-analyze, netscoot-manage
+src/.claude-plugin/      plugin.json and icon.svg: src/ is the Claude Code plugin
+.claude-plugin/          marketplace.json, which lists the plugin
 docs/                    data for the generated reference (categories, output types, dispatch diagrams)
 tools/                   the reference generator, and ad-hoc CI and UX tools
 tests/                   Pester tests + fixtures
-.claude/skills/          restructure-dotnet / -powershell / -unity / -native, netscoot-analyze, netscoot-manage
-.claude-plugin/          plugin.json and marketplace.json for the Claude Code plugin
 ```

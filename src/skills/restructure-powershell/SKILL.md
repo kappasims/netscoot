@@ -1,6 +1,7 @@
 ---
 name: restructure-powershell
-description: Use when moving, relocating, or restructuring PowerShell code: moving a .ps1 script, relocating a PowerShell module (its folder or .psd1 manifest), or reorganizing a module layout. Triggers on "move this script," "relocate the module," "restructure the PowerShell module." Cross-platform. For .NET projects (.csproj/.sln) use restructure-dotnet, for Unity assets use restructure-unity, and for native C++ use restructure-native.
+description: >-
+  Use when moving, relocating, or restructuring PowerShell code: moving a .ps1 script, relocating a PowerShell module (its folder or .psd1 manifest), or reorganizing a module layout. Triggers on "move this script," "relocate the module," "restructure the PowerShell module." Cross-platform. For .NET projects (.csproj/.sln) use restructure-dotnet, for Unity assets use restructure-unity, and for native C++ use restructure-native.
 ---
 
 # Restructuring PowerShell code (scripts + modules, cross-platform)
@@ -22,7 +23,7 @@ plain `Move-Item`). The hazard is **relative references that break when a file m
   module-relative, so a folder move leaves it valid and netscoot does not rewrite it.
 
 Load the netscoot module that ships with this plugin:
-`Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"`. The single front door is
+`Import-Module "${CLAUDE_PLUGIN_ROOT}/Netscoot/Netscoot.psd1"`. The single front door is
 **`Move-PowerShell`**. It routes a `.ps1` to the script mover and a `.psd1`/module folder to the
 module mover. Always dry-run with `-WhatIf` first. A real move prompts for confirmation and an
 agent's shell is non-interactive, so after the user agrees, run it with `-Confirm:$false`.
@@ -39,7 +40,7 @@ types a PowerShell solution may include, such as a `.pssproj`, which `dotnet sln
 surface.
 
 ```powershell
-Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"
+Import-Module "${CLAUDE_PLUGIN_ROOT}/Netscoot/Netscoot.psd1"
 
 # Script (fixes dot-source/call/Import-Module references via the PowerShell AST):
 Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -WhatIf

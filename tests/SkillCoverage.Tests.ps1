@@ -1,7 +1,7 @@
 #requires -Modules Pester
 
 # Guards against agent-discovery drift: every cmdlet the umbrella manifest advertises must appear in
-# at least one .claude/skills/*/SKILL.md file. Otherwise an AI agent reading the repo's skill set
+# at least one src/skills/*/SKILL.md file. Otherwise an AI agent reading the repo's skill set
 # can't discover the cmdlet through the skill body once the skill activates, and the cmdlet is
 # effectively invisible to skill-driven workflows even though it ships and works.
 #
@@ -17,7 +17,7 @@
 BeforeAll {
     $script:repo = Resolve-Path (Join-Path $PSScriptRoot '..')
     $script:psd  = Join-Path $script:repo 'src/Netscoot/Netscoot.psd1'
-    $script:skillRoot = Join-Path $script:repo '.claude/skills'
+    $script:skillRoot = Join-Path $script:repo 'src/skills'
 }
 
 Describe 'Every exported cmdlet appears in at least one SKILL.md' {

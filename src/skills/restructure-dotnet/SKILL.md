@@ -1,6 +1,7 @@
 ---
 name: restructure-dotnet
-description: Use when moving, relocating, or restructuring managed .NET projects, or repairing their solutions: moving a .csproj/.fsproj/.vbproj folder, reorganizing solution layout, extracting a project into its own assembly, syncing solution membership, or fixing dangling solution entries and project references. Triggers on "move this project," "restructure," "reorganize the solution," "extract into its own folder/assembly," "sync the solutions," "fix dangling solution references," "prune missing projects." Do not hand-edit .sln/.slnx/.csproj. For PowerShell modules/scripts use restructure-powershell, for Unity assets use restructure-unity, and for native C++/.vcxproj use restructure-native.
+description: >-
+  Use when moving, relocating, or restructuring managed .NET projects, or repairing their solutions: moving a .csproj/.fsproj/.vbproj folder, reorganizing solution layout, extracting a project into its own assembly, syncing solution membership, or fixing dangling solution entries and project references. Triggers on "move this project," "restructure," "reorganize the solution," "extract into its own folder/assembly," "sync the solutions," "fix dangling solution references," "prune missing projects." Do not hand-edit .sln/.slnx/.csproj. For PowerShell modules/scripts use restructure-powershell, for Unity assets use restructure-unity, and for native C++/.vcxproj use restructure-native.
 ---
 
 # Restructuring managed .NET repositories (cross-platform)
@@ -15,7 +16,7 @@ edits where none does (a solution's stored paths, `<Import>` paths). You never h
 Cross-platform: PowerShell 7 on Windows/Linux/macOS, or Windows PowerShell 5.1. It needs the dotnet
 CLI, and git is optional (without it, a move falls back to a plain `Move-Item`). Load the netscoot
 module that ships with this plugin:
-`Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"`. Never auto-install: if a
+`Import-Module "${CLAUDE_PLUGIN_ROOT}/Netscoot/Netscoot.psd1"`. Never auto-install: if a
 prerequisite (git, dotnet) is missing, give the user the install command and let them run it. For
 native C++ (`.vcxproj`, Windows-only) see `restructure-native` (`Move-DotnetProject` refuses
 `.vcxproj`). For PowerShell modules or scripts see `restructure-powershell`, and for Unity assets see
@@ -57,7 +58,7 @@ These are the right tools when the task is "audit" or "sync the solutions," not 
 ## Moving a .NET project
 
 ```powershell
-Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"
+Import-Module "${CLAUDE_PLUGIN_ROOT}/Netscoot/Netscoot.psd1"
 # Always dry-run first:
 Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
 # Then, after the user agrees:

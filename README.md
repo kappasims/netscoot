@@ -39,7 +39,7 @@ What netscoot optimizes for, in order:
    references is worse than no move.
 2. **Reliability.** Write-ahead journal, in-operation rollback, structured `-WhatIf` previews, and
    CI gates against drift on both the Gallery-listed surface and the agent-discovery
-   (`.claude/skills/`) surface.
+   (`src/skills/`) surface.
 3. **A conservative public shape.** Only what callers need ships as a public cmdlet. Internal
    helpers stay internal (see CONTRIBUTING for the convention). Result-type shapes are documented
    and gated.
@@ -135,7 +135,7 @@ Flags: `--whatif` (preview), `--force` (plain `Move-Item` fallback without askin
 installed), `--nobuild` (skip the .NET build step). Unity and native engines are loaded on demand.
 The alias runs `pwsh`, so it needs PowerShell 7 on PATH.
 
-For AI agents, four Claude Code skills (`.claude/skills/`), one per engine, trigger on natural
+For AI agents, four Claude Code skills (`src/skills/`), one per engine, trigger on natural
 language and run the commands above:
 
 | Skill | Triggers on |

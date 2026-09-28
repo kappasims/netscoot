@@ -23,8 +23,5 @@
     "refactoring",
     "restructure",
     "git"
-  ],
-  "skills": [
-    "./.claude/skills"
   ]
 }
