@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-09-28
+
 ### Changed
 
 - The Claude Code plugin ships the netscoot module from the same release as its skills, and the
