@@ -9,6 +9,8 @@
   },
   "homepage": "https://github.com/kappasims/netscoot",
   "repository": "https://github.com/kappasims/netscoot",
+  "supportUrl": "https://github.com/kappasims/netscoot/issues",
+  "privacyPolicyUrl": "https://github.com/kappasims/netscoot/blob/master/README.md#privacy-policy",
   "license": "MIT",
   "keywords": [
     "dotnet",

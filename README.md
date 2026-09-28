@@ -514,6 +514,19 @@ The full journaling precedence and how to turn it off live under
 > that the `NETSCOOT_JOURNAL` env var overrides fleet-wide (see
 > [Turning the journal off](#turning-the-journal-off)).
 
+## Privacy policy
+
+netscoot collects no personal data and sends no telemetry. It runs on your machine, and what it writes
+stays there, as [Footprint](#footprint) lists: the module files, the undo journal in your per-user data
+directory, and the temporary snapshots each move removes when it finishes.
+
+It uses the network only when you run `Test-NetscootUpdate`, `Update-Netscoot` or the installer. They make
+unauthenticated requests to `api.github.com` and `github.com` for the latest release and its source
+archive, and send no credentials or data of yours. GitHub's privacy statement covers those requests.
+
+The Claude Code plugin runs the same module on your machine. What you send to Claude while using it is
+covered by Anthropic's privacy policy.
+
 Contributing / building from source: see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Reference
