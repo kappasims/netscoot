@@ -18,4 +18,14 @@ Describe 'Skill frontmatter' {
         }
         @($plain).Count | Should -Be 0 -Because "these skills need 'description: >-' frontmatter: $(@($plain) -join ', ')"
     }
+
+    It 'keeps every skill description within the 1024-character limit of the skill format' {
+        $long = foreach ($file in Get-ChildItem -LiteralPath $script:skillRoot -Recurse -Filter 'SKILL.md') {
+            $text = [System.IO.File]::ReadAllText($file.FullName) -replace "`r`n", "`n"
+            if ($text -match '(?s)\A---\nname: [a-z0-9-]+\ndescription: >-\n  (\S[^\n]*)\n---\n' -and $Matches[1].Length -gt 1024) {
+                "$($file.Directory.Name) ($($Matches[1].Length))"
+            }
+        }
+        @($long).Count | Should -Be 0 -Because "these skill descriptions are over 1024 characters: $(@($long) -join ', ')"
+    }
 }
