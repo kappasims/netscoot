@@ -34,9 +34,9 @@ Read-only audits. These change nothing.
 | :--- | :--- |
 | [Resolve-MoveEngine](#resolve-moveengine) | Classify a path to the reconciliation engine that should move it: dotnet, native, unity, ps-script, ps-module, or unknown. |
 | [Get-NetscootCapability](#get-netscootcapability) | Resolve Netscoot's external-tool capabilities (git, dotnet) and platform. |
-| [Test-SolutionConsistency](#test-solutionconsistency) | Report projects whose membership diverges across the solution files in a repository (present in some solutions but absent from others). |
-| [Get-SolutionInventory](#get-solutioninventory) | List the full contents of every solution in a repository (projects of any type, solution folders, and solution items), plus on-disk managed and native projects that no solution references. |
-| [Find-PathReference](#find-pathreference) | Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party tool reconciles. |
+| [Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) | Report projects whose membership diverges across the solution files in a repository (present in some solutions but absent from others). |
+| [Get-NetscootSolutionInventory](#get-netscootsolutioninventory) | List the full contents of every solution in a repository (projects of any type, solution folders, and solution items), plus on-disk managed and native projects that no solution references. |
+| [Find-NetscootPathReference](#find-netscootpathreference) | Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party tool reconciles. |
 | [Test-UnityMetaIntegrity](#test-unitymetaintegrity) | Report Unity `.meta` integrity problems under a root: Assets missing a `.meta`, and orphan `.meta` files whose asset is gone. |
 | [Test-EditorSolutionGuard](#test-editorsolutionguard) | Check that a repository's editor configuration will keep a `.slnx` consolidation durable - i.e. |
 
@@ -48,8 +48,8 @@ Reconcile a repository, undo moves, and control the journal.
 
 | Command | What it does |
 | :--- | :--- |
-| [Repair-SolutionReferences](#repair-solutionreferences) | Scan a repository for broken solution membership and dangling ProjectReferences and repair them by re-pointing each entry at the project's new location. |
-| [Sync-Solution](#sync-solution) | Resolve solution-membership divergence by adding each project to the solutions that are missing it, within each group of solutions that share projects. |
+| [Repair-NetscootSolutionReferences](#repair-netscootsolutionreferences) | Scan a repository for broken solution membership and dangling ProjectReferences and repair them by re-pointing each entry at the project's new location. |
+| [Sync-NetscootSolution](#sync-netscootsolution) | Resolve solution-membership divergence by adding each project to the solutions that are missing it, within each group of solutions that share projects. |
 
 #### Undo & journal
 
@@ -77,6 +77,13 @@ Manage the installation itself and wire up the git integration.
 | :--- | :--- |
 | [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) | Report the effective auto-update policy and where it was resolved from. |
 | [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) | Set netscoot's auto-update policy to Enabled, Disabled, or Manual. |
+
+#### Update channel
+
+| Command | What it does |
+| :--- | :--- |
+| [Get-NetscootUpdateChannel](#get-netscootupdatechannel) | Report the effective update channel (Stable or Beta) and where it was resolved from. |
+| [Set-NetscootUpdateChannel](#set-netscootupdatechannel) | Set netscoot's update channel to Stable or Beta. |
 
 #### Git verb
 
@@ -184,7 +191,7 @@ Clear-NetscootJournal -WhatIf
 
 ---
 
-### Find-PathReference
+### Find-NetscootPathReference
 
 Find references to a path in non-canonical, path-hardcoding files (build/CI/hook/ container scripts) that no first-party
 tool reconciles. Report-only.
@@ -192,7 +199,7 @@ tool reconciles. Report-only.
 #### Syntax
 
 ```powershell
-Find-PathReference [-Path] <string> [-RepositoryRoot <string>] [-AdditionalGlob <string[]>] [-AllFiles] [<CommonParameters>]
+Find-NetscootPathReference [-Path] <string> [-RepositoryRoot <string>] [-AdditionalGlob <string[]>] [-AllFiles] [<CommonParameters>]
 ```
 
 Moving a project/folder breaks any path hardcoded in `build.ps1`, CI YAML, git hooks, tools scripts,
@@ -234,16 +241,16 @@ Netscoot.PathReference
 
 ```powershell
 # Build/CI/hook lines that hardcode the path (report-only)
-Find-PathReference -Path ./lib/Tarragon.csproj
+Find-NetscootPathReference -Path ./lib/Tarragon.csproj
 
 # Scan the old path after a move to find what still points at it
-Find-PathReference -Path ./libs/Tarragon/Tarragon.csproj
+Find-NetscootPathReference -Path ./libs/Tarragon/Tarragon.csproj
 
 # Widen the candidate set with extra repository-relative globs
-Find-PathReference -Path ./lib/Tarragon.csproj -AdditionalGlob 'deploy/*.sh','*.psake.ps1'
+Find-NetscootPathReference -Path ./lib/Tarragon.csproj -AdditionalGlob 'deploy/*.sh','*.psake.ps1'
 
 # Search EVERY text file (not just build/CI/hook files) for the reference
-Find-PathReference -Path ./lib/Tarragon.csproj -AllFiles
+Find-NetscootPathReference -Path ./lib/Tarragon.csproj -AllFiles
 ```
 
 [Back to Command reference](#command-reference)
@@ -311,6 +318,116 @@ Get-NetscootCapability
 
 ---
 
+### Get-NetscootSolutionInventory
+
+List the full contents of every solution in a repository (projects of any type, solution folders, and solution items),
+plus on-disk managed and native projects that no solution references.
+
+#### Syntax
+
+```powershell
+Get-NetscootSolutionInventory [[-RepositoryRoot] <string>] [<CommonParameters>]
+```
+
+Where [Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) compares membership and
+[Repair-NetscootSolutionReferences](#repair-netscootsolutionreferences) finds dangling entries, this gives the complete
+picture without reading the files by hand. It parses each `.sln/.slnx` directly (not via `dotnet sln list`, which only
+returns CLI-buildable projects), so it also surfaces non-CLI project types (e.g. .pssproj), solution folders, and loose
+solution items. It then compares against the managed and native (vcxproj) projects on disk and flags any that are in no
+solution at all. An unreferenced PowerShell project (pssproj) is not flagged. Read-only: One record per item, so you can
+group, filter, or format it however you like.
+
+#### Parameters
+
+| Name | Type | Required | Pipeline | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `‑RepositoryRoot` | String | false | true (ByValue) | Root to scan. Accepts pipeline input: a path string, or a file/directory item from Get-Item / Get-ChildItem. Defaults to the enclosing git repository root. Nested git worktrees are skipped. |
+
+#### Output
+
+Returns zero or more [Netscoot.SolutionItem](#netscootsolutionitem), collected as an array.
+One per item.
+
+```text
+Netscoot.SolutionItem
+  Solution  string                     # repository-relative, or '(none)' for an unreferenced project
+  Kind      Netscoot.SolutionItemKind  # enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
+  Type      string                     # project extension without the dot, else empty
+  Name      string
+  Path      string                     # as stored in the solution, or repository-relative
+```
+
+#### Examples
+
+```powershell
+# Everything across all solutions, plus projects in none
+Get-NetscootSolutionInventory -RepositoryRoot . | Format-Table -AutoSize
+
+# Only the projects on disk that no solution references
+Get-NetscootSolutionInventory | Where-Object Kind -eq 'UnreferencedProject'
+
+# Only loose solution items (e.g. a README in a solution folder)
+Get-NetscootSolutionInventory | Where-Object Kind -eq 'SolutionItem'
+
+# Kind is the [Netscoot.SolutionItemKind] enum, so this also works
+Get-NetscootSolutionInventory | Where-Object Kind -eq ([Netscoot.SolutionItemKind]::UnreferencedProject)
+```
+
+#### Related
+
+[ [Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) |
+[Sync-NetscootSolution](#sync-netscootsolution) |
+[Repair-NetscootSolutionReferences](#repair-netscootsolutionreferences) ]
+
+[Back to Command reference](#command-reference)
+
+---
+
+### Get-NetscootUpdateChannel
+
+Report the effective update channel (Stable or Beta) and where it was resolved from.
+
+#### Syntax
+
+```powershell
+Get-NetscootUpdateChannel [<CommonParameters>]
+```
+
+netscoot ships a stable line and, alongside it, opt-in prerelease (beta) builds. The channel decides which the updater
+([Test-NetscootUpdate](#test-netscootupdate) / [Update-Netscoot](#update-netscoot)) tracks: Stable (default) only
+non-prerelease GitHub releases are offered. Beta prerelease releases (e.g. v3.0.0-beta1) are offered too. The channel is
+stored in the `NETSCOOT_CHANNEL` environment variable, so it can be set with
+[Set-NetscootUpdateChannel](#set-netscootupdatechannel) or pushed by an administrator (Group Policy / Intune / a
+profile). This resolves the value in precedence order: the current process, then (on Windows) the user environment, then
+the machine environment. A value of `beta`/`preview` is Beta, and anything else or absent is Stable.
+
+#### Output
+
+Returns a single [Netscoot.UpdateChannel](#netscootupdatechannel).
+
+```text
+Netscoot.UpdateChannel
+  Channel  string  # Stable | Beta
+  Source   string  # Process | User | Machine | Default
+  Value    string  # the raw NETSCOOT_CHANNEL value, or $null
+```
+
+#### Examples
+
+```powershell
+# See the current channel and where it came from
+Get-NetscootUpdateChannel
+```
+
+#### Related
+
+[ [Set-NetscootUpdateChannel](#set-netscootupdatechannel) | [Test-NetscootUpdate](#test-netscootupdate) |
+[Update-Netscoot](#update-netscoot) ]
+
+[Back to Command reference](#command-reference)
+
+---
+
 ### Get-NetscootUpdatePolicy
 
 Report the effective auto-update policy and where it was resolved from.
@@ -353,70 +470,6 @@ Get-NetscootUpdatePolicy
 
 [ [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) | [Test-NetscootUpdate](#test-netscootupdate) |
 [Update-Netscoot](#update-netscoot) ]
-
-[Back to Command reference](#command-reference)
-
----
-
-### Get-SolutionInventory
-
-List the full contents of every solution in a repository (projects of any type, solution folders, and solution items),
-plus on-disk managed and native projects that no solution references.
-
-#### Syntax
-
-```powershell
-Get-SolutionInventory [[-RepositoryRoot] <string>] [<CommonParameters>]
-```
-
-Where [Test-SolutionConsistency](#test-solutionconsistency) compares membership and
-[Repair-SolutionReferences](#repair-solutionreferences) finds dangling entries, this gives the complete picture without
-reading the files by hand. It parses each `.sln/.slnx` directly (not via `dotnet sln list`, which only returns
-CLI-buildable projects), so it also surfaces non-CLI project types (e.g. .pssproj), solution folders, and loose solution
-items. It then compares against the managed and native (vcxproj) projects on disk and flags any that are in no solution
-at all. An unreferenced PowerShell project (pssproj) is not flagged. Read-only: One record per item, so you can group,
-filter, or format it however you like.
-
-#### Parameters
-
-| Name | Type | Required | Pipeline | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `‑RepositoryRoot` | String | false | true (ByValue) | Root to scan. Accepts pipeline input: a path string, or a file/directory item from Get-Item / Get-ChildItem. Defaults to the enclosing git repository root. Nested git worktrees are skipped. |
-
-#### Output
-
-Returns zero or more [Netscoot.SolutionItem](#netscootsolutionitem), collected as an array.
-One per item.
-
-```text
-Netscoot.SolutionItem
-  Solution  string                     # repository-relative, or '(none)' for an unreferenced project
-  Kind      Netscoot.SolutionItemKind  # enum: Project | SolutionFolder | SolutionItem | UnreferencedProject
-  Type      string                     # project extension without the dot, else empty
-  Name      string
-  Path      string                     # as stored in the solution, or repository-relative
-```
-
-#### Examples
-
-```powershell
-# Everything across all solutions, plus projects in none
-Get-SolutionInventory -RepositoryRoot . | Format-Table -AutoSize
-
-# Only the projects on disk that no solution references
-Get-SolutionInventory | Where-Object Kind -eq 'UnreferencedProject'
-
-# Only loose solution items (e.g. a README in a solution folder)
-Get-SolutionInventory | Where-Object Kind -eq 'SolutionItem'
-
-# Kind is the [Netscoot.SolutionItemKind] enum, so this also works
-Get-SolutionInventory | Where-Object Kind -eq ([Netscoot.SolutionItemKind]::UnreferencedProject)
-```
-
-#### Related
-
-[ [Test-SolutionConsistency](#test-solutionconsistency) | [Sync-Solution](#sync-solution) |
-[Repair-SolutionReferences](#repair-solutionreferences) ]
 
 [Back to Command reference](#command-reference)
 
@@ -466,8 +519,8 @@ folder of .NET projects    ->  Netscoot.TreeMoveResult
 Unity asset or folder      ->  Netscoot.UnityMoveResult
 ```
 
-These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields, with no
-shared base type. See [Output types](#output-types).
+These share a common shape (Engine, Source, Destination, Performed) and each adds its own fields, with no shared base
+type. See [Output types](#output-types).
 
 #### Examples
 
@@ -531,8 +584,8 @@ them.
 .props  .targets           ->  Move-MSBuildImport   ->  Netscoot.ImportMoveResult
 ```
 
-These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields, with no
-shared base type. See [Output types](#output-types).
+These share a common shape (Engine, Source, Destination, Performed) and each adds its own fields, with no shared base
+type. See [Output types](#output-types).
 
 #### Examples
 
@@ -592,7 +645,6 @@ Netscoot.TreeMoveResult
   Source         string  # absolute path
   Destination    string  # absolute path
   Performed      bool    # false under -WhatIf
-  SkippedCount   int
   ProjectsMoved  int
   ConsumerCount  int     # external references repointed
   Built          bool?   # $null with -NoBuild
@@ -656,7 +708,6 @@ Netscoot.MoveResult
   Source         string    # absolute path
   Destination    string    # absolute path
   Performed      bool      # false under -WhatIf
-  SkippedCount   int
   Solutions      string[]  # solution names updated
   ConsumerCount  int       # external references repointed
   OwnRefCount    int       # the moved project's own references rebased
@@ -733,7 +784,6 @@ Netscoot.TreeMoveResult
   Source         string  # absolute path
   Destination    string  # absolute path
   Performed      bool    # false under -WhatIf
-  SkippedCount   int
   ProjectsMoved  int
   ConsumerCount  int     # external references repointed
   Built          bool?   # $null with -NoBuild
@@ -805,7 +855,6 @@ Netscoot.ImportMoveResult
   Source           string  # absolute path
   Destination      string  # absolute path
   Performed        bool    # false under -WhatIf
-  SkippedCount     int
   ImportersFixed   int     # files whose <Import> was rewritten
   OwnImportsFixed  int     # the moved file's own imports rewritten
   AutoImported     bool    # true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
@@ -863,8 +912,8 @@ to the script specialist (the module specialist has no RepositoryRoot).
 .psd1  module folder   ->  Move-PowerShellModule  ->  Netscoot.PSModuleMoveResult
 ```
 
-These share a common shape (Engine, Source, Destination, Performed, SkippedCount) and each adds its own fields, with no
-shared base type. See [Output types](#output-types).
+These share a common shape (Engine, Source, Destination, Performed) and each adds its own fields, with no shared base
+type. See [Output types](#output-types).
 
 #### Examples
 
@@ -918,12 +967,11 @@ Returns a single [Netscoot.PSModuleMoveResult](#netscootpsmodulemoveresult).
 
 ```text
 Netscoot.PSModuleMoveResult
-  Engine        string
-  Source        string  # absolute path
-  Destination   string  # absolute path
-  Performed     bool    # false under -WhatIf
-  SkippedCount  int
-  Manifest      string  # the manifest file name
+  Engine       string
+  Source       string  # absolute path
+  Destination  string  # absolute path
+  Performed    bool    # false under -WhatIf
+  Manifest     string  # the manifest file name
 ```
 
 #### Examples
@@ -987,7 +1035,6 @@ Netscoot.ScriptMoveResult
   Source            string  # absolute path
   Destination       string  # absolute path
   Performed         bool    # false under -WhatIf
-  SkippedCount      int
   ReferencersFixed  int     # scripts whose path to the moved file was rewritten
   OwnRefsFixed      int     # the moved script's own paths rewritten
   UnresolvedRefs    int     # count of possible dynamic references to verify, not a list
@@ -1050,7 +1097,6 @@ Netscoot.SolutionMoveResult
   Source           string  # absolute path
   Destination      string  # absolute path
   Performed        bool    # false under -WhatIf
-  SkippedCount     int
   ProjectsRebased  int     # project paths rewritten
   ItemsRebased     int     # solution item paths rewritten
 ```
@@ -1160,7 +1206,7 @@ references. Snapshots less than an hour old are kept.
 
 | Name | Type | Required | Pipeline | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `‑RepositoryRoot` | String | false | false | Repository whose journal to inspect, and the boundary every recovery is confined to. Defaults to the enclosing git repository root of the current directory. |
+| `‑RepositoryRoot` | String | false | false | Repository whose journal to inspect, and the boundary every recovery is confined to. Defaults to the enclosing git repository root. |
 | `‑Rollback` | SwitchParameter | true | false | Roll each interrupted move back to its pre-move state (high-impact: prompts unless `-Force`). |
 | `‑Discard` | SwitchParameter | true | false | Forget each interrupted move without touching the working tree (removes its snapshot). |
 | `‑Id` | String | false | false | Act on only the interrupted move with this journal id. |
@@ -1210,7 +1256,7 @@ Repair-NetscootJournal -ClearOrphanSnapshots
 
 ---
 
-### Repair-SolutionReferences
+### Repair-NetscootSolutionReferences
 
 Scan a repository for broken solution membership and dangling ProjectReferences and repair them by re-pointing each
 entry at the project's new location.
@@ -1218,7 +1264,7 @@ entry at the project's new location.
 #### Syntax
 
 ```powershell
-Repair-SolutionReferences [[-RepositoryRoot] <string>] [-Fix] [-Prune] [-WhatIf] [-Confirm] [<CommonParameters>]
+Repair-NetscootSolutionReferences [[-RepositoryRoot] <string>] [-Fix] [-Prune] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 Finds solution entries and `<ProjectReference>`s that point at a project file which no longer exists at the recorded
@@ -1263,19 +1309,20 @@ Netscoot.RepairResult
 
 ```powershell
 # Report dangling entries only - read-only (each tagged Relocatable, Missing, or Ambiguous)
-Repair-SolutionReferences -RepositoryRoot .
+Repair-NetscootSolutionReferences -RepositoryRoot .
 
 # Re-point relocatable entries at the project's new location (relocates, never deletes)
-Repair-SolutionReferences -RepositoryRoot . -Fix
+Repair-NetscootSolutionReferences -RepositoryRoot . -Fix
 
 # Also remove entries whose project is gone for good - preview the whole thing first
-Repair-SolutionReferences -RepositoryRoot . -Fix -Prune -WhatIf
+Repair-NetscootSolutionReferences -RepositoryRoot . -Fix -Prune -WhatIf
 ```
 
 #### Related
 
-[ [Get-SolutionInventory](#get-solutioninventory) | [Test-SolutionConsistency](#test-solutionconsistency) |
-[Sync-Solution](#sync-solution) | [Find-PathReference](#find-pathreference) ]
+[ [Get-NetscootSolutionInventory](#get-netscootsolutioninventory) |
+[Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) | [Sync-NetscootSolution](#sync-netscootsolution)
+| [Find-NetscootPathReference](#find-netscootpathreference) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1438,6 +1485,68 @@ Set-NetscootJournal -Enabled $false -Global
 
 ---
 
+### Set-NetscootUpdateChannel
+
+Set netscoot's update channel to Stable or Beta.
+
+#### Syntax
+
+```powershell
+Set-NetscootUpdateChannel [-Channel] <string> [[-Scope] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+Writes the `NETSCOOT_CHANNEL` environment variable that governs which releases the updater offers (see
+[Get-NetscootUpdateChannel](#get-netscootupdatechannel)). The change always takes effect in the current session, and the
+scope controls how far it persists: `-Scope` Process (default) this session only, with nothing persisted. `-Scope` User
+persists for the current user (Windows). `-Scope` Machine persists for all users (Windows), and needs an elevated
+session. On non-Windows, User/Machine cannot be persisted programmatically, so this sets the session value and prints
+the line to add to your shell profile. Stable is the neutral default, represented by clearing the variable at the given
+scope. Beta sets it to `beta`. A Beta persisted at User scope still applies after a Process-scope Stable, so switch back
+at the scope you persisted.
+
+#### Parameters
+
+| Name | Type | Required | Pipeline | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `‑Channel` | String | true | false | Stable or Beta. Beta opts the updater into prerelease releases (e.g. v3.0.0-beta1). |
+| `‑Scope` | String | false | false | How far to persist: Process (default, this session only), User (Windows), or Machine (Windows, elevated). |
+| `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
+| `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
+
+#### Output
+
+Returns a single [Netscoot.UpdateChannel](#netscootupdatechannel).
+The resulting effective channel.
+
+```text
+Netscoot.UpdateChannel
+  Channel  string  # Stable | Beta
+  Source   string  # Process | User | Machine | Default
+  Value    string  # the raw NETSCOOT_CHANNEL value, or $null
+```
+
+#### Examples
+
+```powershell
+# Opt into prerelease (beta) updates for this session
+Set-NetscootUpdateChannel -Channel Beta
+
+# Persist beta for the current user (Windows)
+Set-NetscootUpdateChannel -Channel Beta -Scope User
+
+# Back to the default stable line, at the scope beta was persisted at
+Set-NetscootUpdateChannel -Channel Stable -Scope User
+```
+
+#### Related
+
+[ [Get-NetscootUpdateChannel](#get-netscootupdatechannel) | [Test-NetscootUpdate](#test-netscootupdate) |
+[Update-Netscoot](#update-netscoot) ]
+
+[Back to Command reference](#command-reference)
+
+---
+
 ### Set-NetscootUpdatePolicy
 
 Set netscoot's auto-update policy to Enabled, Disabled, or Manual.
@@ -1499,7 +1608,7 @@ Set-NetscootUpdatePolicy -State Manual
 
 ---
 
-### Sync-Solution
+### Sync-NetscootSolution
 
 Resolve solution-membership divergence by adding each project to the solutions that are missing it, within each group of
 solutions that share projects.
@@ -1507,17 +1616,17 @@ solutions that share projects.
 #### Syntax
 
 ```powershell
-Sync-Solution [[-RepositoryRoot] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+Sync-NetscootSolution [[-RepositoryRoot] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
-The companion to [Test-SolutionConsistency](#test-solutionconsistency), which only reports divergence. It works on the
-same groups: solutions that share at least one project, such as a `.sln` and its `.slnx` mirror. A solution that shares
-no project with another is left alone. Within a group, every managed project present in one solution but absent from
-another is added where it is missing, through `dotnet sln add`. The dotnet CLI cannot load a `.vcxproj` or .pssproj, so
-a missing one is reported as a warning to add in Visual Studio. It only adds and never removes, so a project in no
-solution is left alone (use [Get-SolutionInventory](#get-solutioninventory) to find those). Uniform membership within a
-group is the assumption. If a solution is intentionally a subset of another it shares projects with, preview with
-`-WhatIf` first and add specific projects by hand.
+The companion to [Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency), which only reports divergence.
+It works on the same groups: solutions that share at least one project, such as a `.sln` and its `.slnx` mirror. A
+solution that shares no project with another is left alone. Within a group, every managed project present in one
+solution but absent from another is added where it is missing, through `dotnet sln add`. The dotnet CLI cannot load a
+`.vcxproj` or .pssproj, so a missing one is reported as a warning to add in Visual Studio. It only adds and never
+removes, so a project in no solution is left alone (use [Get-NetscootSolutionInventory](#get-netscootsolutioninventory)
+to find those). Uniform membership within a group is the assumption. If a solution is intentionally a subset of another
+it shares projects with, preview with `-WhatIf` first and add specific projects by hand.
 
 #### Parameters
 
@@ -1542,16 +1651,17 @@ Netscoot.SyncResult
 
 ```powershell
 # Preview which projects would be added to which solutions to make membership uniform
-Sync-Solution -RepositoryRoot . -WhatIf
+Sync-NetscootSolution -RepositoryRoot . -WhatIf
 
 # Add each divergent project to the solutions missing it (only adds, never removes)
-Sync-Solution -RepositoryRoot .
+Sync-NetscootSolution -RepositoryRoot .
 ```
 
 #### Related
 
-[ [Get-SolutionInventory](#get-solutioninventory) | [Test-SolutionConsistency](#test-solutionconsistency) |
-[Repair-SolutionReferences](#repair-solutionreferences) ]
+[ [Get-NetscootSolutionInventory](#get-netscootsolutioninventory) |
+[Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) |
+[Repair-NetscootSolutionReferences](#repair-netscootsolutionreferences) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1570,10 +1680,11 @@ Test-EditorSolutionGuard [[-RepositoryRoot] <string>] [-Strict] [<CommonParamete
 
 Consolidating to a single `.slnx` is not durable on its own. VS Code's C# Dev Kit AUTO-GENERATES a legacy `.sln` next to
 a `.slnx` on folder open unless 'dotnet.automaticallyCreateSolutionInWorkspace' is false, so a regenerated `.sln`
-reappears and drifts (the exact stale-duplicate that [Test-SolutionConsistency](#test-solutionconsistency) detects after
-the fact). When at least one `.slnx` exists in the repository, this inspects the repository-root editor config and
-reports whether the guards that keep the consolidation durable are in place: AutoCreateGuard .vscode/settings.json must
-set 'dotnet.automaticallyCreateSolutionInWorkspace' to false (else Dev Kit re-mints the `.sln`). DefaultSolution
+reappears and drifts (the exact stale-duplicate that
+[Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) detects after the fact). When at least one `.slnx`
+exists in the repository, this inspects the repository-root editor config and reports whether the guards that keep the
+consolidation durable are in place: AutoCreateGuard .vscode/settings.json must set
+'dotnet.automaticallyCreateSolutionInWorkspace' to false (else Dev Kit re-mints the `.sln`). DefaultSolution
 'dotnet.defaultSolution' should point at a real, existing solution (ideally the `.slnx`). Missing, or pointing at a
 deleted/nonexistent file, means Dev Kit chooses which solution loads - possibly a stray `.sln`. GitignoreGuard
 .gitignore should ignore *`.sln` so a regenerated one cannot be committed. Read-only: it never edits settings,
@@ -1619,78 +1730,14 @@ Get-Item ./repo | Test-EditorSolutionGuard
 
 #### Related
 
-[ [Test-SolutionConsistency](#test-solutionconsistency) | [Get-SolutionInventory](#get-solutioninventory) ]
+[ [Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) |
+[Get-NetscootSolutionInventory](#get-netscootsolutioninventory) ]
 
 [Back to Command reference](#command-reference)
 
 ---
 
-### Test-NetscootUpdate
-
-Check GitHub for a newer netscoot release and report whether the installed version is behind. On-demand and read-only:
-it never updates anything itself.
-
-#### Syntax
-
-```powershell
-Test-NetscootUpdate [[-Repository] <string>] [-Auto] [<CommonParameters>]
-```
-
-netscoot does not update automatically, however it is installed (PowerShell Gallery, installer, or a clone). This is the
-pull-based check: It GETs the latest GitHub release and compares its tag (the "available" version) against the installed
-module's ModuleVersion (the "installed" version). It prints what to do when behind, but performs no update - an agent or
-user runs it when they want to know. Needs network access to api.github.com. Honors `-ErrorAction` if the request fails
-(offline, rate-limited, or no releases yet). A plain Test-NetscootUpdate always checks. `-Auto` is the
-automation/SessionStart entry point: It runs the check only when the update policy is Enabled (see
-[Set-NetscootUpdatePolicy](#set-netscootupdatepolicy)), and is a silent no-op otherwise. So a hook can call it
-unconditionally, and nothing happens until the policy is opted in. An administrator can disable it fleet-wide. Either
-way it never updates - it only reports.
-
-#### Parameters
-
-| Name | Type | Required | Pipeline | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `‑Repository` | String | false | false | The GitHub repository to check, in `owner/name` form. Defaults to the project repository. |
-| `‑Auto` | SwitchParameter | false | false | Run as the automatic check (for a SessionStart hook or other automation): proceed only when the update policy is Enabled, otherwise do nothing. Still read-only - it never updates. |
-
-#### Output
-
-Returns a single [Netscoot.Update](#netscootupdate).
-None (writes a non-terminating error) when the release cannot be fetched, and nothing at all when `-Auto` is set but the
-update policy is not Enabled.
-
-```text
-Netscoot.Update
-  Installed        version   # a [version], e.g. 2.1.0 (compares numerically)
-  Latest           version?  # a [version], $null if the tag could not be parsed
-  Tag              string
-  UpdateAvailable  bool
-  Url              string
-```
-
-#### Examples
-
-```powershell
-# Compare the installed module to the latest GitHub release
-Test-NetscootUpdate
-
-# Check a fork or a different repository (owner/name)
-Test-NetscootUpdate -Repository myfork/netscoot
-
-# SessionStart hook: checks only when the update policy is Enabled
-Test-NetscootUpdate -Auto
-```
-
-#### Related
-
-[ [Update-Netscoot](#update-netscoot) | [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) |
-[Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) ]
-
-[Back to Command reference](#command-reference)
-
----
-
-### Test-SolutionConsistency
+### Test-NetscootSolutionConsistency
 
 Report projects whose membership diverges across the solution files in a repository (present in some solutions but
 absent from others).
@@ -1698,7 +1745,7 @@ absent from others).
 #### Syntax
 
 ```powershell
-Test-SolutionConsistency [[-RepositoryRoot] <string>] [-Strict] [<CommonParameters>]
+Test-NetscootSolutionConsistency [[-RepositoryRoot] <string>] [-Strict] [<CommonParameters>]
 ```
 
 When a repository carries more than one solution (e.g. a classic `.sln` alongside a `.slnx`), they can drift out of sync
@@ -1734,22 +1781,89 @@ Netscoot.ConsistencyResult
 
 ```powershell
 # Report projects whose membership diverges across solutions (warnings)
-Test-SolutionConsistency -RepositoryRoot .
+Test-NetscootSolutionConsistency -RepositoryRoot .
 
 # Add the full solution/project membership matrix
-Test-SolutionConsistency -RepositoryRoot . -Debug
+Test-NetscootSolutionConsistency -RepositoryRoot . -Debug
 
 # Escalate divergence to non-terminating errors (e.g. to gate CI)
-Test-SolutionConsistency -RepositoryRoot . -Strict
+Test-NetscootSolutionConsistency -RepositoryRoot . -Strict
 
 # Check several repositories from the pipeline
-Get-Item ./repoA, ./repoB | Test-SolutionConsistency -Strict
+Get-Item ./repoA, ./repoB | Test-NetscootSolutionConsistency -Strict
 ```
 
 #### Related
 
-[ [Get-SolutionInventory](#get-solutioninventory) | [Sync-Solution](#sync-solution) |
-[Repair-SolutionReferences](#repair-solutionreferences) ]
+[ [Get-NetscootSolutionInventory](#get-netscootsolutioninventory) | [Sync-NetscootSolution](#sync-netscootsolution) |
+[Repair-NetscootSolutionReferences](#repair-netscootsolutionreferences) ]
+
+[Back to Command reference](#command-reference)
+
+---
+
+### Test-NetscootUpdate
+
+Check GitHub for a newer netscoot release and report whether the installed version is behind. On-demand and read-only:
+it never updates anything itself.
+
+#### Syntax
+
+```powershell
+Test-NetscootUpdate [[-Repository] <string>] [[-Channel] <string>] [-Auto] [<CommonParameters>]
+```
+
+netscoot does not update automatically, however it is installed (PowerShell Gallery, installer, or a clone). This is the
+pull-based check. On the Stable channel it GETs the latest GitHub release, and on the Beta channel the newest of the
+recent releases, prereleases included. It compares that tag (the "available" version) against the installed version,
+prerelease label included. It prints what to do when behind, but performs no update - an agent or user runs it when they
+want to know. Needs network access to api.github.com. Honors `-ErrorAction` if the request fails (offline, rate-limited,
+or no releases yet). A plain Test-NetscootUpdate always checks. `-Auto` is the automation/SessionStart entry point: It
+runs the check only when the update policy is Enabled (see [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy)), and
+is a silent no-op otherwise. So a hook can call it unconditionally, and nothing happens until the policy is opted in. An
+administrator can disable it fleet-wide. Either way it never updates - it only reports.
+
+#### Parameters
+
+| Name | Type | Required | Pipeline | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `‑Repository` | String | false | false | The GitHub repository to check, in `owner/name` form. Defaults to the project repository. |
+| `‑Auto` | SwitchParameter | false | false | Run as the automatic check (for a SessionStart hook or other automation): proceed only when the update policy is Enabled, otherwise do nothing. Still read-only - it never updates. |
+| `‑Channel` | String | false | false | Which releases to consider: Stable (only non-prerelease releases) or Beta (prerelease releases too, e.g. v3.0.0-beta1). Defaults to the resolved channel ([Get-NetscootUpdateChannel](#get-netscootupdatechannel)). |
+
+#### Output
+
+Returns a single [Netscoot.Update](#netscootupdate).
+None (writes a non-terminating error) when the release cannot be fetched, and nothing at all when `-Auto` is set but the
+update policy is not Enabled.
+
+```text
+Netscoot.Update
+  Installed        version   # a [version], e.g. 2.1.0 (compares numerically)
+  Latest           version?  # a [version], $null if the tag could not be parsed
+  Tag              string
+  UpdateAvailable  bool
+  Url              string
+  Channel          string    # Stable | Beta, the channel the check used
+```
+
+#### Examples
+
+```powershell
+# Compare the installed module to the latest GitHub release
+Test-NetscootUpdate
+
+# Check a fork or a different repository (owner/name)
+Test-NetscootUpdate -Repository myfork/netscoot
+
+# SessionStart hook: checks only when the update policy is Enabled
+Test-NetscootUpdate -Auto
+```
+
+#### Related
+
+[ [Update-Netscoot](#update-netscoot) | [Get-NetscootUpdatePolicy](#get-netscootupdatepolicy) |
+[Set-NetscootUpdatePolicy](#set-netscootupdatepolicy) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1897,7 +2011,7 @@ update for non-clone installs.
 #### Syntax
 
 ```powershell
-Update-Netscoot [[-Repository] <string>] [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
+Update-Netscoot [[-Repository] <string>] [[-Channel] <string>] [-Force] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 Checks GitHub for a newer release (via [Test-NetscootUpdate](#test-netscootupdate)) and, if the installed version is
@@ -1905,9 +2019,9 @@ behind, downloads the release's source archive and copies its module folders to 
 place `install.ps1` installs to. It runs nothing it downloads. No git, no clone. Does nothing when already current
 unless `-Force`. Honors `-WhatIf`/`-Confirm`. After it runs, reload the module in the current session with
 `Import-Module Netscoot -Force`. Needs network access to GitHub. For Gallery installs, use `Update-Module Netscoot`
-instead. This command updates installer installs in place from the GitHub release, and replaces a Gallery install's
-folder with an installer copy. The Claude Code plugin carries its own copy of the module and updates it itself. This
-command never touches that copy. When the update policy is Disabled (see
+(with `-AllowPrerelease` for betas) instead. This command updates installer installs in place from the GitHub release,
+and replaces a Gallery install's folder with an installer copy. The Claude Code plugin carries its own copy of the
+module and updates it itself. This command never touches that copy. When the update policy is Disabled (see
 [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy)), this refuses to update. `-Force` overrides a policy you set for
 yourself, never one an administrator set.
 
@@ -1917,6 +2031,7 @@ yourself, never one an administrator set.
 | :--- | :--- | :--- | :--- | :--- |
 | `‑Force` | SwitchParameter | false | false | Reinstall the latest release even if already current, and override a Disabled update policy that you set for yourself. |
 | `‑Repository` | String | false | false | The GitHub repository to install from, in `owner/name` form. Defaults to the project repository. |
+| `‑Channel` | String | false | false | Which releases to consider: Stable or Beta (prerelease releases too). Defaults to the resolved channel ([Get-NetscootUpdateChannel](#get-netscootupdatechannel)). Set Beta to track prerelease builds. |
 | `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
 | `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
 
@@ -1933,6 +2048,7 @@ Netscoot.Update
   Tag              string
   UpdateAvailable  bool
   Url              string
+  Channel          string    # Stable | Beta, the channel the check used
 ```
 
 #### Examples
@@ -2000,7 +2116,6 @@ Netscoot.NativeMoveResult
   Source                string                    # absolute path
   Destination           string                    # absolute path
   Performed             bool                      # false under -WhatIf
-  SkippedCount          int
   Solutions             string[]                  # solution names updated
   UnreconciledSettings  Netscoot.NativeSetting[]  # native path settings to verify by hand
                           Kind   string  # e.g. AdditionalIncludeDirectories, OutDir, Import
@@ -2071,7 +2186,6 @@ Netscoot.UnityMoveResult
   Source        string    # absolute path
   Destination   string    # absolute path
   Performed     bool      # false under -WhatIf
-  SkippedCount  int
   MetaMoved     bool      # the paired .meta moved too
   IsAsmdef      bool      # the moved asset is an .asmdef
   ReferencedBy  string[]  # asmdefs that reference a moved .asmdef (informational, since refs are by name or GUID and survive)
@@ -2176,6 +2290,7 @@ In a field, `type[]` is array-valued, `type?` may be `$null`, and a `Netscoot.*`
 | [Netscoot.TreeMoveResult](#netscoottreemoveresult) | Result of moving a folder of one or more .NET projects in one operation. |
 | [Netscoot.UnityMoveResult](#netscootunitymoveresult) | Result of moving a Unity asset/folder while keeping its paired `.meta` file(s). |
 | [Netscoot.Update](#netscootupdate) | Whether the installed Netscoot is behind the latest GitHub release. |
+| [Netscoot.UpdateChannel](#netscootupdatechannel) | The effective update channel and where it was resolved from. |
 | [Netscoot.UpdatePolicy](#netscootupdatepolicy) | The effective auto-update policy and where it was resolved from. |
 
 ---
@@ -2213,7 +2328,7 @@ Netscoot.Capability
 
 ### Netscoot.ConsistencyResult
 
-[ [Test-SolutionConsistency](#test-solutionconsistency) ]
+[ [Test-NetscootSolutionConsistency](#test-netscootsolutionconsistency) ]
 
 One project whose solution membership diverges across the repository.
 
@@ -2293,7 +2408,6 @@ Netscoot.ImportMoveResult
   Source           string  # absolute path
   Destination      string  # absolute path
   Performed        bool    # false under -WhatIf
-  SkippedCount     int
   ImportersFixed   int     # files whose <Import> was rewritten
   OwnImportsFixed  int     # the moved file's own imports rewritten
   AutoImported     bool    # true for a by-location import (e.g. Directory.Build.props) whose inheritance scope changed
@@ -2353,7 +2467,6 @@ Netscoot.MoveResult
   Source         string    # absolute path
   Destination    string    # absolute path
   Performed      bool      # false under -WhatIf
-  SkippedCount   int
   Solutions      string[]  # solution names updated
   ConsumerCount  int       # external references repointed
   OwnRefCount    int       # the moved project's own references rebased
@@ -2376,7 +2489,6 @@ Netscoot.NativeMoveResult
   Source                string                    # absolute path
   Destination           string                    # absolute path
   Performed             bool                      # false under -WhatIf
-  SkippedCount          int
   Solutions             string[]                  # solution names updated
   UnreconciledSettings  Netscoot.NativeSetting[]  # native path settings to verify by hand
                           Kind   string  # e.g. AdditionalIncludeDirectories, OutDir, Import
@@ -2406,7 +2518,7 @@ Netscoot.NativeSetting
 
 ### Netscoot.PathReference
 
-[ [Find-PathReference](#find-pathreference) ]
+[ [Find-NetscootPathReference](#find-netscootpathreference) ]
 
 One build/CI/hook/container line that hardcodes a moved path and that no first-party tool reconciles.
 
@@ -2431,12 +2543,11 @@ Result of moving a PowerShell module folder and fixing the paths that load it.
 
 ```text
 Netscoot.PSModuleMoveResult
-  Engine        string
-  Source        string  # absolute path
-  Destination   string  # absolute path
-  Performed     bool    # false under -WhatIf
-  SkippedCount  int
-  Manifest      string  # the manifest file name
+  Engine       string
+  Source       string  # absolute path
+  Destination  string  # absolute path
+  Performed    bool    # false under -WhatIf
+  Manifest     string  # the manifest file name
 ```
 
 [Back to Output types](#output-types)
@@ -2445,7 +2556,7 @@ Netscoot.PSModuleMoveResult
 
 ### Netscoot.RepairResult
 
-[ [Repair-SolutionReferences](#repair-solutionreferences) ]
+[ [Repair-NetscootSolutionReferences](#repair-netscootsolutionreferences) ]
 
 One dangling solution-membership or ProjectReference entry that was (or would be) repaired.
 
@@ -2477,7 +2588,6 @@ Netscoot.ScriptMoveResult
   Source            string  # absolute path
   Destination       string  # absolute path
   Performed         bool    # false under -WhatIf
-  SkippedCount      int
   ReferencersFixed  int     # scripts whose path to the moved file was rewritten
   OwnRefsFixed      int     # the moved script's own paths rewritten
   UnresolvedRefs    int     # count of possible dynamic references to verify, not a list
@@ -2489,7 +2599,7 @@ Netscoot.ScriptMoveResult
 
 ### Netscoot.SolutionItem
 
-[ [Get-SolutionInventory](#get-solutioninventory) ]
+[ [Get-NetscootSolutionInventory](#get-netscootsolutioninventory) ]
 
 One entry in the full contents of a solution (or a project on disk that no solution references).
 
@@ -2519,7 +2629,6 @@ Netscoot.SolutionMoveResult
   Source           string  # absolute path
   Destination      string  # absolute path
   Performed        bool    # false under -WhatIf
-  SkippedCount     int
   ProjectsRebased  int     # project paths rewritten
   ItemsRebased     int     # solution item paths rewritten
 ```
@@ -2530,7 +2639,7 @@ Netscoot.SolutionMoveResult
 
 ### Netscoot.SyncResult
 
-[ [Sync-Solution](#sync-solution) ]
+[ [Sync-NetscootSolution](#sync-netscootsolution) ]
 
 One project added to a solution that was missing it, to resolve membership divergence.
 
@@ -2575,7 +2684,6 @@ Netscoot.TreeMoveResult
   Source         string  # absolute path
   Destination    string  # absolute path
   Performed      bool    # false under -WhatIf
-  SkippedCount   int
   ProjectsMoved  int
   ConsumerCount  int     # external references repointed
   Built          bool?   # $null with -NoBuild
@@ -2597,7 +2705,6 @@ Netscoot.UnityMoveResult
   Source        string    # absolute path
   Destination   string    # absolute path
   Performed     bool      # false under -WhatIf
-  SkippedCount  int
   MetaMoved     bool      # the paired .meta moved too
   IsAsmdef      bool      # the moved asset is an .asmdef
   ReferencedBy  string[]  # asmdefs that reference a moved .asmdef (informational, since refs are by name or GUID and survive)
@@ -2620,6 +2727,24 @@ Netscoot.Update
   Tag              string
   UpdateAvailable  bool
   Url              string
+  Channel          string    # Stable | Beta, the channel the check used
+```
+
+[Back to Output types](#output-types)
+
+---
+
+### Netscoot.UpdateChannel
+
+[ [Get-NetscootUpdateChannel](#get-netscootupdatechannel) | [Set-NetscootUpdateChannel](#set-netscootupdatechannel) ]
+
+The effective update channel and where it was resolved from.
+
+```text
+Netscoot.UpdateChannel
+  Channel  string  # Stable | Beta
+  Source   string  # Process | User | Machine | Default
+  Value    string  # the raw NETSCOOT_CHANNEL value, or $null
 ```
 
 [Back to Output types](#output-types)

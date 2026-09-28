@@ -52,6 +52,6 @@ function Get-NetscootCapability {
         Git                = $git
         Dotnet             = $dotnet
         DotnetSupportsSlnx = $slnx
-        DotnetInstalls     = @(Find-DotnetInstall)
+        DotnetInstalls     = [Netscoot.DotnetInstall[]]@(Find-DotnetInstall)
     }
 }

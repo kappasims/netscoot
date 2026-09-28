@@ -114,7 +114,7 @@ function Find-DotnetInstall {
         $seen.Add($exe)
         $version = Get-ExternalToolVersion -Path $exe
         if (-not $version) { continue }
-        [pscustomobject]@{ PSTypeName = 'Netscoot.DotnetInstall'; Version = $version; Path = $exe; FoundIn = $candidate.FoundIn }
+        [Netscoot.DotnetInstall]@{ Version = $version; Path = $exe; FoundIn = $candidate.FoundIn }
     }
     @($installs) | Sort-Object -Descending -Property { [version]($_.Version -replace '-.*$', '') }
 }
