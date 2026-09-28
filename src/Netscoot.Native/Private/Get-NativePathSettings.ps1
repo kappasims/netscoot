@@ -26,8 +26,8 @@ function Get-NativePathSettings {
     $seen = @{}
     $unique = @()
     foreach ($f in $found) {
-        $key = "$($f.Kind)|$($f.Value)"
-        if (-not $seen.ContainsKey($key)) { $seen[$key] = $true; $unique += $f }
+        $kindAndValue = "$($f.Kind)|$($f.Value)"
+        if (-not $seen.ContainsKey($kindAndValue)) { $seen[$kindAndValue] = $true; $unique += $f }
     }
     return $unique
 }

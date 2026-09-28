@@ -241,11 +241,11 @@ function Group-SolutionsBySharedProjects {
     $byRoot = [ordered]@{}
     for ($i = 0; $i -lt $n; $i++) {
         $r = $i; while ($parent[$r] -ne $r) { $r = $parent[$r] }
-        $key = [string]$r
-        if (-not $byRoot.Contains($key)) { $byRoot[$key] = [System.Collections.Generic.List[object]]::new() }
-        $byRoot[$key].Add($records[$i])
+        $rootId = [string]$r
+        if (-not $byRoot.Contains($rootId)) { $byRoot[$rootId] = [System.Collections.Generic.List[object]]::new() }
+        $byRoot[$rootId].Add($records[$i])
     }
-    $out = foreach ($k in $byRoot.Keys) { [pscustomobject]@{ Solutions = @($byRoot[$k]) } }
+    $out = foreach ($rootId in $byRoot.Keys) { [pscustomobject]@{ Solutions = @($byRoot[$rootId]) } }
     return @($out)
 }
 
