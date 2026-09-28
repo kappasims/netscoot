@@ -8,7 +8,7 @@
       Test    (default) - import the modules and run the Pester suite (validates they load).
                           Non-zero exit on failure (for CI). -Fast skips the tests tagged
                           'Integration', which build real fixtures on disk.
-      Analyze           - run PSScriptAnalyzer over src/ if it is available.
+      Analyze           - run PSScriptAnalyzer over src/. Needs PSScriptAnalyzer 1.25.0.
       Install           - copy all modules (Shared, the engines, and the netscoot umbrella) into
                           a PowerShell module path so `Import-Module Netscoot` works by name.
       Docs              - regenerate the "Command reference" section of README.md from the
@@ -17,8 +17,9 @@
                           cmdlet help without regenerating), if any tracked file carries an
                           old-brand token, if README/skills name a cmdlet that no longer exists, if an
                           exported cmdlet is missing from docs/command-categories.psd1, if
-                          markdownlint fails (when npx is on PATH), or if the plugin version differs
-                          from the module version. Part of the Release gate and of CI.
+                          markdownlint fails, or if the plugin version differs from the module
+                          version. Needs Node.js (npx) for markdownlint. Part of the Release gate
+                          and of CI.
       Release -Version  - cut a release in one run: stamp the version into every manifest, commit
                           `release: vX.Y.Z` and push it, wait for every CI run on that commit to
                           pass (Linux and macOS included), then tag it and create the GitHub release.
@@ -182,8 +183,7 @@ function script:Invoke-AnalyzerInChildProcess {
 
 function Invoke-AnalyzeTask {
     if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) {
-        Write-Warning 'PSScriptAnalyzer not installed, so analysis is skipped. CI pins 1.25.0: Install-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser'
-        return
+        throw 'Analyze needs PSScriptAnalyzer. CI pins 1.25.0: Install-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser'
     }
     Import-Module PSScriptAnalyzer
     $settings = Join-Path $root 'PSScriptAnalyzerSettings.psd1'
@@ -318,24 +318,19 @@ function Assert-DocsNotStale {
     $ghosts = @($mapped | Where-Object { $_ -notin $documented })
     if ($ghosts.Count) { throw "command-categories.psd1 names cmdlet(s) that are not exported: $($ghosts -join ', '). Remove or rename them." }
 
-    # (3) markdownlint-cli2, mirroring the CI step in .github/workflows/markdownlint.yml. Run in-tree
-    # when npx is on PATH so MD013/MD024/MD032 etc. fail at -Task CheckDocs / -Task Release prepare,
-    # not at CI time after the release commit has already been stamped and pushed. The CI workflow
-    # remains the authoritative gate; this just shifts the failure left for developers who have Node.
-    # Skipped (not failed) when npx is absent - so contributors without Node aren't blocked locally.
-    $npx = Get-Command npx -ErrorAction SilentlyContinue
-    if (-not $npx) {
-        Write-Host 'markdownlint-cli2 skipped (npx not on PATH). The CI workflow markdownlint.yml is the authoritative gate.' -ForegroundColor DarkYellow
-    } else {
-        Write-Host 'Running markdownlint-cli2 (CI parity)...' -ForegroundColor Cyan
-        Push-Location $root
-        try {
-            & npx --yes markdownlint-cli2 '**/*.md'
-            if ($LASTEXITCODE -ne 0) {
-                throw 'markdownlint-cli2 reported violations (see above). Fix the source markdown or the comment-based help that regenerates into README.md, then re-run.'
-            }
-        } finally { Pop-Location }
+    # (3) markdownlint-cli2, the same check as .github/workflows/markdownlint.yml, so a violation fails
+    # here instead of after a release commit has been pushed.
+    if (-not (Get-Command npx -ErrorAction Ignore)) {
+        throw 'CheckDocs needs Node.js (npx) to run markdownlint. Install the LTS release (winget install OpenJS.NodeJS.LTS, or https://nodejs.org), then re-run.'
     }
+    Write-Host 'Running markdownlint-cli2...' -ForegroundColor Cyan
+    Push-Location $root
+    try {
+        & npx --yes markdownlint-cli2 '**/*.md'
+        if ($LASTEXITCODE -ne 0) {
+            throw 'markdownlint-cli2 reported violations (see above). Fix the source markdown or the comment-based help that regenerates into README.md, then re-run.'
+        }
+    } finally { Pop-Location }
 
     # (4) The plugin ships the module its skills load, so the two carry one version.
     $pluginVersion = ([System.IO.File]::ReadAllText([System.IO.Path]::Combine($root, 'src', '.claude-plugin', 'plugin.json')) | ConvertFrom-Json).version
