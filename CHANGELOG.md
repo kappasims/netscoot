@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [3.0.0-beta7] - 2026-09-28
+
 ### Changed
 
 - The Claude Code plugin ships the netscoot module from the same release as its skills, and the
@@ -25,7 +27,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `Repair-NetscootJournal -ClearOrphanSnapshots` no longer reports snapshots as cleared when they
   could not be deleted.
 - Importing netscoot no longer loads a second copy of the Unity or native engine.
-
 - The `restructure-dotnet`, `restructure-powershell` and `netscoot-manage` skills load with their
   descriptions, so Claude picks them up from what you ask. Before, their descriptions were dropped.
 - The beta install instructions pin the marketplace with `#3.0-beta`, the form Claude Code accepts.
@@ -369,7 +370,8 @@ See the release notes for the full pull-request list.
 
 DotnetMove 1.x history predates the rename. See the legacy DotnetMove releases.
 
-[Unreleased]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta6...HEAD
+[Unreleased]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta7...HEAD
+[3.0.0-beta7]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta6...v3.0.0-beta7
 [3.0.0-beta6]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta5...v3.0.0-beta6
 [3.0.0-beta5]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta4...v3.0.0-beta5
 [3.0.0-beta4]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta3...v3.0.0-beta4
