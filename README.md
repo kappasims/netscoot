@@ -453,7 +453,7 @@ Everything netscoot writes, and where:
   zip to the system temp dir. They and the update check (`Test-NetscootUpdate`) are the only actions
   that touch the network (`github.com` / `api.github.com`).
 - **A move** edits the target repository's solution/project files to reconcile it, through first-party
-  tooling where one exists and path-text-only edits otherwise (see [How moves edit files](#netscoot)).
+  tooling where one exists and path-text-only edits otherwise (see "How moves edit files" at the top).
   It writes a per-repository undo journal to the per-user data directory (out of the working tree, so
   `git status` stays clean, see [How the journal works](#how-the-journal-works)). It also snapshots
   the files it edits to the system temp dir for rollback, removed when the move finishes. See
