@@ -3,7 +3,7 @@
     ModuleVersion        = '2.6.7'
     GUID                 = '917ef9d9-9117-4ee4-a07f-eb1c1902b9d6'
     Author               = 'kappasims'
-    Description          = 'Move/restructure .NET projects (and PowerShell, Unity, native C++) from the command line without breaking references. A single bundled package: Import-Module Netscoot loads the .NET/PowerShell and Unity engines everywhere, and the native C++ (.vcxproj) engine on Windows. Independent community project; not affiliated with or endorsed by Microsoft.'
+    Description          = 'A safer way for your agent to restructure .NET, PowerShell, Unity, and native C++ projects. Instead of the agent hand-editing solution and project files, netscoot uses each format''s own tooling where one exists and otherwise changes only the paths. A move that fails is rolled back on a best-effort basis. Its analysis commands (solution consistency, dangling and hardcoded references) and repair commands (solution sync, broken references, interrupted moves) also work on their own.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Core', 'Desktop')
     # Single bundled package: the RootModule loads Shared -Global and imports each engine nested,
