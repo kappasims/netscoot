@@ -2,7 +2,7 @@
   "name": "netscoot",
   "displayName": "netscoot",
   "version": "2.6.7",
-  "description": "netscoot moves .NET, PowerShell, Unity, and native C++ projects and updates every solution, project, and script that points at them, rolling back if a step fails. This plugin has your agent use it instead of hand-editing those files.",
+  "description": "A safer way for your agent to restructure .NET, PowerShell, Unity, and native C++ projects. netscoot uses each format's own tooling where one exists, otherwise changes only the paths, and rolls back if a step fails, instead of the agent hand-editing solution and project files.",
   "author": {
     "name": "kappasims",
     "url": "https://github.com/kappasims"
