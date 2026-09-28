@@ -6,6 +6,19 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The Claude Code plugin ships the netscoot module from the same release as its skills, and the
+  skills load it, so a plugin update updates the code too and no separate install is needed. The
+  plugin installs only the module and its skills, has an icon, and its version is the release
+  version.
+
+### Fixed
+
+- The `restructure-dotnet`, `restructure-powershell` and `netscoot-manage` skills load with their
+  descriptions, so Claude picks them up from what you ask. Before, their descriptions were dropped.
+- The beta install instructions pin the marketplace with `#3.0-beta`, the form Claude Code accepts.
+
 ## [3.0.0-beta6] - 2026-09-26
 
 ### Changed

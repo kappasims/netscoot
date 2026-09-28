@@ -49,16 +49,16 @@ they ship. `Set-NetscootUpdateChannel -Channel Stable -Scope User` returns you t
 not use `Update-Netscoot` on a Gallery install, because it replaces the module folder with an
 installer copy.
 
-### Claude Code plugin (skills, with the renamed cmdlets)
+### Claude Code plugin (skills and module, with the renamed cmdlets)
 
 ```text
-/plugin marketplace add kappasims/netscoot@3.0-beta
+/plugin marketplace add kappasims/netscoot#3.0-beta
 /plugin install netscoot@netscoot
 ```
 
-The `@3.0-beta` ref pins you to the beta branch. To take newer skill versions, run
-`claude plugin update netscoot@netscoot` in a shell, or open `/plugin` and choose Update now on the
-Installed tab. To go back to stable: `/plugin marketplace remove netscoot`, then
+The `#3.0-beta` ref pins you to the beta branch, and the plugin carries the beta module, so it needs
+no separate install. To update, run `claude plugin update netscoot@netscoot` in a shell, or open
+`/plugin` and choose Update now on the Installed tab. To go back to stable: `/plugin marketplace remove netscoot`, then
 `/plugin marketplace add kappasims/netscoot`.
 
 ## Reporting

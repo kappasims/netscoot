@@ -1,6 +1,7 @@
 ---
 name: netscoot-analyze
-description: Use to analyze a repository's solution/project state and to verify that a refactor is complete. Read-only inventory, consistency, and reference detection across .NET, PowerShell, Unity, and native projects. Triggers on "what projects are in this solution," "list all projects," "are the sln and slnx in sync," "is the solution consistent," "do the solutions agree on membership," "find dangling references," "any orphaned projects," "broken solution refs," "what's in this solution," "any unreferenced projects," "find references to <path>," "where else does <X> appear," "what would break if I moved <X>," "did I miss any references after the rename," "is the rename/refactor complete," "check for stragglers," "any non-canonical references," "what engine moves <file>," "can netscoot handle this file," "does this env have what netscoot needs," "why does my .sln keep coming back," "will my .slnx consolidation stick," "is VS Code regenerating a .sln," "check the editor solution guards." For actually moving/restructuring, use restructure-dotnet / restructure-powershell / restructure-unity / restructure-native instead.
+description: >-
+  Use to analyze a repository's solution/project state and to verify that a refactor is complete. Read-only inventory, consistency, and reference detection across .NET, PowerShell, Unity, and native projects. Triggers on "what projects are in this solution," "list all projects," "are the sln and slnx in sync," "is the solution consistent," "do the solutions agree on membership," "find dangling references," "any orphaned projects," "broken solution refs," "what's in this solution," "any unreferenced projects," "find references to <path>," "where else does <X> appear," "what would break if I moved <X>," "did I miss any references after the rename," "is the rename/refactor complete," "check for stragglers," "any non-canonical references," "what engine moves <file>," "can netscoot handle this file," "does this env have what netscoot needs," "why does my .sln keep coming back," "will my .slnx consolidation stick," "is VS Code regenerating a .sln," "check the editor solution guards." For actually moving/restructuring, use restructure-dotnet / restructure-powershell / restructure-unity / restructure-native instead.
 ---
 
 # Netscoot: analysis and post-refactor sanity (cross-engine, read-only)
@@ -55,10 +56,10 @@ search every text file under the repository (caches/vendored dirs and binaries s
 it for a renamed type or namespace, which lives in source files, and for the thorough "search
 literally everywhere" pass when the default returns nothing but you suspect a reference survives.
 
-## Use the installed module
+## Load the module
 
-`Import-Module Netscoot` if available. If it is not installed, point the user at the
-[install steps](https://github.com/kappasims/netscoot) and let them run them. Never auto-install.
+Load the netscoot module that ships with this plugin:
+`Import-Module "${CLAUDE_PLUGIN_ROOT}/Netscoot/Netscoot.psd1"`.
 
 ## Cross-engine, not engine-specific
 

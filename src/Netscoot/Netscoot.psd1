@@ -3,7 +3,7 @@
     ModuleVersion        = '3.0.0'
     GUID                 = '917ef9d9-9117-4ee4-a07f-eb1c1902b9d6'
     Author               = 'kappasims'
-    Description          = 'Move/restructure .NET projects (and PowerShell, Unity, native C++) from the command line without breaking references. A single bundled package: Import-Module Netscoot loads the .NET/PowerShell and Unity engines everywhere, and the native C++ (.vcxproj) engine on Windows. Independent community project; not affiliated with or endorsed by Microsoft.'
+    Description          = 'A safer way for your agent to restructure .NET, PowerShell, Unity, and native C++ projects. Instead of the agent hand-editing solution and project files, netscoot uses each format''s own tooling where one exists and otherwise changes only the paths. A move that fails is rolled back on a best-effort basis. Its analysis commands (solution consistency, dangling and hardcoded references) and repair commands (solution sync, broken references, interrupted moves) also work on their own. An independent community project, not affiliated with or endorsed by Microsoft.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Core', 'Desktop')
     # Single bundled package: the RootModule loads Shared -Global and imports each engine nested,
@@ -60,9 +60,10 @@
         PSData = @{
             # OS tags (Windows/Linux/macOS) surface the platform badges on the Gallery; PowerShellGet
             # adds PSEdition_Core/PSEdition_Desktop from CompatiblePSEditions. The rest aid discovery.
-            Tags         = @('dotnet', 'powershell', 'unity', 'native', 'refactoring', 'restructure', 'cross-platform', 'solution', 'msbuild', 'csproj', 'slnx', 'migration', 'Windows', 'Linux', 'macOS')
+            Tags         = @('dotnet', 'csproj', 'sln', 'slnx', 'msbuild', 'powershell', 'unity', 'cpp', 'vcxproj', 'refactoring', 'restructure', 'git', 'ai-agents', 'claude-code', 'cross-platform', 'Windows', 'Linux', 'macOS')
             ProjectUri   = 'https://github.com/kappasims/netscoot'
             LicenseUri   = 'https://github.com/kappasims/netscoot/blob/master/LICENSE'
+            IconUri      = 'https://raw.githubusercontent.com/kappasims/netscoot/master/docs/icon.png'
             ReleaseNotes = 'See https://github.com/kappasims/netscoot/releases'
             # 3.0 ships as an opt-in prerelease while it is stress-tested. `Install-Module Netscoot`
             # stays on 2.6.x stable, and `-AllowPrerelease` opts into this build. Remove this line to

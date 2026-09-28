@@ -73,15 +73,12 @@ jobs:
 
   # The docs gate: README reference, brand and cmdlet references, the command category map,
   # markdownlint, and the plugin version.
-  # Windows, because the reference covers the Windows-only native engine; full history, because the
-  # plugin check finds the commit that last set the plugin version.
+  # Windows, because the reference covers the Windows-only native engine.
   docs:
     name: CheckDocs
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - name: Check docs
         shell: pwsh
         run: ./build.ps1 -Task CheckDocs

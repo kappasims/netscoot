@@ -1,5 +1,7 @@
 # Netscoot
 
+![netscoot icon: a robot moving a project node with its links kept](src/.claude-plugin/icon.svg)
+
 [![PowerShell Gallery][gallery-badge]][gallery]
 [![Downloads][downloads-badge]][gallery]
 [![CI][ci-badge]][ci]
@@ -19,8 +21,9 @@ Invoke-Netscoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarrago
 git netscoot src/Tarragon/Tarragon.csproj libs/Tarragon --whatif
 ```
 
-For AI agents, the repository ships Claude Code skills that run these commands, triggering on phrases
-like "move this project" (see [Usage](#usage)).
+For AI agents, the repository ships a Claude Code plugin whose skills run these commands, triggering
+on phrases like "move this project". The plugin carries the module, so it needs no separate install
+(see [Usage](#usage)).
 
 **How moves edit files.** Path changes go through the tool that owns the format where one works
 (`dotnet sln` / `dotnet reference` for managed projects, `git mv`). Where none does, such as native
@@ -38,7 +41,7 @@ What netscoot optimizes for, in order:
    references is worse than no move.
 2. **Reliability.** Write-ahead journal, in-operation rollback, structured `-WhatIf` previews, and
    CI gates against drift on both the Gallery-listed surface and the agent-discovery
-   (`.claude/skills/`) surface.
+   (`src/skills/`) surface.
 3. **A conservative public shape.** Only what callers need ships as a public cmdlet. Internal
    helpers stay internal (see CONTRIBUTING for the convention). Result-type shapes are documented
    and gated.
@@ -136,7 +139,7 @@ Flags: `--whatif` (preview), `--force` (plain `Move-Item` fallback without askin
 installed), `--nobuild` (skip the .NET build step). Unity and native engines are loaded on demand.
 The alias runs `pwsh`, so it needs PowerShell 7 on PATH.
 
-For AI agents, four Claude Code skills (`.claude/skills/`), one per engine, trigger on natural
+For AI agents, four Claude Code skills (`src/skills/`), one per engine, trigger on natural
 language and run the commands above:
 
 | Skill | Triggers on |
@@ -148,17 +151,32 @@ language and run the commands above:
 
 An analysis skill, `netscoot-analyze` (inventory, consistency and reference checks), and a management
 skill, `netscoot-manage` (update policy, journal and git alias), round out the set. Install them as a
-Claude Code plugin:
+Claude Code plugin, which brings its own copy of the module, so no separate install is needed. In a
+terminal session:
 
 ```text
 /plugin marketplace add kappasims/netscoot
 /plugin install netscoot@netscoot
 ```
 
-To take newer skill versions, run `claude plugin update netscoot@netscoot` in a shell, or open
-`/plugin` in a session and choose Update now on the Installed tab. The default marketplace serves the
-stable skills. For skills that use the 3.0 cmdlet names, add the marketplace from this branch as
-[BETA.md](BETA.md) describes.
+In the desktop app, add the marketplace from a terminal first
+(`claude plugin marketplace add kappasims/netscoot`), then install netscoot from
+**+ > Plugins > Add plugin**.
+
+Claude Code updates plugins from marketplaces outside Anthropic's own only when you turn that on, so
+turn it on once: in `/plugin`, open the **Marketplaces** tab, select netscoot, and choose
+**Enable auto-update**. To update by hand, run this in a shell:
+
+```bash
+claude plugin update netscoot@netscoot
+```
+
+An update applies to new sessions, and to a running terminal session after `/reload-plugins`. The
+desktop app reads the same settings, so its next session loads the new version. The plugin version is
+the netscoot release it carries.
+
+The default marketplace serves the stable plugin. For the plugin with the 3.0 cmdlet names, add the
+marketplace from this branch as [BETA.md](BETA.md) describes.
 
 ### Moving
 
@@ -345,9 +363,13 @@ included), see [Turning the journal off](#turning-the-journal-off).
 Nothing updates automatically. For Gallery installs, `Update-Module Netscoot -AllowPrerelease` is the
 one-liner while you are on the beta.
 Otherwise `Test-NetscootUpdate` checks GitHub for a newer release and `Update-Netscoot` (or
-re-running the installer) applies it in place. The Claude Code skills update separately through the
-plugin: `claude plugin update netscoot@netscoot` in a shell, or Update now on the Installed tab of
-`/plugin`. In a clone, `git pull` refreshes them in place.
+re-running the installer) applies it in place.
+
+The Claude Code plugin carries its own copy of the module, from the same release as its skills, and
+the skills load that copy. So a plugin update, by hand or automatic (see [Usage](#usage) for turning
+automatic updates on), updates the skills and the code together, and Claude never runs skills against
+an older module. The plugin does not need the
+module installed, and it leaves an installed module alone.
 
 > Updating from a release before 2.6.1: the in-box `Test-NetscootUpdate` / `Update-Netscoot` cannot
 > fetch the fix, since the broken endpoint they shipped with is exactly what 2.6.1 repairs. Update

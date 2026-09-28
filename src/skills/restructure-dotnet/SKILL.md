@@ -1,6 +1,7 @@
 ---
 name: restructure-dotnet
-description: Use when moving, relocating, or restructuring managed .NET projects, or repairing their solutions: moving a .csproj/.fsproj/.vbproj folder, reorganizing solution layout, extracting a project into its own assembly, syncing solution membership, or fixing dangling solution entries and project references. Triggers on "move this project," "restructure," "reorganize the solution," "extract into its own folder/assembly," "sync the solutions," "fix dangling solution references," "prune missing projects." Do not hand-edit .sln/.slnx/.csproj. For PowerShell modules/scripts use restructure-powershell, for Unity assets use restructure-unity, and for native C++/.vcxproj use restructure-native.
+description: >-
+  Use when moving, relocating, or restructuring managed .NET projects, or repairing their solutions: moving a .csproj/.fsproj/.vbproj folder, reorganizing solution layout, extracting a project into its own assembly, syncing solution membership, or fixing dangling solution entries and project references. Triggers on "move this project," "restructure," "reorganize the solution," "extract into its own folder/assembly," "sync the solutions," "fix dangling solution references," "prune missing projects." Do not hand-edit .sln/.slnx/.csproj. For PowerShell modules/scripts use restructure-powershell, for Unity assets use restructure-unity, and for native C++/.vcxproj use restructure-native.
 ---
 
 # Restructuring managed .NET repositories (cross-platform)
@@ -13,11 +14,13 @@ edits where none does (a solution's stored paths, `<Import>` paths). You never h
 `.slnx`, or `.csproj`/`.fsproj`/`.vbproj`, because hand-typed paths and GUIDs drift.
 
 Cross-platform: PowerShell 7 on Windows/Linux/macOS, or Windows PowerShell 5.1. It needs the dotnet
-CLI, and git is optional (without it, a move falls back to a plain `Move-Item`). Use the installed
-module (`Import-Module Netscoot`). Never auto-install: if it or a prerequisite (git, dotnet) is
-missing, give the user the install command and let them run it. For native C++ (`.vcxproj`,
-Windows-only) see `restructure-native` (`Move-DotnetProject` refuses `.vcxproj`). For PowerShell
-modules or scripts see `restructure-powershell`, and for Unity assets see `restructure-unity`.
+CLI, and git is optional (without it, a move falls back to a plain `Move-Item`). Load the netscoot
+module that ships with this plugin:
+`Import-Module "${CLAUDE_PLUGIN_ROOT}/Netscoot/Netscoot.psd1"`. Never auto-install: if a
+prerequisite (git, dotnet) is missing, give the user the install command and let them run it. For
+native C++ (`.vcxproj`, Windows-only) see `restructure-native` (`Move-DotnetProject` refuses
+`.vcxproj`). For PowerShell modules or scripts see `restructure-powershell`, and for Unity assets see
+`restructure-unity`.
 
 ## Running a real move from an agent
 
@@ -55,7 +58,7 @@ These are the right tools when the task is "audit" or "sync the solutions," not 
 ## Moving a .NET project
 
 ```powershell
-Import-Module Netscoot
+Import-Module "${CLAUDE_PLUGIN_ROOT}/Netscoot/Netscoot.psd1"
 # Always dry-run first:
 Move-DotnetProject -Project ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarragon -WhatIf
 # Then, after the user agrees:
@@ -152,15 +155,14 @@ The same routing is also an opt-in git verb: `git netscoot <src> <dst> [--whatif
 one-time alias that `Register-NetscootGitAlias` writes to git config (this repository by default,
 `-Scope Global` for the user). The alias runs `pwsh`, so it needs PowerShell 7 on PATH. If you
 suggest it or want to use it, prompt the user first and let them register it. Do not edit their git
-config for them. Never auto-install anything (git, the dotnet SDK, or these modules). If a
-prerequisite is missing, tell the user the install command and let them run it.
+config for them. The alias runs the user's own installed netscoot, not this plugin's copy. Never
+auto-install anything (git, the dotnet SDK, or the netscoot module). If a prerequisite is missing,
+tell the user the install command and let them run it.
 
 ## Staying current
 
-netscoot does not auto-update. Check with `Test-NetscootUpdate`, which compares the installed module
-to the latest GitHub release on the update channel (stable unless
-`Set-NetscootUpdateChannel -Channel Beta` opted into betas). Update a Gallery install with
-`Update-Module Netscoot`, an installer install with `Update-Netscoot`, and a dev clone with
-`git pull` then `./build.ps1 -Task Install`. A SessionStart hook running `Test-NetscootUpdate -Auto`
-can remind automatically. It checks only when the update policy is Enabled, and never updates. Ask
-the user before adding it, since it edits their settings.json.
+This plugin carries the netscoot release its skills were written for, so a plugin update updates
+both. Claude Code does not update this plugin on its own until the user turns on auto-update for the
+netscoot marketplace (`/plugin`, **Marketplaces** tab). To update by hand, the user runs
+`claude plugin update netscoot@netscoot` in a shell and starts a new session. A netscoot module the
+user installed for their own scripts is separate, and the skills do not use it.

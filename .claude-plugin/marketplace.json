@@ -4,12 +4,12 @@
     "name": "kappasims",
     "url": "https://github.com/kappasims"
   },
-  "description": "The netscoot plugin: AI-agent skills for restructuring .NET, PowerShell, Unity, and native C++ projects.",
+  "description": "A safer way for your agent to restructure .NET, PowerShell, Unity, and native C++ projects.",
   "plugins": [
     {
       "name": "netscoot",
-      "source": "./",
-      "description": "Move and restructure .NET, PowerShell, Unity, and native C++ projects without breaking references. Solution entries and project references are updated, hardcoded paths elsewhere are reported, and a failed move rolls back, with solution-consistency analysis and post-move verification.",
+      "source": "./src",
+      "description": "A safer way for your agent to restructure .NET, PowerShell, Unity, and native C++ projects. Instead of the agent hand-editing solution and project files, netscoot uses each format's own tooling where one exists and otherwise changes only the paths. A move that fails is rolled back on a best-effort basis. Its analysis commands (solution consistency, dangling and hardcoded references) and repair commands (solution sync, broken references, interrupted moves) also work on their own.",
       "homepage": "https://github.com/kappasims/netscoot",
       "license": "MIT",
       "category": "developer-tools",
@@ -21,12 +21,11 @@
         "msbuild",
         "powershell",
         "unity",
-        "native",
+        "cpp",
         "vcxproj",
-        "refactor",
+        "refactoring",
         "restructure",
-        "solution",
-        "monorepo"
+        "git"
       ]
     }
   ]

@@ -1,6 +1,7 @@
 ---
 name: restructure-native
-description: Use when moving or restructuring a native C++ or C++/CLI project (.vcxproj) in a Visual Studio solution on Windows. Triggers on moving a .vcxproj folder, relocating a native library, or restructuring a mixed managed+native solution. Windows-only. For pure managed .csproj/.fsproj/.vbproj use the restructure-dotnet skill instead.
+description: >-
+  Use when moving or restructuring a native C++ or C++/CLI project (.vcxproj) in a Visual Studio solution on Windows. Triggers on moving a .vcxproj folder, relocating a native library, or restructuring a mixed managed+native solution. Windows-only. For pure managed .csproj/.fsproj/.vbproj use the restructure-dotnet skill instead.
 ---
 
 # Restructuring native / C++ projects (.vcxproj), Windows only
@@ -44,11 +45,11 @@ only reports a moved one. Add or re-point it in Visual Studio.
 
 ## Use Move-NativeProject
 
-`Import-Module Netscoot` loads the native engine on Windows (install it first if needed, never
-auto-install).
+`Import-Module "${CLAUDE_PLUGIN_ROOT}/Netscoot/Netscoot.psd1"` loads the native engine on Windows from the
+netscoot module that ships with this plugin.
 
 ```powershell
-Import-Module Netscoot
+Import-Module "${CLAUDE_PLUGIN_ROOT}/Netscoot/Netscoot.psd1"
 Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo -WhatIf
 # Then, after the user agrees (the move prompts, and an agent's shell is non-interactive):
 Move-NativeProject -Project ./Aleppo/Aleppo.vcxproj -Destination ./native/Aleppo -Confirm:$false
@@ -98,15 +99,14 @@ The same routing is also an opt-in git verb: `git netscoot <src> <dst> [--whatif
 one-time alias that `Register-NetscootGitAlias` writes to git config (this repository by default,
 `-Scope Global` for the user). The alias runs `pwsh`, so it needs PowerShell 7 on PATH. If you
 suggest it or want to use it, prompt the user first and let them register it. Do not edit their git
-config for them. Never auto-install anything (git, the dotnet SDK, or these modules). If a
-prerequisite is missing, tell the user the install command and let them run it.
+config for them. The alias runs the user's own installed netscoot, not this plugin's copy. Never
+auto-install anything (git, the dotnet SDK, or the netscoot module). If a prerequisite is missing,
+tell the user the install command and let them run it.
 
 ## Staying current
 
-netscoot does not auto-update. Check with `Test-NetscootUpdate`, which compares the installed module
-to the latest GitHub release on the update channel (stable unless
-`Set-NetscootUpdateChannel -Channel Beta` opted into betas). Update a Gallery install with
-`Update-Module Netscoot`, an installer install with `Update-Netscoot`, and a dev clone with
-`git pull` then `./build.ps1 -Task Install`. A SessionStart hook running `Test-NetscootUpdate -Auto`
-can remind automatically. It checks only when the update policy is Enabled, and never updates. Ask
-the user before adding it, since it edits their settings.json.
+This plugin carries the netscoot release its skills were written for, so a plugin update updates
+both. Claude Code does not update this plugin on its own until the user turns on auto-update for the
+netscoot marketplace (`/plugin`, **Marketplaces** tab). To update by hand, the user runs
+`claude plugin update netscoot@netscoot` in a shell and starts a new session. A netscoot module the
+user installed for their own scripts is separate, and the skills do not use it.
