@@ -318,15 +318,17 @@ function Assert-DocsNotStale {
     $ghosts = @($mapped | Where-Object { $_ -notin $documented })
     if ($ghosts.Count) { throw "command-categories.psd1 names cmdlet(s) that are not exported: $($ghosts -join ', '). Remove or rename them." }
 
-    # (3) markdownlint-cli2, the same check as .github/workflows/markdownlint.yml, so a violation fails
-    # here instead of after a release commit has been pushed.
+    # (3) markdownlint-cli2 over the tracked Markdown, the files .github/workflows/markdownlint.yml lints,
+    # so a violation fails here instead of after a release commit has been pushed.
     if (-not (Get-Command npx -ErrorAction Ignore)) {
         throw 'CheckDocs needs Node.js (npx) to run markdownlint. Install the LTS release (winget install OpenJS.NodeJS.LTS, or https://nodejs.org), then re-run.'
     }
+    $markdown = @(& git -C $root ls-files '*.md')
+    if ($LASTEXITCODE -ne 0) { throw 'git ls-files failed; CheckDocs must run inside the repository.' }
     Write-Host 'Running markdownlint-cli2...' -ForegroundColor Cyan
     Push-Location $root
     try {
-        & npx --yes markdownlint-cli2 '**/*.md'
+        & npx --yes markdownlint-cli2 @markdown
         if ($LASTEXITCODE -ne 0) {
             throw 'markdownlint-cli2 reported violations (see above). Fix the source markdown or the comment-based help that regenerates into README.md, then re-run.'
         }
