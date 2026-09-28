@@ -6,6 +6,17 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.7.1] - 2026-09-28
+
+### Fixed
+
+- The `restructure-dotnet`, `restructure-powershell` and `netscoot-manage` skills load with their
+  descriptions, so Claude picks them up from what you ask. Before, their descriptions were dropped.
+
+### Changed
+
+- The Claude Code plugin installs only the netscoot module and its skills, and has an icon.
+
 ## [2.7.0] - 2026-09-28
 
 ### Changed
