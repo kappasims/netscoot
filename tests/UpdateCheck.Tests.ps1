@@ -125,6 +125,45 @@ Describe 'Update-Netscoot' {
         }
     }
 
+    It 'downloads the release source archive and never install.ps1' {
+        InModuleScope Netscoot.Core {
+            Mock Test-NetscootUpdate { [pscustomobject]@{ Installed = [version]'1.0.0'; Latest = [version]'1.1.0'; Tag = 'v1.1.0'; UpdateAvailable = $true; Url = '' } }
+            Mock New-Item {}
+            Mock Remove-Item {}
+            Mock Invoke-WebRequest { throw 'stop after the request' }
+            { Update-Netscoot -Confirm:$false } | Should -Throw 'stop after the request'
+            Should -Invoke Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+                $Uri -eq 'https://github.com/kappasims/netscoot/archive/refs/tags/v1.1.0.zip'
+            }
+            Should -Invoke Invoke-WebRequest -Times 0 -ParameterFilter { $Uri -like '*install.ps1' }
+        }
+    }
+
+    It 'copies only the module folders out of the archive' {
+        InModuleScope Netscoot.Core {
+            Mock Test-NetscootUpdate { [pscustomobject]@{ Installed = [version]'1.0.0'; Latest = [version]'1.1.0'; Tag = 'v1.1.0'; UpdateAvailable = $true; Url = '' } }
+            Mock New-Item {}
+            Mock Remove-Item {}
+            Mock Invoke-WebRequest {}
+            Mock Expand-Archive {}
+            Mock Get-ChildItem -ParameterFilter { $LiteralPath -like '*netscoot_update_*' } {
+                [pscustomobject]@{ Name = 'netscoot-1.1.0'; FullName = 'nsfake' }
+            }
+            Mock Get-ChildItem -ParameterFilter { $LiteralPath -eq [System.IO.Path]::Combine('nsfake', 'src') } {
+                foreach ($n in 'Netscoot', 'Netscoot.Core', 'skills', '.claude-plugin') {
+                    [pscustomobject]@{ Name = $n; FullName = [System.IO.Path]::Combine('nsfake', 'src', $n) }
+                }
+            }
+            Mock Test-Path -ParameterFilter { $LiteralPath -eq [System.IO.Path]::Combine('nsfake', 'src') } { $true }
+            Mock Test-Path -ParameterFilter { $LiteralPath -like '*.psd1' } { $LiteralPath -match '[\\/](Netscoot|Netscoot\.Core)\.psd1$' }
+            Mock Test-Path -ParameterFilter { $LiteralPath -like '*Modules*' } { $false }
+            Mock Copy-Item {}
+            Update-Netscoot -Confirm:$false | Out-Null
+            Should -Invoke Copy-Item -Times 2 -Exactly
+            Should -Invoke Copy-Item -Times 0 -ParameterFilter { $LiteralPath -match 'skills|\.claude-plugin' }
+        }
+    }
+
     It 'does not download under -WhatIf even when an update is available' {
         InModuleScope Netscoot.Core {
             Mock Test-NetscootUpdate { [pscustomobject]@{ Installed = [version]'1.0.0'; Latest = [version]'1.1.0'; Tag = 'v1.1.0'; UpdateAvailable = $true; Url = '' } }
