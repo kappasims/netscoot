@@ -9,6 +9,7 @@
     # No RequiredModules: shipped as one bundled Netscoot package; the umbrella loads the bundled
     # NetscootShared (-Global) before this engine. (In dev, tests/build/the forwarder do the same.)
     FunctionsToExport    = @(
+        'Clear-NetscootDotnetPath',
         'Clear-NetscootJournal',
         'Find-PathReference',
         'Get-NetscootCapability',
@@ -28,6 +29,7 @@
         'Repair-NetscootJournal',
         'Repair-SolutionReferences',
         'Resolve-MoveEngine',
+        'Set-NetscootDotnetPath',
         'Set-NetscootJournal',
         'Set-NetscootUpdatePolicy',
         'Sync-Solution',

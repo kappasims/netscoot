@@ -6,9 +6,12 @@ function Get-NetscootCapability {
 
     .DESCRIPTION
         PowerShell has no manifest mechanism to declare external-CLI prerequisites, so this is a
-        runtime probe via Get-Command. dotnet is required for .NET project moves (the delegation
-        target). git is optional. Without it, a move asks before falling back to a plain PowerShell
-        `Move-Item`, which preserves no history, and -Force skips the question.
+        runtime probe. dotnet is required for .NET project moves (the delegation target). It is
+        taken from the path stored with Set-NetscootDotnetPath when there is one, and from PATH
+        otherwise. DotnetInstalls lists the .NET SDK installs found on the machine, which is what to
+        choose from when dotnet is not on PATH. git is optional. Without it, a move asks before
+        falling back to a plain PowerShell `Move-Item`, which preserves no history, and -Force skips
+        the question.
 
     .OUTPUTS
         Netscoot.Capability
@@ -16,6 +19,14 @@ function Get-NetscootCapability {
     .EXAMPLE
         # Probe machine capabilities (returns an object with Platform, PSEdition, Git, Dotnet, DotnetSupportsSlnx)
         Get-NetscootCapability
+        # The .NET SDK installs to choose from when dotnet is not on PATH
+        (Get-NetscootCapability).DotnetInstalls
+
+    .LINK
+        Set-NetscootDotnetPath
+
+    .LINK
+        Clear-NetscootDotnetPath
     #>
     [CmdletBinding()]
     [OutputType('Netscoot.Capability')]
@@ -42,5 +53,6 @@ function Get-NetscootCapability {
         Git                = $git
         Dotnet             = $dotnet
         DotnetSupportsSlnx = $slnx
+        DotnetInstalls     = @(Find-DotnetInstall)
     }
 }

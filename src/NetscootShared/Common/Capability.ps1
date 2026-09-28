@@ -5,33 +5,34 @@ function Test-GitAvailable {
 
 function Test-DotnetAvailable {
     [CmdletBinding()] param()
-    return [bool](Get-Command dotnet -CommandType Application -ErrorAction SilentlyContinue)
+    return [bool](Resolve-DotnetCommand)
 }
 
 function Get-ExternalTool {
-    # Presence + first --version line + resolved path for an external command.
+    # Presence, version, path and source (Stored or Path) of an external command.
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$Name)
-    $cmd = Get-Command $Name -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
-    if (-not $cmd) { return [pscustomobject]@{ Present = $false; Version = $null; Path = $null } }
-    # Ignore keeps Windows PowerShell 5.1 from recording the probe's stderr as an error, and the exit code decides.
-    $prev = $ErrorActionPreference
-    $ErrorActionPreference = 'Ignore'
-    try { $out = @(& $Name --version 2>$null) }
-    finally { $ErrorActionPreference = $prev }
-    $ver = $out | Select-Object -First 1
-    if ($LASTEXITCODE -ne 0) {
-        # A dotnet host with no SDK installed is on PATH but fails --version.
-        Write-Warning "$Name is on PATH at $($cmd.Source), but '$Name --version' failed (exit $LASTEXITCODE)."
-        $ver = $null
+    $found = if ($Name -eq 'dotnet') { Resolve-DotnetCommand } else {
+        $onPath = Get-Command $Name -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($onPath) { [pscustomobject]@{ Path = $onPath.Source; Source = 'Path' } }
     }
-    return [pscustomobject]@{ Present = $true; Version = "$ver".Trim(); Path = $cmd.Source }
+    if (-not $found) { return [pscustomobject]@{ Present = $false; Version = $null; Path = $null; Source = $null } }
+    $version = Get-ExternalToolVersion -Path $found.Path
+    if (-not $version) {
+        # A dotnet host with no SDK installed is present but cannot report a version.
+        Write-Warning "$Name was found at $($found.Path), but it could not report its version."
+    }
+    return [pscustomobject]@{ Present = $true; Version = "$version"; Path = $found.Path; Source = $found.Source }
 }
 
 function Write-CapabilityGuidance {
     # Red, copy-pasteable remediation. We never auto-install; this is guidance only.
     [CmdletBinding()]
-    param([Parameter(Mandatory)][ValidateSet('git', 'dotnet')][string]$Tool)
+    param(
+        [Parameter(Mandatory)][ValidateSet('git', 'dotnet')][string]$Tool,
+        # The dotnet installs found on the machine, when the tool is dotnet.
+        [object[]]$Installs = @()
+    )
     $lines = switch ($Tool) {
         'git' {
             @('git was not found on PATH. netscoot can fall back to a plain move (PowerShell `Move-Item`), but file',
@@ -41,11 +42,20 @@ function Write-CapabilityGuidance {
               '  Linux   : sudo apt install git      (or your distro package manager)')
         }
         'dotnet' {
-            @('The .NET SDK (dotnet) was not found on PATH. It is required for .NET project',
-              'moves (netscoot delegates to dotnet sln / dotnet reference). To install:',
-              '  Windows : winget install Microsoft.DotNet.SDK.10',
-              '  macOS   : brew install --cask dotnet-sdk',
-              '  Linux   : see https://learn.microsoft.com/dotnet/core/install/linux')
+            if (@($Installs).Count) {
+                @('dotnet is not on PATH. netscoot found these installs:', '') +
+                @($Installs | ForEach-Object { "  .NET SDK $($_.Version)   $($_.Path)" }) +
+                @('', 'Store the one to use, then run the command again:',
+                  "  Set-NetscootDotnetPath -Path '$(if (@($Installs).Count -eq 1) { $Installs[0].Path } else { '<path>' })'")
+            } else {
+                @('The .NET SDK was not found. Moving a .NET project needs it.', '',
+                  'To install it:',
+                  '  Windows : winget install Microsoft.DotNet.SDK.10',
+                  '  macOS   : brew install --cask dotnet-sdk',
+                  '  Linux   : https://learn.microsoft.com/dotnet/core/install/linux', '',
+                  'Already installed somewhere netscoot did not look?',
+                  "  Set-NetscootDotnetPath -Path '<path to dotnet>'")
+            }
         }
     }
     foreach ($l in $lines) { Write-Host $l -ForegroundColor Red }
@@ -70,14 +80,25 @@ function Resolve-GitUsage {
 }
 
 function Assert-DotnetAvailable {
-    # Required tool: on missing, emit red guidance and write a terminating-style error
-    # via the calling cmdlet. Returns $true if present, $false (and writes error) if not.
+    # Required tool. When dotnet is missing, a person at a terminal is asked which install to store.
+    # Otherwise this prints guidance and writes an error. Returns $true when dotnet can be run.
     [CmdletBinding()]
     param([Parameter(Mandatory)][System.Management.Automation.PSCmdlet]$Cmdlet)
     if (Test-DotnetAvailable) { return $true }
-    Write-CapabilityGuidance -Tool dotnet
+    $installs = @(Find-DotnetInstall)
+    $bound = $Cmdlet.MyInvocation.BoundParameters
+    $previewing = $bound.ContainsKey('WhatIf') -and [bool]$bound['WhatIf']
+    if ($installs.Count -and (-not $previewing) -and (Test-InteractiveSession)) {
+        $chosen = Read-DotnetInstallChoice -Cmdlet $Cmdlet -Installs $installs
+        if ($chosen) {
+            Save-StoredDotnetPath -Path $chosen.Path
+            Write-Host "netscoot will use $($chosen.Path) from now on." -ForegroundColor DarkGray
+            return $true
+        }
+    }
+    Write-CapabilityGuidance -Tool dotnet -Installs $installs
     $Cmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
-            [System.InvalidOperationException]::new('The .NET SDK (dotnet) is required for this command but was not found on PATH.'),
+            [System.InvalidOperationException]::new('The .NET SDK (dotnet) is required for this command, but it is not on PATH and no path to it is stored.'),
             'DotnetMissing', [System.Management.Automation.ErrorCategory]::NotInstalled, $null))
     return $false
 }
