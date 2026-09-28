@@ -11,7 +11,7 @@ module layout. For installing and using netscoot, see the [README](README.md).
 ./build.ps1 -Task Analyze            # PSScriptAnalyzer over src/
 ./build.ps1 -Task Install            # copy all modules into the per-user PowerShell module path
 ./build.ps1 -Task Install -InstallPath D:\Modules
-./build.ps1 -Task Docs               # regenerate the README Command reference section from the cmdlets' help
+./build.ps1 -Task Docs               # regenerate docs/reference.md from the cmdlets' help
 ./build.ps1 -Task CheckDocs          # fail if the generated reference or the plugin version is stale
 ./build.ps1 -Task Release -Version 1.2.0                    # from develop: stable release, end to end
 ./build.ps1 -Task Release -Version 3.0.0 -Prerelease beta5  # from 3.0-beta: prerelease, end to end
@@ -172,7 +172,7 @@ src/Netscoot.Unity/      cross-platform Unity module
 src/skills/              restructure-dotnet / -powershell / -unity / -native, netscoot-analyze, netscoot-manage
 src/.claude-plugin/      plugin.json and icon.svg: src/ is the Claude Code plugin
 .claude-plugin/          marketplace.json, which lists the plugin
-docs/                    data for the generated reference (categories, output types, dispatch diagrams)
+docs/                    reference.md (generated) and its data (categories, output types, dispatch diagrams)
 tools/                   the reference generator, and ad-hoc CI and UX tools
 tests/                   Pester tests + fixtures
 ```
