@@ -373,9 +373,8 @@ module installed, and it leaves an installed module alone.
 
 > Updating from a release before 2.6.1: the in-box `Test-NetscootUpdate` / `Update-Netscoot` cannot
 > fetch the fix, since the broken endpoint they shipped with is exactly what 2.6.1 repairs. Update
-> once by the path you installed from - `Update-Module Netscoot` (Gallery), `git pull` then
-> `./build.ps1 -Task Install` (clone), or re-run `install.ps1` (installer) - then the in-box updater
-> works again.
+> once by the path you installed from - `Update-Module Netscoot` (Gallery) or re-run `install.ps1`
+> (installer) - then the in-box updater works again.
 
 A single policy governs automatic behavior, set with `Set-NetscootUpdatePolicy` (or read with
 `Get-NetscootUpdatePolicy`):

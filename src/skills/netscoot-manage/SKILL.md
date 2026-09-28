@@ -47,7 +47,7 @@ install takes betas through `Update-Module Netscoot -AllowPrerelease` instead, s
 
 Installs of 2.6.0 or earlier shipped a broken update endpoint, so their in-box `Test-NetscootUpdate`
 and `Update-Netscoot` cannot fetch the fix. Update those once by the install path: `Update-Module
-Netscoot` (Gallery), `git pull` then `./build.ps1 -Task Install` (clone), or re-running `install.ps1`.
+Netscoot` (Gallery) or re-running `install.ps1`.
 
 ## Journal (undo history)
 
