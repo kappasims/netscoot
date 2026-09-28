@@ -61,6 +61,15 @@ function New-DotnetReferenceItems {
     return $items
 }
 
+function Test-DotnetBuild {
+    # The verifying build after a move. Returns whether it succeeded, since a failed build only warns.
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param([Parameter(Mandatory)][string]$Project)
+    & (Resolve-DotnetCommand).Path build $Project | Out-Null
+    return ($LASTEXITCODE -eq 0)
+}
+
 function Invoke-Dotnet {
     # Mutating dotnet call: runs, then throws on non-zero exit. Windows PowerShell 5.1 turns native
     # stderr into a terminating error when $ErrorActionPreference is Stop; force Continue around the
@@ -70,7 +79,9 @@ function Invoke-Dotnet {
     Write-Verbose "dotnet $($Arguments -join ' ')"
     $prev = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
-    try { & dotnet @Arguments 2>&1 | Write-Verbose }
+    $dotnet = Resolve-DotnetCommand
+    if (-not $dotnet) { throw 'dotnet is not on PATH and no path to it is stored. Store one with Set-NetscootDotnetPath.' }
+    try { & $dotnet.Path @Arguments 2>&1 | Write-Verbose }
     finally { $ErrorActionPreference = $prev }
     if ($LASTEXITCODE -ne 0) {
         throw "dotnet $($Arguments -join ' ') failed with exit code $LASTEXITCODE"

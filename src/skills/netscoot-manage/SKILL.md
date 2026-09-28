@@ -19,6 +19,8 @@ read-only analysis use `netscoot-analyze`.
 | Stop / re-enable netscoot's auto-update behavior | `Set-NetscootUpdatePolicy -State Enabled \| Manual \| Disabled` |
 | Disable / re-enable the move journal (per-repository or globally) | `Set-NetscootJournal -Enabled $false [-Global]` (or `$true`) |
 | Wipe my undo history for this repository | `Clear-NetscootJournal` |
+| Tell netscoot which dotnet to run when it is not on PATH | `Set-NetscootDotnetPath -Path <path>` |
+| Make netscoot forget the stored dotnet path | `Clear-NetscootDotnetPath` |
 | Remove the `git netscoot` alias I registered earlier | `Unregister-NetscootGitAlias [-Scope Local\|Global]` |
 | Check for or install a newer netscoot release | `Test-NetscootUpdate` / `Update-Netscoot` (Gallery installs: `Update-Module Netscoot`) |
 
@@ -48,6 +50,15 @@ repository, so later moves are not undoable. Add `-Global` to default it off acr
 repository unless re-enabled. A `NETSCOOT_JOURNAL` environment variable, when set, overrides both.
 `Clear-NetscootJournal` wipes this repository's journal file. It does NOT reverse any moves, it
 only removes the undo record.
+
+## dotnet path
+
+`Set-NetscootDotnetPath -Path <path>` stores the dotnet executable netscoot runs, in `settings.json`
+in the same per-user data directory as the journal. The stored path is used ahead of a dotnet on
+PATH. `(Get-NetscootCapability).DotnetInstalls` lists the installs to choose from, and
+`(Get-NetscootCapability).Dotnet.Source` says whether the one in use is `Stored` or from `Path`.
+`Clear-NetscootDotnetPath` removes the stored path. Ask the user which install they want before
+storing one.
 
 ## Git verb
 

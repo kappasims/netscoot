@@ -85,6 +85,55 @@ Manage the installation itself and wire up the git integration.
 | [Register-NetscootGitAlias](#register-netscootgitalias) | Opt-in: register a `git netscoot` alias pointing at Netscoot's forwarder. |
 | [Unregister-NetscootGitAlias](#unregister-netscootgitalias) | Remove the `git netscoot` alias registered by [Register-NetscootGitAlias](#register-netscootgitalias). |
 
+#### dotnet path
+
+| Command | What it does |
+| :--- | :--- |
+| [Set-NetscootDotnetPath](#set-netscootdotnetpath) | Store the dotnet executable netscoot runs, for a machine where dotnet is not on PATH. |
+| [Clear-NetscootDotnetPath](#clear-netscootdotnetpath) | Remove the dotnet path stored with [Set-NetscootDotnetPath](#set-netscootdotnetpath). |
+
+---
+
+### Clear-NetscootDotnetPath
+
+Remove the dotnet path stored with [Set-NetscootDotnetPath](#set-netscootdotnetpath).
+
+#### Syntax
+
+```powershell
+Clear-NetscootDotnetPath [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+Deletes the stored path from the per-user settings file. netscoot is then as it was before a path was stored: it runs
+the dotnet on PATH, and when there is none, the next .NET command asks which install to use.
+
+#### Parameters
+
+| Name | Type | Required | Pipeline | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
+| `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
+
+#### Output
+
+None.
+
+#### Examples
+
+```powershell
+# Remove the stored path
+Clear-NetscootDotnetPath
+
+# Preview without removing
+Clear-NetscootDotnetPath -WhatIf
+```
+
+#### Related
+
+[ [Set-NetscootDotnetPath](#set-netscootdotnetpath) | [Get-NetscootCapability](#get-netscootcapability) ]
+
+[Back to Command reference](#command-reference)
+
 ---
 
 ### Clear-NetscootJournal
@@ -212,9 +261,12 @@ probe - netscoot does not auto-install anything.
 Get-NetscootCapability [<CommonParameters>]
 ```
 
-PowerShell has no manifest mechanism to declare external-CLI prerequisites, so this is a runtime probe via Get-Command.
-dotnet is required for .NET project moves (the delegation target). git is optional. Without it, a move asks before
-falling back to a plain PowerShell `Move-Item`, which preserves no history, and `-Force` skips the question.
+PowerShell has no manifest mechanism to declare external-CLI prerequisites, so this is a runtime probe. dotnet is
+required for .NET project moves (the delegation target). It is taken from the path stored with
+[Set-NetscootDotnetPath](#set-netscootdotnetpath) when there is one, and from PATH otherwise. DotnetInstalls lists the
+.NET SDK installs found on the machine, which is what to choose from when dotnet is not on PATH. git is optional.
+Without it, a move asks before falling back to a plain PowerShell `Move-Item`, which preserves no history, and `-Force`
+skips the question.
 
 #### Output
 
@@ -226,13 +278,19 @@ Netscoot.Capability
   PSEdition           string
   DotnetSupportsSlnx  bool
   Git                 Netscoot.ToolInfo
-                        Present  bool    # found on PATH
+                        Present  bool    # found
                         Version  string
                         Path     string
+                        Source   string  # Stored | Path
   Dotnet              Netscoot.ToolInfo
-                        Present  bool    # found on PATH
+                        Present  bool    # found
                         Version  string
                         Path     string
+                        Source   string  # Stored | Path
+  DotnetInstalls      Netscoot.DotnetInstall[]  # the .NET SDK installs found on the machine
+                        Version  string  # the SDK version
+                        Path     string  # the dotnet executable
+                        FoundIn  string  # DOTNET_ROOT | Registry | an install_location file | DefaultFolder
 ```
 
 #### Examples
@@ -240,7 +298,14 @@ Netscoot.Capability
 ```powershell
 # Probe machine capabilities (returns an object with Platform, PSEdition, Git, Dotnet, DotnetSupportsSlnx)
 Get-NetscootCapability
+
+# The .NET SDK installs to choose from when dotnet is not on PATH
+(Get-NetscootCapability).DotnetInstalls
 ```
+
+#### Related
+
+[ [Set-NetscootDotnetPath](#set-netscootdotnetpath) | [Clear-NetscootDotnetPath](#clear-netscootdotnetpath) ]
 
 [Back to Command reference](#command-reference)
 
@@ -1273,6 +1338,53 @@ Resolve-MoveEngine ./Aleppo/Aleppo.vcxproj
 
 ---
 
+### Set-NetscootDotnetPath
+
+Store the dotnet executable netscoot runs, for a machine where dotnet is not on PATH.
+
+#### Syntax
+
+```powershell
+Set-NetscootDotnetPath [-Path] <string> [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+Checks that the executable reports a .NET SDK version, then stores its path in the per-user settings file, next to the
+move journal. Every later netscoot command uses the stored path, and it takes precedence over a dotnet on PATH. To use a
+different install, store its path. [Get-NetscootCapability](#get-netscootcapability) lists the installs found on the
+machine and shows which dotnet is in use. A stored path that no longer exists stops a .NET command with an error naming
+it. netscoot does not switch to another install by itself.
+
+#### Parameters
+
+| Name | Type | Required | Pipeline | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `‑Path` | String | true | false | The dotnet executable to store, for example 'C:\Program Files\dotnet\dotnet.exe'. |
+| `‑WhatIf` | SwitchParameter | false | false | Preview the operation and report what would change, without modifying anything. |
+| `‑Confirm` | SwitchParameter | false | false | Prompt for confirmation before each change. |
+
+#### Output
+
+None.
+
+#### Examples
+
+```powershell
+# See which installs the machine has, then store one
+(Get-NetscootCapability).DotnetInstalls
+Set-NetscootDotnetPath -Path 'C:\Program Files\dotnet\dotnet.exe'
+
+# Preview without storing
+Set-NetscootDotnetPath -Path ~/.dotnet/dotnet -WhatIf
+```
+
+#### Related
+
+[ [Clear-NetscootDotnetPath](#clear-netscootdotnetpath) | [Get-NetscootCapability](#get-netscootcapability) ]
+
+[Back to Command reference](#command-reference)
+
+---
+
 ### Set-NetscootJournal
 
 Turn the move journal on or off, per repository (default) or for every repository (`-Global`).
@@ -2044,6 +2156,7 @@ In a field, `type[]` is array-valued, `type?` may be `$null`, and a `Netscoot.*`
 | :--- | :--- |
 | [Netscoot.Capability](#netscootcapability) | Netscoot's resolved external-tool capabilities and platform - the 'what can I do here' probe. |
 | [Netscoot.ConsistencyResult](#netscootconsistencyresult) | One project whose solution membership diverges across the repository. |
+| [Netscoot.DotnetInstall](#netscootdotnetinstall) | One .NET SDK install found on the machine. |
 | [Netscoot.EditorSolutionGuard](#netscooteditorsolutionguard) | One editor-config check that governs whether a `.slnx` consolidation stays durable (VS Code C# Dev Kit). |
 | [Netscoot.GitAlias](#netscootgitalias) | The git netscoot alias registration (or what would be registered). |
 | [Netscoot.ImportMoveResult](#netscootimportmoveresult) | Result of moving a shared MSBuild `.props/.targets` file and fixing its importers. |
@@ -2079,13 +2192,19 @@ Netscoot.Capability
   PSEdition           string
   DotnetSupportsSlnx  bool
   Git                 Netscoot.ToolInfo
-                        Present  bool    # found on PATH
+                        Present  bool    # found
                         Version  string
                         Path     string
+                        Source   string  # Stored | Path
   Dotnet              Netscoot.ToolInfo
-                        Present  bool    # found on PATH
+                        Present  bool    # found
                         Version  string
                         Path     string
+                        Source   string  # Stored | Path
+  DotnetInstalls      Netscoot.DotnetInstall[]  # the .NET SDK installs found on the machine
+                        Version  string  # the SDK version
+                        Path     string  # the dotnet executable
+                        FoundIn  string  # DOTNET_ROOT | Registry | an install_location file | DefaultFolder
 ```
 
 [Back to Output types](#output-types)
@@ -2103,6 +2222,23 @@ Netscoot.ConsistencyResult
   Project     string
   PresentIn   string[]  # solution paths that list it
   AbsentFrom  string[]  # solution paths that do not
+```
+
+[Back to Output types](#output-types)
+
+---
+
+### Netscoot.DotnetInstall
+
+[ [Netscoot.Capability](#netscootcapability) ]
+
+One .NET SDK install found on the machine.
+
+```text
+Netscoot.DotnetInstall
+  Version  string  # the SDK version
+  Path     string  # the dotnet executable
+  FoundIn  string  # DOTNET_ROOT | Registry | an install_location file | DefaultFolder
 ```
 
 [Back to Output types](#output-types)
@@ -2416,9 +2552,10 @@ Presence and version of one external tool (git or dotnet).
 
 ```text
 Netscoot.ToolInfo
-  Present  bool    # found on PATH
+  Present  bool    # found
   Version  string
   Path     string
+  Source   string  # Stored | Path
 ```
 
 [Back to Output types](#output-types)

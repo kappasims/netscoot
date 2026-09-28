@@ -20,7 +20,8 @@ Describe 'First-party tooling drift monitor' {
         #   StoredPath.ps1      - IS the sanctioned in-place path rewriter.
         #   Journal.ps1         - writes the per-user undo journal; a tool sidecar, never a solution/project file.
         #   Move-UnityAsset.ps1 - creates the folder .meta Unity would generate for a new folder; never edits a file.
-        $sanctioned = @('StoredPath.ps1', 'Journal.ps1', 'Move-UnityAsset.ps1')
+        #   DotnetPath.ps1      - writes the per-user settings file; a tool sidecar, never a solution/project file.
+        $sanctioned = @('StoredPath.ps1', 'Journal.ps1', 'Move-UnityAsset.ps1', 'DotnetPath.ps1')
         $offenders = $srcFiles |
             Where-Object { (Get-Content -LiteralPath $_.FullName -Raw) -match $writePattern } |
             Where-Object { $sanctioned -notcontains $_.Name } |
