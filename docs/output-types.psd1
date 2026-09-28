@@ -1,5 +1,5 @@
 @{
-    # Output-type registry (typedefs) for the generated README reference.
+    # Output-type registry (typedefs) for the generated reference (docs/reference.md).
     #
     # Each cmdlet declares the type(s) it emits via [OutputType('Netscoot.X')]; the Docs task
     # (build.ps1 -Task Docs) looks the name up here and renders, in the command's Output section,

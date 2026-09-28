@@ -1,7 +1,7 @@
 #requires -Modules Pester
 
 # PowerShell silently drops a whole comment-based help block it cannot parse (for example a wrapped
-# line that starts with '.word'), and the generated README reference then loses that cmdlet's help.
+# line that starts with '.word'), and the generated reference then loses that cmdlet's help.
 
 BeforeAll {
     . (Join-Path $PSScriptRoot TestHelpers.ps1)
