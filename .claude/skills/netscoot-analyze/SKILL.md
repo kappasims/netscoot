@@ -55,9 +55,10 @@ search every text file under the repository (caches/vendored dirs and binaries s
 it for a renamed type or namespace, which lives in source files, and for the thorough "search
 literally everywhere" pass when the default returns nothing but you suspect a reference survives.
 
-## Use the installed module
+## Load the module
 
-Load the netscoot module that ships with this plugin: `Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"`.
+Load the netscoot module that ships with this plugin:
+`Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"`.
 
 ## Cross-engine, not engine-specific
 

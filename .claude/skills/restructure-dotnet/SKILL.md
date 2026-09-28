@@ -14,10 +14,12 @@ edits where none does (a solution's stored paths, `<Import>` paths). You never h
 
 Cross-platform: PowerShell 7 on Windows/Linux/macOS, or Windows PowerShell 5.1. It needs the dotnet
 CLI, and git is optional (without it, a move falls back to a plain `Move-Item`). Load the netscoot
-module that ships with this plugin (`Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"`). Never auto-install: if a
-prerequisite (git, dotnet) is missing, give the user the install command and let them run it. For native C++ (`.vcxproj`,
-Windows-only) see `restructure-native` (`Move-DotnetProject` refuses `.vcxproj`). For PowerShell
-modules or scripts see `restructure-powershell`, and for Unity assets see `restructure-unity`.
+module that ships with this plugin:
+`Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"`. Never auto-install: if a
+prerequisite (git, dotnet) is missing, give the user the install command and let them run it. For
+native C++ (`.vcxproj`, Windows-only) see `restructure-native` (`Move-DotnetProject` refuses
+`.vcxproj`). For PowerShell modules or scripts see `restructure-powershell`, and for Unity assets see
+`restructure-unity`.
 
 ## Running a real move from an agent
 

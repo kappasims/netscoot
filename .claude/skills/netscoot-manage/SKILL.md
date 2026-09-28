@@ -54,8 +54,9 @@ only removes the undo record.
 removes it. `-Scope Local` (the default) is the current repository's git config, and `Global` is the
 user's. Both cmdlets take the same scopes.
 
-## Use the installed module
+## Load the module
 
-Load the netscoot module that ships with this plugin: `Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"`. The update
-policy, `Test-NetscootUpdate` and `Update-Netscoot` govern the user's own installed module, not this
-plugin's copy, which updates with the plugin.
+Load the netscoot module that ships with this plugin:
+`Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"`. The update policy,
+`Test-NetscootUpdate` and `Update-Netscoot` govern the user's own installed module, not this plugin's
+copy, which updates with the plugin.

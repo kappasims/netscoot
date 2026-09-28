@@ -21,9 +21,9 @@ plain `Move-Item`). The hazard is **relative references that break when a file m
   and the module's own `.ps1`/`.psm1` paths to files outside it. The `.psd1` manifest's entries are
   module-relative, so a folder move leaves it valid and netscoot does not rewrite it.
 
-Load the netscoot module that ships with this plugin (`Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"`).
-The single front door
-is **`Move-PowerShell`**. It routes a `.ps1` to the script mover and a `.psd1`/module folder to the
+Load the netscoot module that ships with this plugin:
+`Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"`. The single front door is
+**`Move-PowerShell`**. It routes a `.ps1` to the script mover and a `.psd1`/module folder to the
 module mover. Always dry-run with `-WhatIf` first. A real move prompts for confirmation and an
 agent's shell is non-interactive, so after the user agrees, run it with `-Confirm:$false`.
 
