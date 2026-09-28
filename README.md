@@ -1,17 +1,22 @@
 # Netscoot
 
-![netscoot icon: a robot moving a project node with its links kept](src/.claude-plugin/icon.svg)
+![netscoot icon: a robot moving a nested item up a project tree](src/.claude-plugin/icon.svg)
 
 [![PowerShell Gallery][gallery-badge]][gallery]
 [![Downloads][downloads-badge]][gallery]
 [![CI][ci-badge]][ci]
 [![License][license-badge]][license]
 
-netscoot moves .NET projects without breaking what depends on them: it updates their solution
-membership and project references. It also moves PowerShell scripts and modules (updating the paths
-that load them), Unity assets (keeping their `.meta` GUIDs), and native C++ projects (updating their
-solution entries and references, and reporting the build settings it cannot safely rewrite). It runs
-from the command line, so it works in any editor, in CI, on Linux and macOS, and for AI agents.
+A safer way for your agent to restructure .NET, PowerShell, Unity, and native C++ projects. Instead of
+the agent hand-editing solution and project files, netscoot uses each format's own tooling where one
+exists and otherwise changes only the paths. A move that fails is rolled back on a best-effort basis.
+Its analysis commands (solution consistency, dangling and hardcoded references) and repair commands
+(solution sync, broken references, interrupted moves) also work on their own.
+
+A moved .NET project keeps its solution membership and project references. A moved PowerShell script
+or module keeps the paths that load it, a Unity asset keeps its `.meta` GUID, and a native C++ project
+keeps its solution entry and references, with a report of the build settings netscoot cannot safely
+rewrite.
 
 ```powershell
 # moves the project and updates the solution and references (rolls back if that fails)
@@ -28,9 +33,9 @@ on phrases like "move this project". The plugin carries the module, so it needs 
 **How moves edit files.** Path changes go through the tool that owns the format where one works
 (`dotnet sln` / `dotnet reference` for managed projects, `git mv`). Where none does, such as native
 `.vcxproj` entries, `<Import>` paths and script references, netscoot rewrites only the path text in
-place and keeps every GUID, platform mapping, line of formatting and file encoding. A move rolls
-back to the original state if any reconciliation step fails. A failed verifying build only warns.
-Path-reference detection is report-only.
+place and keeps every GUID, platform mapping, line of formatting and file encoding. When a
+reconciliation step fails, netscoot rolls the move back on a best-effort basis. A failed verifying
+build only warns. Path-reference detection is report-only.
 
 ## Project philosophy
 
@@ -226,7 +231,7 @@ every OS (path-only). A `.vcxproj`'s native link settings are never rewritten: `
 2. Remove references and solution membership while the old paths still resolve.
 3. Move the directory (`git mv` if tracked, else `Move-Item`).
 4. Re-add membership and references so the CLI recomputes fresh paths. If any step up to here
-   fails, the move rolls back to the original state.
+   fails, netscoot rolls the move back on a best-effort basis.
 5. Build and report. A failed build warns, and the move stays.
 
 Every move supports `-WhatIf` and `-Confirm`. `-Force` skips the question before the no-git fallback.
@@ -360,16 +365,16 @@ included), see [Turning the journal off](#turning-the-journal-off).
 
 ### Updating
 
-Nothing updates automatically. For Gallery installs, `Update-Module Netscoot -AllowPrerelease` is the
-one-liner while you are on the beta.
+The module never updates itself. For Gallery installs, `Update-Module Netscoot -AllowPrerelease` is
+the one-liner while you are on the beta.
 Otherwise `Test-NetscootUpdate` checks GitHub for a newer release and `Update-Netscoot` (or
 re-running the installer) applies it in place.
 
 The Claude Code plugin carries its own copy of the module, from the same release as its skills, and
 the skills load that copy. So a plugin update, by hand or automatic (see [Usage](#usage) for turning
 automatic updates on), updates the skills and the code together, and Claude never runs skills against
-an older module. The plugin does not need the
-module installed, and it leaves an installed module alone.
+an older module. The plugin does not need the module installed, and it leaves an installed module
+alone.
 
 > Updating from a release before 2.6.1: the in-box `Test-NetscootUpdate` / `Update-Netscoot` cannot
 > fetch the fix, since the broken endpoint they shipped with is exactly what 2.6.1 repairs. Update
