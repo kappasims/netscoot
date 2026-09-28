@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.7.2] - 2026-09-28
+
 ### Changed
 
 - `Update-Netscoot` installs the release from its source archive and runs nothing it downloads.
@@ -337,7 +339,10 @@ See the release notes for the full pull-request list.
 
 DotnetMove 1.x history predates the rename. See the legacy DotnetMove releases.
 
-[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.6.7...HEAD
+[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.7.2...HEAD
+[2.7.2]: https://github.com/kappasims/netscoot/compare/v2.7.1...v2.7.2
+[2.7.1]: https://github.com/kappasims/netscoot/compare/v2.7.0...v2.7.1
+[2.7.0]: https://github.com/kappasims/netscoot/compare/v2.6.7...v2.7.0
 [2.6.7]: https://github.com/kappasims/netscoot/compare/v2.6.6...v2.6.7
 [2.6.6]: https://github.com/kappasims/netscoot/compare/v2.6.5...v2.6.6
 [2.6.5]: https://github.com/kappasims/netscoot/compare/v2.6.4...v2.6.5
