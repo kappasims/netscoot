@@ -11,11 +11,10 @@
       Analyze           - run PSScriptAnalyzer over src/. Needs PSScriptAnalyzer 1.25.0.
       Install           - copy all modules (Shared, the engines, and the netscoot umbrella) into
                           a PowerShell module path so `Import-Module Netscoot` works by name.
-      Docs              - regenerate the "Command reference" section of README.md from the
-                          cmdlets' comment-based help.
-      CheckDocs         - gate the docs: fail if the README reference is stale (someone edited
+      Docs              - regenerate docs/reference.md from the cmdlets' comment-based help.
+      CheckDocs         - gate the docs: fail if docs/reference.md is stale (someone edited
                           cmdlet help without regenerating), if any tracked file carries an
-                          old-brand token, if README/skills name a cmdlet that no longer exists, if an
+                          old-brand token, if the docs or skills name a cmdlet that no longer exists, if an
                           exported cmdlet is missing from docs/command-categories.psd1, if
                           markdownlint fails, or if the plugin version differs from the module
                           version. Needs Node.js (npx) for markdownlint. Part of the Release gate
@@ -39,7 +38,7 @@
     ./build.ps1 -Task Analyze
     ./build.ps1 -Task Install         # into the per-user module path
     ./build.ps1 -Task Install -InstallPath D:\Modules
-    ./build.ps1 -Task Docs            # regenerate the README Command reference section
+    ./build.ps1 -Task Docs            # regenerate docs/reference.md
     ./build.ps1 -Task Release -Version 1.2.0                     # from develop: stable release
     ./build.ps1 -Task Release -Version 3.0.0 -Prerelease beta5   # from 3.0-beta: prerelease
 #>
@@ -246,32 +245,35 @@ function Invoke-InstallTask {
     }
 }
 
-# The README "Command reference" generator (Invoke-DocsTask) is large enough to live on its own;
+# The docs/reference.md generator (Invoke-DocsTask) is large enough to live on its own;
 # see tools/Build-DocsReference.ps1. Dot-sourced so it shares this script's scope ($root,
 # $modules, $umbrella) and defines Invoke-DocsTask before Assert-DocsNotStale and the dispatch use it.
 . ([System.IO.Path]::Combine($PSScriptRoot, 'tools', 'Build-DocsReference.ps1'))
 
 function Assert-DocsNotStale {
     # Release and CI gate: fail if the docs have drifted from the code. The checks below run with a clean tree.
-    #   1. Stale README - regenerating the Command reference must be a no-op. If it changes, someone
+    #   1. Stale reference - regenerating docs/reference.md must be a no-op. If it changes, someone
     #      edited cmdlet help without running -Task Docs.
-    #   2. No leftover old-brand tokens in any tracked file, and every product cmdlet the README and
+    #   2. No leftover old-brand tokens in any tracked file, and every product cmdlet the docs and
     #      skills name must still be exported (catches a rename/removal the docs did not follow).
-    Write-Host 'Checking docs are current (README reference + brand/command references)...' -ForegroundColor Cyan
+    Write-Host 'Checking docs are current (generated reference + brand/command references)...' -ForegroundColor Cyan
 
-    # (1) README reference drift. Save the current content, regenerate, compare (ignoring EOL), then
+    # (1) Reference drift. Save the current content, regenerate, compare (ignoring EOL), then
     # restore the saved content. File save/restore - never `git checkout` - so this never discards
-    # uncommitted README work even if run on a dirty tree.
-    $readmePath = [System.IO.Path]::Combine($root, 'README.md')
-    $before = [System.IO.File]::ReadAllText($readmePath)
+    # uncommitted work even if run on a dirty tree.
+    $referencePath = [System.IO.Path]::Combine($root, 'docs', 'reference.md')
+    if (-not [System.IO.File]::Exists($referencePath)) {
+        throw 'docs/reference.md is missing. Run ./build.ps1 -Task Docs and commit.'
+    }
+    $before = [System.IO.File]::ReadAllText($referencePath)
     Invoke-DocsTask | Out-Null
-    $after = [System.IO.File]::ReadAllText($readmePath)
-    [System.IO.File]::WriteAllText($readmePath, $before, [System.Text.UTF8Encoding]::new($false))
+    $after = [System.IO.File]::ReadAllText($referencePath)
+    [System.IO.File]::WriteAllText($referencePath, $before, [System.Text.UTF8Encoding]::new($false))
     if (($before -replace "`r`n", "`n") -ne ($after -replace "`r`n", "`n")) {
-        throw 'README is stale: its generated Command reference does not match the cmdlet help. Run ./build.ps1 -Task Docs and commit.'
+        throw 'docs/reference.md is stale: it does not match the cmdlet help. Run ./build.ps1 -Task Docs and commit.'
     }
 
-    $docFiles = @([System.IO.Path]::Combine($root, 'README.md'))
+    $docFiles = @([System.IO.Path]::Combine($root, 'README.md'), $referencePath)
     $docFiles += @(Get-ChildItem -Path (Join-Path $root 'src/skills') -Recurse -Filter '*.md' -ErrorAction SilentlyContinue | ForEach-Object FullName)
 
     # (2a) Leftover old-brand tokens in any tracked file (legacy/, CHANGELOG.md and this script keep the old name).
@@ -330,7 +332,7 @@ function Assert-DocsNotStale {
     try {
         & npx --yes markdownlint-cli2 @markdown
         if ($LASTEXITCODE -ne 0) {
-            throw 'markdownlint-cli2 reported violations (see above). Fix the source markdown or the comment-based help that regenerates into README.md, then re-run.'
+            throw 'markdownlint-cli2 reported violations (see above). Fix the source markdown or the comment-based help that regenerates into docs/reference.md, then re-run.'
         }
     } finally { Pop-Location }
 
@@ -395,7 +397,7 @@ function Invoke-ReleaseTask {
             }
         }
 
-        # Gate: docs must not be stale (README reference current; README + skills reference no removed
+        # Gate: docs must not be stale (generated reference current; docs + skills reference no removed
         # brand/cmdlets). Run while the tree is clean, before stamping.
         Assert-DocsNotStale
 
