@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-09-29
+
 ### Added
 
 - dotnet no longer has to be on PATH. When it is missing, a .NET command finds the .NET SDK installs
