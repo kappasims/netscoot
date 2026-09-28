@@ -1,6 +1,4 @@
-# Netscoot
-
-![netscoot icon: a robot moving a nested item up a project tree](src/.claude-plugin/icon.svg)
+# ![netscoot icon: a robot moving a nested item up a project tree](docs/icon-title.svg) Netscoot
 
 [![PowerShell Gallery][gallery-badge]][gallery]
 [![Downloads][downloads-badge]][gallery]
