@@ -139,14 +139,15 @@ function Read-DotnetInstallChoice {
         [Parameter(Mandatory)][System.Management.Automation.PSCmdlet]$Cmdlet,
         [Parameter(Mandatory)][object[]]$Installs
     )
-    $afterwards = "Change it later with Set-NetscootDotnetPath.`nRemove it with Clear-NetscootDotnetPath."
+    $afterwards = "netscoot stores the path you choose and uses it for every later command.`n" +
+        "Set-NetscootDotnetPath changes it, and Clear-NetscootDotnetPath removes it."
     $choices = [System.Collections.ObjectModel.Collection[System.Management.Automation.Host.ChoiceDescription]]::new()
 
     if ($Installs.Count -eq 1) {
         $only = $Installs[0]
-        $message = "Moving a .NET project needs the .NET SDK, and dotnet is not on PATH.`n" +
-            "netscoot found one install:`n  $($only.Path)   (.NET SDK $($only.Version))`n`n" +
-            "$afterwards`n`nUse it for this move and remember it?"
+        $message = "Moving a .NET project needs the .NET SDK. netscoot found one install:`n`n" +
+            "  .NET SDK $($only.Version)   $($only.Path)`n`n" +
+            "$afterwards`n`nUse this install?"
         $choices.Add([System.Management.Automation.Host.ChoiceDescription]::new('&Yes', 'Use this install and store its path.'))
         $choices.Add([System.Management.Automation.Host.ChoiceDescription]::new('&No', 'Stop the move and store nothing.'))
         $answer = $Cmdlet.Host.UI.PromptForChoice('dotnet is not on PATH', $message, $choices, 0)
@@ -159,9 +160,9 @@ function Read-DotnetInstallChoice {
         $choices.Add([System.Management.Automation.Host.ChoiceDescription]::new("&$($i + 1)", $Installs[$i].Path))
     }
     $choices.Add([System.Management.Automation.Host.ChoiceDescription]::new('&None of these', 'Stop the move and store nothing.'))
-    $message = "Moving a .NET project needs the .NET SDK, and dotnet is not on PATH.`n" +
-        "netscoot found these installs:`n`n$($lines -join "`n")`n`n" +
-        "$afterwards`n`nWhich one should netscoot use and remember?"
+    $message = "Moving a .NET project needs the .NET SDK. netscoot found these installs:`n`n" +
+        "$($lines -join "`n")`n`n" +
+        "$afterwards`n`nWhich install should netscoot use?"
     $answer = $Cmdlet.Host.UI.PromptForChoice('dotnet is not on PATH', $message, $choices, -1)
     if ($answer -ge 0 -and $answer -lt $Installs.Count) { return $Installs[$answer] }
     return $null
