@@ -26,10 +26,10 @@ function New-ForwardArgs {
         [System.Collections.IDictionary]$Add = @{}
     )
     $fwd = @{}
-    foreach ($k in $BoundParameters.Keys) {
-        if ($Drop -notcontains $k) { $fwd[$k] = $BoundParameters[$k] }
+    foreach ($paramName in $BoundParameters.Keys) {
+        if ($Drop -notcontains $paramName) { $fwd[$paramName] = $BoundParameters[$paramName] }
     }
-    foreach ($k in $Add.Keys) { $fwd[$k] = $Add[$k] }
+    foreach ($paramName in $Add.Keys) { $fwd[$paramName] = $Add[$paramName] }
     return $fwd
 }
 
@@ -51,16 +51,16 @@ function Write-MovePlan {
         [Parameter(Mandatory)][System.Collections.IDictionary]$Items
     )
     $Cmdlet.WriteVerbose("Plan: $Caption")
-    foreach ($k in $Items.Keys) {
-        $v = $Items[$k]
-        if ($null -eq $v) { $Cmdlet.WriteVerbose(("  {0}: (none)" -f $k)); continue }
+    foreach ($label in $Items.Keys) {
+        $v = $Items[$label]
+        if ($null -eq $v) { $Cmdlet.WriteVerbose(("  {0}: (none)" -f $label)); continue }
         if ($v -is [string] -or $v.GetType().IsValueType) {
-            $Cmdlet.WriteVerbose(("  {0}: {1}" -f $k, $v))
+            $Cmdlet.WriteVerbose(("  {0}: {1}" -f $label, $v))
             continue
         }
         $arr = @($v)
-        if ($arr.Count -eq 0) { $Cmdlet.WriteVerbose(("  {0}: (none)" -f $k)); continue }
-        $Cmdlet.WriteVerbose(("  {0} ({1}):" -f $k, $arr.Count))
+        if ($arr.Count -eq 0) { $Cmdlet.WriteVerbose(("  {0}: (none)" -f $label)); continue }
+        $Cmdlet.WriteVerbose(("  {0} ({1}):" -f $label, $arr.Count))
         foreach ($i in $arr) { $Cmdlet.WriteVerbose(("    - $i")) }
     }
 }
@@ -94,7 +94,7 @@ function New-MoveResult {
         Performed    = $Performed
         SkippedCount = $SkippedCount
     }
-    foreach ($k in $Extra.Keys) { $ordered[$k] = $Extra[$k] }
+    foreach ($propertyName in $Extra.Keys) { $ordered[$propertyName] = $Extra[$propertyName] }
     $obj = [pscustomobject]$ordered
     $obj.PSObject.TypeNames.Insert(0, $TypeName)
     return $obj
@@ -180,12 +180,12 @@ function Invoke-MovePhase {
     foreach ($it in $Items) {
         $batch = $it.$batchProp
         if ($batch) {
-            $key = $batch.Key
-            if (-not $groups.ContainsKey($key)) {
-                $order.Add($key)
-                $groups[$key] = [pscustomobject]@{ Prefix = @($batch.Prefix); Items = [System.Collections.Generic.List[string]]::new() }
+            $spawnId = $batch.Key
+            if (-not $groups.ContainsKey($spawnId)) {
+                $order.Add($spawnId)
+                $groups[$spawnId] = [pscustomobject]@{ Prefix = @($batch.Prefix); Items = [System.Collections.Generic.List[string]]::new() }
             }
-            $groups[$key].Items.Add([string]$batch.Item)
+            $groups[$spawnId].Items.Add([string]$batch.Item)
         } else {
             $sb = $it.$sbProp
             if ($sb) { $a = @($it.$argProp); & $sb @a }
@@ -193,8 +193,8 @@ function Invoke-MovePhase {
     }
     # NOTE: @var is the splat operator (needs a bare variable); @(expr) is array-subexpression and
     # would pass the whole array as one argument. So build the bare arg array, then splat it.
-    foreach ($key in $order) {
-        $g = $groups[$key]
+    foreach ($spawnId in $order) {
+        $g = $groups[$spawnId]
         $callArgs = @($g.Prefix) + @($g.Items)
         Invoke-Dotnet @callArgs
     }

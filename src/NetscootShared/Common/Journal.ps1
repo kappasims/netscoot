@@ -143,10 +143,10 @@ function Get-MoveJournalPath {
     $sha = [System.Security.Cryptography.SHA1]::Create()
     try { $hash = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($RepositoryRoot.ToLowerInvariant())) }
     finally { $sha.Dispose() }
-    $key = -join ($hash[0..3] | ForEach-Object { $_.ToString('x2') })
+    $rootHash = -join ($hash[0..3] | ForEach-Object { $_.ToString('x2') })
     $leaf = (Split-Path -Leaf $RepositoryRoot) -replace '[^A-Za-z0-9._-]', '_'
     if (-not $leaf) { $leaf = 'repo' }
-    return (Join-Path $dir "$leaf-$key.jsonl")
+    return (Join-Path $dir "$leaf-$rootHash.jsonl")
 }
 
 function Select-RecentJournalLine {

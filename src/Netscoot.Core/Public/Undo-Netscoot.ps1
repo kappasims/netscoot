@@ -227,9 +227,9 @@ function Invoke-MoveJournalUndo {
     # and the prefix check rejects anything resolving outside this repository, capping the blast radius.
     $rootFull = [System.IO.Path]::GetFullPath($RepositoryRoot).TrimEnd([char]'\', [char]'/')
     $rootPrefix = $rootFull + [System.IO.Path]::DirectorySeparatorChar
-    foreach ($k in 'Project', 'Path', 'ModulePath', 'AssetPath', 'Destination', 'FoldersToPrune') {
-        if (-not $params.ContainsKey($k)) { continue }
-        foreach ($raw in @($params[$k] | ForEach-Object { [string]$_ })) {
+    foreach ($paramName in 'Project', 'Path', 'ModulePath', 'AssetPath', 'Destination', 'FoldersToPrune') {
+        if (-not $params.ContainsKey($paramName)) { continue }
+        foreach ($raw in @($params[$paramName] | ForEach-Object { [string]$_ })) {
             $combined = if ([System.IO.Path]::IsPathRooted($raw)) { $raw } else { Join-Path $rootFull $raw }
             $resolved = [System.IO.Path]::GetFullPath($combined)
             if ($resolved -ne $rootFull -and -not $resolved.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
