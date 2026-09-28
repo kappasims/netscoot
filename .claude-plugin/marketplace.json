@@ -4,7 +4,7 @@
     "name": "kappasims",
     "url": "https://github.com/kappasims"
   },
-  "description": "The netscoot plugin: AI-agent skills for restructuring .NET, PowerShell, Unity, and native C++ projects.",
+  "description": "A safer way for your agent to restructure .NET, PowerShell, Unity, and native C++ projects.",
   "plugins": [
     {
       "name": "netscoot",

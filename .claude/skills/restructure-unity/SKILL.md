@@ -1,6 +1,6 @@
 ---
 name: restructure-unity
-description: Use when moving, relocating, or restructuring assets/folders in a Unity project (including mobile - iOS/Android). Triggers on moving a Unity asset, folder, or .asmdef; reorganizing an Assets/ or Packages/ layout; or any file move inside a Unity project. Cross-platform. Do not move Unity files without their .meta. For pure .NET/.csproj use restructure-dotnet, and for native C++ use restructure-native.
+description: Use when moving, relocating, or restructuring assets or folders in a Unity project (including mobile, iOS and Android). Triggers on moving a Unity asset, folder, or .asmdef, reorganizing an Assets/ or Packages/ layout, or any file move inside a Unity project. Cross-platform. Do not move Unity files without their .meta. For pure .NET/.csproj use restructure-dotnet, and for native C++ use restructure-native.
 ---
 
 # Restructuring Unity projects (cross-platform, incl. mobile)

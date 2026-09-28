@@ -1,6 +1,6 @@
 ---
 name: netscoot-manage
-description: Use to configure netscoot itself (NOT for moving files): the auto-update policy, the per-user move journal, and the `git netscoot` alias. Triggers on "stop netscoot auto-updating," "disable updates," "set update policy," "what's the update policy," "block netscoot updates for our org," "check for netscoot updates," "update netscoot," "stop journaling moves," "disable the journal," "wipe / clear my undo history," "reset the move journal," "remove the git netscoot alias," "unregister the git verb." For actually moving / restructuring files, use restructure-dotnet / restructure-powershell / restructure-unity / restructure-native, and for analyzing / verifying refactors use netscoot-analyze.
+description: Use to configure netscoot itself (NOT for moving files): the update policy of an installed netscoot module, the per-user move journal, and the `git netscoot` alias. Triggers on "stop netscoot auto-updating," "disable updates," "set update policy," "what's the update policy," "block netscoot updates for our org," "check for netscoot updates," "update netscoot," "stop journaling moves," "disable the journal," "wipe / clear my undo history," "reset the move journal," "remove the git netscoot alias," "unregister the git verb." For actually moving / restructuring files, use restructure-dotnet / restructure-powershell / restructure-unity / restructure-native, and for analyzing / verifying refactors use netscoot-analyze.
 ---
 
 # Netscoot: configure netscoot itself (the toolkit, not the repository)

@@ -19,8 +19,9 @@ Invoke-Netscoot -Path ./src/Tarragon/Tarragon.csproj -Destination ./libs/Tarrago
 git netscoot src/Tarragon/Tarragon.csproj libs/Tarragon --whatif
 ```
 
-For AI agents, the repository ships Claude Code skills that run these commands, triggering on phrases
-like "move this project" (see [Usage](#usage)).
+For AI agents, the repository ships a Claude Code plugin whose skills run these commands, triggering
+on phrases like "move this project". The plugin carries the module, so it needs no separate install
+(see [Usage](#usage)).
 
 **How moves edit files.** Path changes go through the tool that owns the format where one works
 (`dotnet sln` / `dotnet reference` for managed projects, `git mv`). Where none does, such as native
