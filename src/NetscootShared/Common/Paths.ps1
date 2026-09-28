@@ -167,11 +167,8 @@ function Resolve-MoveTarget {
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$Source,
           [Parameter(Mandatory)][string]$Destination)
-    # Resolve-FullPath (not raw GetFullPath) so a relative Destination resolves against PowerShell's
-    # current location (Get-Location / $PWD), NOT the .NET process cwd ([Environment]::CurrentDirectory,
-    # which `Set-Location`/`cd` does not update). Raw GetFullPath sent a relative `-Destination` to the
-    # launch dir instead of the repo the user cd'd into. Normalize away a trailing slash so './libs'
-    # and './libs/' behave identically (else `git mv src dest/` would error where `dest` renames).
+    # Resolve-FullPath resolves a relative Destination against Get-Location, which Set-Location updates.
+    # A trailing slash is trimmed so './libs/' behaves like './libs'.
     $dest = Resolve-FullPath $Destination
     $trimmed = $dest.TrimEnd([char]'\', [char]'/')
     if ($trimmed) { $dest = $trimmed }
