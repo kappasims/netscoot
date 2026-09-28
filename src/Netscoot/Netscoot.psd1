@@ -51,7 +51,7 @@
         PSData = @{
             # OS tags (Windows/Linux/macOS) surface the platform badges on the Gallery; PowerShellGet
             # adds PSEdition_Core/PSEdition_Desktop from CompatiblePSEditions. The rest aid discovery.
-            Tags         = @('dotnet', 'powershell', 'unity', 'native', 'refactoring', 'restructure', 'cross-platform', 'solution', 'msbuild', 'csproj', 'slnx', 'migration', 'Windows', 'Linux', 'macOS')
+            Tags         = @('dotnet', 'csproj', 'sln', 'slnx', 'msbuild', 'powershell', 'unity', 'cpp', 'vcxproj', 'refactoring', 'restructure', 'git', 'ai-agents', 'claude-code', 'cross-platform', 'Windows', 'Linux', 'macOS')
             ProjectUri   = 'https://github.com/kappasims/netscoot'
             LicenseUri   = 'https://github.com/kappasims/netscoot/blob/master/LICENSE'
             ReleaseNotes = 'See https://github.com/kappasims/netscoot/releases'

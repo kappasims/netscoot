@@ -18,12 +18,11 @@
     "msbuild",
     "powershell",
     "unity",
-    "native",
+    "cpp",
     "vcxproj",
-    "refactor",
+    "refactoring",
     "restructure",
-    "solution",
-    "monorepo"
+    "git"
   ],
   "skills": [
     "./.claude/skills"
