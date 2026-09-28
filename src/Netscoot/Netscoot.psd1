@@ -54,6 +54,7 @@
             Tags         = @('dotnet', 'csproj', 'sln', 'slnx', 'msbuild', 'powershell', 'unity', 'cpp', 'vcxproj', 'refactoring', 'restructure', 'git', 'ai-agents', 'claude-code', 'cross-platform', 'Windows', 'Linux', 'macOS')
             ProjectUri   = 'https://github.com/kappasims/netscoot'
             LicenseUri   = 'https://github.com/kappasims/netscoot/blob/master/LICENSE'
+            IconUri      = 'https://raw.githubusercontent.com/kappasims/netscoot/master/docs/icon.png'
             ReleaseNotes = 'See https://github.com/kappasims/netscoot/releases'
         }
     }

@@ -1,5 +1,7 @@
 # Netscoot
 
+![netscoot icon: a robot moving a project node with its links kept](src/.claude-plugin/icon.svg)
+
 [![PowerShell Gallery][gallery-badge]][gallery]
 [![Downloads][downloads-badge]][gallery]
 [![CI][ci-badge]][ci]
