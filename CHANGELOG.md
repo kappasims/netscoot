@@ -6,6 +6,19 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.7.3] - 2026-09-28
+
+### Changed
+
+- The PowerShell Gallery shows a shorter description, so its search results no longer cut it off.
+- The Claude Code plugin links to the GitHub issue tracker for support and to a new Privacy policy
+  section in the README.
+
+### Fixed
+
+- The `netscoot-analyze` skill's description fits the 1,024-character limit of the skill format.
+- The plugin's icon is a plain SVG that Anthropic's plugin directory accepts.
+
 ## [2.7.2] - 2026-09-28
 
 ### Changed
@@ -339,7 +352,8 @@ See the release notes for the full pull-request list.
 
 DotnetMove 1.x history predates the rename. See the legacy DotnetMove releases.
 
-[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.7.2...HEAD
+[Unreleased]: https://github.com/kappasims/netscoot/compare/v2.7.3...HEAD
+[2.7.3]: https://github.com/kappasims/netscoot/compare/v2.7.2...v2.7.3
 [2.7.2]: https://github.com/kappasims/netscoot/compare/v2.7.1...v2.7.2
 [2.7.1]: https://github.com/kappasims/netscoot/compare/v2.7.0...v2.7.1
 [2.7.0]: https://github.com/kappasims/netscoot/compare/v2.6.7...v2.7.0
