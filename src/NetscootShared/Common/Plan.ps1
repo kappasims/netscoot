@@ -130,7 +130,7 @@ function New-MoveItem {
         [scriptblock]$Reattach,
         [object[]]$ReattachArgs = @(),
         # Optional batch metadata (see New-DotnetReferenceItems). When present, Invoke-MovePlan
-        # coalesces every item sharing a .Key into one dotnet spawn instead of running the
+        # coalesces every item sharing a .SpawnId into one dotnet spawn instead of running the
         # per-item scriptblock. Items without it run individually via Detach/Reattach as before.
         [hashtable]$DetachBatch,
         [hashtable]$ReattachBatch
@@ -147,8 +147,8 @@ function New-MoveItem {
 function Invoke-MovePhase {
     # Run one phase (Detach or Reattach) of a move's reconciliation items.
     #
-    # Performance: items carrying batch metadata for the phase (a hashtable { Key; Prefix; Item })
-    # are coalesced - every item sharing a .Key collapses into ONE `dotnet` spawn whose command line
+    # Performance: items carrying batch metadata for the phase (a hashtable { SpawnId; Prefix; Item })
+    # are coalesced - every item sharing a .SpawnId collapses into ONE `dotnet` spawn whose command line
     # is the shared .Prefix followed by each item's .Item token. So all removes from one solution
     # become one `dotnet sln <sln> remove p1 p2 ...`, all re-adds become one `... add p1 p2 ...`,
     # and likewise per consumer/own-ref file - turning the old per-edge spawn count into one per file.
@@ -171,14 +171,14 @@ function Invoke-MovePhase {
     $argProp = "${Phase}Args"              # 'DetachArgs' / 'ReattachArgs'
     $batchProp = "${Phase}Batch"           # 'DetachBatch' / 'ReattachBatch'
 
-    # Accumulate batched item tokens by Key (first appearance fixes both group order and the
+    # Accumulate batched item tokens by SpawnId (first appearance fixes both group order and the
     # project order within each spawn), and run un-batched items inline in place.
     $order = [System.Collections.Generic.List[string]]::new()
     $groups = @{}
     foreach ($it in $Items) {
         $batch = $it.$batchProp
         if ($batch) {
-            $spawnId = $batch.Key
+            $spawnId = $batch.SpawnId
             if (-not $groups.ContainsKey($spawnId)) {
                 $order.Add($spawnId)
                 $groups[$spawnId] = [pscustomobject]@{ Prefix = @($batch.Prefix); Items = [System.Collections.Generic.List[string]]::new() }
