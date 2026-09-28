@@ -17,8 +17,8 @@
                           cmdlet help without regenerating), if any tracked file carries an
                           old-brand token, if README/skills name a cmdlet that no longer exists, if an
                           exported cmdlet is missing from docs/command-categories.psd1, if
-                          markdownlint fails (when npx is on PATH), or if the skills changed without a
-                          plugin version bump. Part of the Release gate and of CI.
+                          markdownlint fails (when npx is on PATH), or if the plugin version differs
+                          from the module version. Part of the Release gate and of CI.
       Release -Version  - cut a release in one run: stamp the version into every manifest, commit
                           `release: vX.Y.Z` and push it, wait for every CI run on that commit to
                           pass (Linux and macOS included), then tag it and create the GitHub release.
@@ -62,10 +62,7 @@ param(
     # Install-Module; still installable by explicit -RequiredVersion - the Gallery never hard-deletes).
     # Pass -KeepOldVersions to skip the unlisting and leave the full version history listed.
     [switch]$KeepOldVersions,
-    # Release: override the "no src/ change since the last tag" guard. A module release only makes
-    # sense when src/ (the Gallery-packaged code) changed; doc/skill/tooling changes ship via the
-    # plugin instead (see CONTRIBUTING "Two release cadences"). Use this only for a deliberate
-    # module-identical bump (e.g. version parity).
+    # Release: override the guard that refuses a release with no src/ or skill change since the last tag.
     [switch]$AllowEmptyModuleRelease,
     # Test: split the test files into -ShardCount slices and run only the -ShardIndex'th (1-based).
     # Used by CI to run the suite as parallel jobs (separate processes - the tests share process-
@@ -340,15 +337,13 @@ function Assert-DocsNotStale {
         } finally { Pop-Location }
     }
 
-    # (4) A plugin update delivers skill changes only when the plugin version changes, so any skill
-    # change since the version last changed needs a bump.
-    $pluginJson = '.claude-plugin/plugin.json'
-    $versioned = "$(& git -C $root log -1 --format=%H -G 'version.[[:space:]]*:' -- $pluginJson)".Trim()
-    if (-not $versioned) { throw "No commit sets the version in $pluginJson. A shallow clone cannot run this check; fetch the full history." }
-    $changedSkills = @(& git -C $root diff --name-only $versioned HEAD -- .claude/skills)
-    if ($changedSkills.Count) {
-        $pluginVersion = ([System.IO.File]::ReadAllText([System.IO.Path]::Combine($root, $pluginJson)) | ConvertFrom-Json).version
-        throw "The skills changed since the plugin was versioned $pluginVersion ($($versioned.Substring(0, 7))): $($changedSkills -join ', '). Bump the version in $pluginJson so /plugin update delivers them."
+    # (4) The plugin ships the module its skills load, so the two carry one version.
+    $pluginVersion = ([System.IO.File]::ReadAllText([System.IO.Path]::Combine($root, '.claude-plugin', 'plugin.json')) | ConvertFrom-Json).version
+    $umbrellaData = Import-PowerShellDataFile (Join-Path $root (Join-Path 'src' (Join-Path $umbrella "$umbrella.psd1")))
+    $moduleVersion = "$($umbrellaData.ModuleVersion)"
+    if ($umbrellaData.PrivateData.PSData.Prerelease) { $moduleVersion += "-$($umbrellaData.PrivateData.PSData.Prerelease)" }
+    if ($pluginVersion -ne $moduleVersion) {
+        throw "The plugin version ($pluginVersion) differs from the module version ($moduleVersion). The release stamps both. Set .claude-plugin/plugin.json to $moduleVersion."
     }
 
     Write-Host 'Docs are current.' -ForegroundColor Green
@@ -392,19 +387,14 @@ function Invoke-ReleaseTask {
     if ("$(& git -C $root log -1 --format=%s)".Trim() -ne "release: $tag") {
         if (& git -C $root status --porcelain) { throw 'Working tree is not clean; commit or stash first so the release commit is only the version bump.' }
 
-        # Gate: a module release must actually change src/ (the only thing the Gallery package ships).
-        # Doc/skill/tooling changes since the last tag are NOT a module release. They reach users from
-        # develop, skills through the plugin (bump .claude-plugin/plugin.json). This guard stops
-        # accidental module-identical bumps (see CONTRIBUTING). Skipped when
-        # there is no prior tag (first release) or when overridden with -AllowEmptyModuleRelease.
+        # Gate: a release must change what it ships, the module (src/) or the plugin's skills. Skipped
+        # when there is no prior tag (first release) or when overridden with -AllowEmptyModuleRelease.
         $lastTag = "$(& git -C $root describe --tags --abbrev=0 --match 'v*' 2>$null)".Trim()
         if ($lastTag -and -not $AllowEmptyModuleRelease) {
-            & git -C $root diff --quiet "$lastTag" HEAD -- src/
+            & git -C $root diff --quiet "$lastTag" HEAD -- src/ .claude/skills/
             if ($LASTEXITCODE -eq 0) {
-                throw "No src/ changes since $lastTag, so a module release would be byte-identical to it. " +
-                "Skill/doc/tooling changes ship via the plugin (bump .claude-plugin/plugin.json, then users " +
-                "update the plugin). See CONTRIBUTING 'Two release cadences'. To force a module-identical bump " +
-                "anyway (e.g. version parity), re-run with -AllowEmptyModuleRelease."
+                throw "No src/ or skill changes since $lastTag, so a release would ship the same module and skills. " +
+                "To release anyway, re-run with -AllowEmptyModuleRelease."
             }
         }
 
@@ -440,9 +430,14 @@ function Invoke-ReleaseTask {
             if ($new -cne $text) { [System.IO.File]::WriteAllText($umbrellaManifest, $new); Write-Host "Stamped Prerelease '$Prerelease' into $(Split-Path -Leaf $umbrellaManifest)" -ForegroundColor Green }
         }
 
+        $pluginJson = Join-Path $root (Join-Path '.claude-plugin' 'plugin.json')
+        $text = [System.IO.File]::ReadAllText($pluginJson)
+        $new = [regex]::Replace($text, '(?m)^(\s*"version"\s*:\s*")[^"]*(")', "`${1}$versionLabel`$2")
+        if ($new -cne $text) { [System.IO.File]::WriteAllText($pluginJson, $new); Write-Host "Stamped $versionLabel into plugin.json" -ForegroundColor Green }
+
         # Analysis and the tests run in CI on this commit, so they are not repeated here. The commit is
         # empty when the manifests already carry this version (a re-cut after a CI fix).
-        & git -C $root add (($modules + $umbrella) | ForEach-Object { "src/$_/$_.psd1" })
+        & git -C $root add (($modules + $umbrella) | ForEach-Object { "src/$_/$_.psd1" }) .claude-plugin/plugin.json
         & git -C $root commit --allow-empty -m "release: $tag"
         if ($LASTEXITCODE -ne 0) { throw 'git commit failed' }
     }

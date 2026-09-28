@@ -21,8 +21,8 @@ plain `Move-Item`). The hazard is **relative references that break when a file m
   and the module's own `.ps1`/`.psm1` paths to files outside it. The `.psd1` manifest's entries are
   module-relative, so a folder move leaves it valid and netscoot does not rewrite it.
 
-Use the installed `netscoot` module (`Import-Module Netscoot`). If it is not installed, point the
-user to the project's install steps and let them run them. Never auto-install. The single front door
+Load the netscoot module that ships with this plugin (`Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"`).
+The single front door
 is **`Move-PowerShell`**. It routes a `.ps1` to the script mover and a `.psd1`/module folder to the
 module mover. Always dry-run with `-WhatIf` first. A real move prompts for confirmation and an
 agent's shell is non-interactive, so after the user agrees, run it with `-Confirm:$false`.
@@ -39,7 +39,7 @@ types a PowerShell solution may include, such as a `.pssproj`, which `dotnet sln
 surface.
 
 ```powershell
-Import-Module Netscoot
+Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"
 
 # Script (fixes dot-source/call/Import-Module references via the PowerShell AST):
 Move-PowerShell -Path ./lib/helpers.ps1 -Destination ./shared/helpers.ps1 -WhatIf
@@ -99,14 +99,13 @@ The same routing is also an opt-in git verb: `git netscoot <src> <dst> [--whatif
 one-time alias that `Register-NetscootGitAlias` writes to git config (this repository by default,
 `-Scope Global` for the user). The alias runs `pwsh`, so it needs PowerShell 7 on PATH. If you
 suggest it or want to use it, prompt the user first and let them register it. Do not edit their git
-config for them. Never auto-install anything (git, the dotnet SDK, or these modules). If a
-prerequisite is missing, tell the user the install command and let them run it.
+config for them. The alias runs the user's own installed netscoot, not this plugin's copy. Never
+auto-install anything (git, the dotnet SDK, or the netscoot module). If a prerequisite is missing,
+tell the user the install command and let them run it.
 
 ## Staying current
 
-netscoot does not auto-update. Check with `Test-NetscootUpdate`, which compares the installed module
-to the latest GitHub release. Update a Gallery install with `Update-Module Netscoot`, an installer
-install with `Update-Netscoot`, and a dev clone with `git pull` then `./build.ps1 -Task Install`. A
-SessionStart hook running `Test-NetscootUpdate -Auto` can remind automatically. It checks only when
-the update policy is Enabled, and never updates. Ask the user before adding it, since it edits their
-settings.json.
+This plugin carries the netscoot release its skills were written for, so a plugin update
+(`claude plugin update netscoot@netscoot`, or Claude Code's automatic plugin updates) updates both.
+A netscoot module the user installed for their own scripts is separate, and the skills do not use
+it.

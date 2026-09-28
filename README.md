@@ -146,16 +146,15 @@ language and run the commands above:
 
 An analysis skill, `netscoot-analyze` (inventory, consistency and reference checks), and a management
 skill, `netscoot-manage` (update policy, journal and git alias), round out the set. Install them as a
-Claude Code plugin:
+Claude Code plugin, which brings its own copy of the module, so no separate install is needed:
 
 ```text
 /plugin marketplace add kappasims/netscoot
 /plugin install netscoot@netscoot
 ```
 
-To take newer skill versions, run `claude plugin update netscoot@netscoot` in a shell, or open
-`/plugin` in a session and choose Update now on the Installed tab. The plugin is versioned
-independently of the PowerShell module, so skill fixes ship without a module release.
+To update, run `claude plugin update netscoot@netscoot` in a shell, or open `/plugin` in a session
+and choose Update now on the Installed tab. The plugin version is the netscoot release it carries.
 
 ### Moving
 
@@ -341,9 +340,13 @@ included), see [Turning the journal off](#turning-the-journal-off).
 
 Nothing updates automatically. For Gallery installs, `Update-Module Netscoot` is the one-liner.
 Otherwise `Test-NetscootUpdate` checks GitHub for a newer release and `Update-Netscoot` (or
-re-running the installer) applies it in place. The Claude Code skills update separately through the
-plugin: `claude plugin update netscoot@netscoot` in a shell, or Update now on the Installed tab of
-`/plugin`. In a clone, `git pull` refreshes them in place.
+re-running the installer) applies it in place.
+
+The Claude Code plugin carries its own copy of the module, from the same release as its skills, and
+the skills load that copy. So a plugin update (`claude plugin update netscoot@netscoot`, Update now
+on the Installed tab of `/plugin`, or Claude Code's automatic plugin updates) updates the skills and
+the code together, and Claude never runs skills against an older module. The plugin does not need the
+module installed, and it leaves an installed module alone.
 
 > Updating from a release before 2.6.1: the in-box `Test-NetscootUpdate` / `Update-Netscoot` cannot
 > fetch the fix, since the broken endpoint they shipped with is exactly what 2.6.1 repairs. Update

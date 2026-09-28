@@ -6,6 +6,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The Claude Code plugin ships the netscoot module from the same release as its skills, and the
+  skills load it. A plugin update now updates the code too, and the plugin no longer needs a
+  separately installed module. The plugin version matches the release version.
+
 ## [2.6.7] - 2026-09-26
 
 ### Added

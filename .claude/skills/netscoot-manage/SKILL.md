@@ -56,5 +56,6 @@ user's. Both cmdlets take the same scopes.
 
 ## Use the installed module
 
-`Import-Module Netscoot` if available. If it is not installed, point the user at the
-[install steps](https://github.com/kappasims/netscoot). Never auto-install.
+Load the netscoot module that ships with this plugin: `Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"`. The update
+policy, `Test-NetscootUpdate` and `Update-Netscoot` govern the user's own installed module, not this
+plugin's copy, which updates with the plugin.

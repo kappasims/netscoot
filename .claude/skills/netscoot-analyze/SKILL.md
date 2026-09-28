@@ -57,8 +57,7 @@ literally everywhere" pass when the default returns nothing but you suspect a re
 
 ## Use the installed module
 
-`Import-Module Netscoot` if available. If it is not installed, point the user at the
-[install steps](https://github.com/kappasims/netscoot) and let them run them. Never auto-install.
+Load the netscoot module that ships with this plugin: `Import-Module "${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1"`.
 
 ## Cross-engine, not engine-specific
 

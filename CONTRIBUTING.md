@@ -92,31 +92,24 @@ a version below one already on the Gallery (a 2.x patch while a 3.0 beta is list
 other version listed. Otherwise the publish unlists the older ones.
 `./build.ps1 -Task Publish -ApiKey <key>` still publishes by hand from PowerShell 7.
 
-## Two release cadences
+## The Claude Code plugin
 
-netscoot ships two independently-versioned artifacts. A change goes through the cadence that matches
-what it touches, never both unless it changes both:
+The plugin (`.claude-plugin/` and the skills in `.claude/skills/`) carries the module it drives. Each
+skill loads `${CLAUDE_PLUGIN_ROOT}/src/Netscoot/Netscoot.psd1`, the module from the same commit, so
+the skills and the code they describe never drift apart. The marketplace entry installs the plugin
+from `master`, so users get only released code, and a release stamps the release version into
+`plugin.json` alongside the manifests. A skill change therefore reaches users with the next release,
+and `-Task Release` counts a skill change as a reason to release. `-Task CheckDocs` fails when the
+plugin version differs from the module version.
 
-- **The module** (`src/`): the PowerShell engines that ship as the bundled Gallery package. Cut a
-  module release (above) only when `src/` actually changes. `-Task Release` enforces this. It refuses
-  a bump with no `src/` change since the last tag (override with `-AllowEmptyModuleRelease` only for a
-  deliberate parity bump). This is what stopped the module-identical churn that used to ride along on
-  doc and skill edits.
-- **The plugin** (`.claude-plugin/` + the skills in `.claude/skills/`): the AI-agent skills. They
-  reach users through a plugin update, gated on the `version` in `.claude-plugin/plugin.json`, which is
-  versioned independently of the module. The marketplace tracks the repository's default branch
-  (`develop`), so a skill or plugin fix ships with **no module release and no `master` involvement**:
+To try skill changes before a release, start Claude Code with the clone loaded as a plugin. Its
+skills then load your working tree's `src/`:
 
-  1. Make the change and bump `version` in `.claude-plugin/plugin.json`.
-  2. Commit and push `develop`. Once it is on `develop`, `claude plugin update netscoot@netscoot`
-     picks it up.
+```bash
+claude --plugin-dir path/to/netscoot
+```
 
-  `-Task CheckDocs`, which CI runs on pushes to `develop`, `master` and the beta branches and on every
-  pull request, fails when a skill changed after the last version bump.
-
-  No manifest stamp, no Gallery publish, no `master` fast-forward, no full module gate. `master` is
-  only for module releases (the Gallery package and its tag). Build/CI tooling and standalone docs
-  ride along the same way: they land on `develop` and need no module version bump.
+Build and CI tooling and standalone docs land on `develop` and need no release.
 
 ## Modules
 
