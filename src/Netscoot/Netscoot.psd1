@@ -1,6 +1,6 @@
 @{
     RootModule           = 'Netscoot.psm1'
-    ModuleVersion        = '2.7.3'
+    ModuleVersion        = '2.8.0'
     GUID                 = '917ef9d9-9117-4ee4-a07f-eb1c1902b9d6'
     Author               = 'kappasims'
     Description          = 'A safer way for your agent to restructure .NET, PowerShell, Unity, and native C++ projects. Instead of the agent hand-editing solution and project files, netscoot uses each format''s own tooling where it can and otherwise changes only the paths. A failed move is rolled back on a best-effort basis. Its analysis and repair commands also work on their own. An independent community project, not affiliated with or endorsed by Microsoft.'
