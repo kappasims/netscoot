@@ -78,9 +78,10 @@ on any branch, use `tools/Invoke-PlatformCI.ps1` (`platforms.yml`).
 
 ## Releasing
 
-Only maintainers cut releases. Releases ship from `master`, which is branch-protected: its required CI checks are enforced even
-for admins, so `master` only ever receives a commit that already passed CI. The release is
-therefore prepared on `develop` and `master` is fast-forwarded to it. From a clean `develop`,
+Only maintainers cut releases. Releases ship from `master`, which is branch-protected: its required
+CI checks are enforced even for admins, so `master` only ever receives a commit that already passed
+CI. The release is therefore prepared on `develop` and `master` is fast-forwarded to it. From a
+clean `develop`,
 `./build.ps1 -Task Release -Version X.Y.Z` does the whole release in one run:
 
 1. **Prepare:** it checks the docs and that `CHANGELOG.md` has a `## [X.Y.Z]` entry, stamps the
