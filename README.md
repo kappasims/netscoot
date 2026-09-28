@@ -161,10 +161,9 @@ In the desktop app, add the marketplace from a terminal first
 
 Claude Code updates plugins from marketplaces outside Anthropic's own only when you turn that on, so
 turn it on once: in `/plugin`, open the **Marketplaces** tab, select netscoot, and choose
-**Enable auto-update**. To update by hand, run these in a shell:
+**Enable auto-update**. To update by hand, run this in a shell:
 
 ```bash
-claude plugin marketplace update netscoot
 claude plugin update netscoot@netscoot
 ```
 
