@@ -194,8 +194,7 @@ function Move-DotnetProjectTree {
             if (-not $NoBuild) {
                 $built = $true
                 foreach ($item in $plan) {
-                    & dotnet build $item.New | Out-Null
-                    if ($LASTEXITCODE -ne 0) { $built = $false }
+                    if (-not (Test-DotnetBuild -Project $item.New)) { $built = $false }
                 }
                 if (-not $built) { Write-Warning "A build failed after the tree move. Review with 'git status'; revert with 'git restore .' if needed." }
             }

@@ -41,6 +41,8 @@ Describe 'Get-NetscootCapability' {
 Describe 'Required-tool gating (dotnet)' {
     It 'aborts with a clear error when dotnet is missing' {
         Mock -ModuleName NetscootShared Test-DotnetAvailable { $false }
+        Mock -ModuleName NetscootShared Test-InteractiveSession { $false }
+        Mock -ModuleName NetscootShared Write-CapabilityGuidance { }
         $errs = @(Move-DotnetProject -Project 'X:/nope/Foo.csproj' -Destination 'X:/dst' `
                 -ErrorAction Continue 2>&1 | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
         $errs.Count | Should -Be 1

@@ -37,6 +37,7 @@
                 @{ Name = 'Update policy'; Commands = @('Get-NetscootUpdatePolicy', 'Set-NetscootUpdatePolicy') }
                 @{ Name = 'Update channel'; Commands = @('Get-NetscootUpdateChannel', 'Set-NetscootUpdateChannel') }
                 @{ Name = 'Git verb';      Commands = @('Register-NetscootGitAlias', 'Unregister-NetscootGitAlias') }
+                @{ Name = 'dotnet path';   Commands = @('Set-NetscootDotnetPath', 'Clear-NetscootDotnetPath') }
             )
         }
     )

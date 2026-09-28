@@ -53,13 +53,13 @@ Describe 'Move-DotnetProjectTree' -Tag 'Integration' {
         $root = New-TreeFixture
         try {
             # group/Lib builds first and fails, group/Lib2 builds last and succeeds.
-            Mock -ModuleName Netscoot.Core dotnet -ParameterFilter { $args[0] -eq 'build' -and $args[1] -match '[\\/]Lib\.csproj$' } { $global:LASTEXITCODE = 1 }
-            Mock -ModuleName Netscoot.Core dotnet -ParameterFilter { $args[0] -eq 'build' -and $args[1] -match '[\\/]Lib2\.csproj$' } { $global:LASTEXITCODE = 0 }
+            Mock -ModuleName Netscoot.Core Test-DotnetBuild -ParameterFilter { $Project -match '[\\/]Lib\.csproj$' } { $false }
+            Mock -ModuleName Netscoot.Core Test-DotnetBuild -ParameterFilter { $Project -match '[\\/]Lib2\.csproj$' } { $true }
             $r = Move-DotnetProjectTree -Path (Join-Path $root 'group') -Destination (Join-Path $root 'moved') -RepositoryRoot $root `
                 -Confirm:$false -WarningAction SilentlyContinue
             $r.Built | Should -BeFalse
-            Should -Invoke -ModuleName Netscoot.Core dotnet -Times 1 -Exactly -ParameterFilter { $args[0] -eq 'build' -and $args[1] -match '[\\/]Lib\.csproj$' }
-            Should -Invoke -ModuleName Netscoot.Core dotnet -Times 1 -Exactly -ParameterFilter { $args[0] -eq 'build' -and $args[1] -match '[\\/]Lib2\.csproj$' }
+            Should -Invoke -ModuleName Netscoot.Core Test-DotnetBuild -Times 1 -Exactly -ParameterFilter { $Project -match '[\\/]Lib\.csproj$' }
+            Should -Invoke -ModuleName Netscoot.Core Test-DotnetBuild -Times 1 -Exactly -ParameterFilter { $Project -match '[\\/]Lib2\.csproj$' }
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 

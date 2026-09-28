@@ -61,8 +61,9 @@ point at, not for their own sake.
 ### Requirements
 
 - PowerShell 7+ (Windows, Linux, macOS), or Windows PowerShell 5.1.
-- The .NET SDK (`dotnet`) on PATH for .NET project moves, and SDK 9.0.200 or later for `.slnx`
-  solutions. Moving PowerShell or Unity files does not need it.
+- The .NET SDK for .NET project moves, and SDK 9.0.200 or later for `.slnx` solutions. It does
+  not have to be on PATH (see [When dotnet is not on PATH](#when-dotnet-is-not-on-path)). Moving
+  PowerShell or Unity files does not need it.
 - git is optional. With it, moves use `git mv` and keep history. Without it, a move asks before
   falling back to a plain `Move-Item` (no history), and `-Force` skips the question.
   `Get-NetscootCapability` reports what the machine has.
@@ -90,6 +91,24 @@ Invoke-WebRequest https://raw.githubusercontent.com/kappasims/netscoot/master/in
 ```
 
 To update an installed copy, see [Updating](#updating).
+
+### When dotnet is not on PATH
+
+netscoot runs the dotnet on PATH. When there is none, the first .NET command looks for the .NET SDK
+installs on the machine and asks which one to use. It stores your answer, and every later command
+uses it.
+
+Where nobody can answer a question (a script, a build job, an AI agent), the command stops and lists
+the installs it found. Store one yourself, then run the command again:
+
+```powershell
+(Get-NetscootCapability).DotnetInstalls                            # the installs found
+Set-NetscootDotnetPath -Path 'C:\Program Files\dotnet\dotnet.exe'   # store one
+Clear-NetscootDotnetPath                                           # remove the stored path
+```
+
+A stored path is used ahead of a dotnet on PATH. If the stored file is later removed, .NET commands
+stop with an error naming it.
 
 netscoot keeps a per-user undo journal so you can reverse a move later (on by default). To install or
 run with it off, see [Turning the journal off](#turning-the-journal-off).
@@ -454,10 +473,12 @@ Everything netscoot writes, and where:
   the files it edits to the system temp dir for rollback, removed when the move finishes. See
   [Turning the journal off](#turning-the-journal-off) to opt out of the journal.
 - **Only when you ask:** `Register-NetscootGitAlias` adds one `alias.netscoot` line to your git
-  config. `install.ps1 -NoJournal` or `Set-NetscootJournal` turns the journal off, and
-  `Clear-NetscootJournal` deletes a repository's journal. `Set-NetscootUpdatePolicy` and
-  `Set-NetscootUpdateChannel` set the `NETSCOOT_AUTOUPDATE` and `NETSCOOT_CHANNEL` environment
-  variables, persisted for your user or the machine on Windows when you ask.
+  config. `Set-NetscootDotnetPath`, or answering yes when a move asks which dotnet to use, writes
+  `settings.json` to the per-user data directory. `install.ps1 -NoJournal` or `Set-NetscootJournal`
+  turns the journal off, and `Clear-NetscootJournal` deletes a repository's journal.
+  `Set-NetscootUpdatePolicy` and `Set-NetscootUpdateChannel` set the `NETSCOOT_AUTOUPDATE` and
+  `NETSCOOT_CHANNEL` environment variables, persisted for your user or the machine on Windows when
+  you ask.
 
 Nothing else under your home or AppData is touched: it never edits `PATH`, never auto-installs git or
 the .NET SDK, and sends no telemetry.
