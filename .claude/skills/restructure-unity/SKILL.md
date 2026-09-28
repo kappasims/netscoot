@@ -102,7 +102,9 @@ tell the user the install command and let them run it.
 
 ## Staying current
 
-This plugin carries the netscoot release its skills were written for, so a plugin update
-(`claude plugin update netscoot@netscoot`, or Claude Code's automatic plugin updates) updates both.
-A netscoot module the user installed for their own scripts is separate, and the skills do not use
-it.
+This plugin carries the netscoot release its skills were written for, so a plugin update updates
+both. Claude Code does not update this plugin on its own until the user turns on auto-update for the
+netscoot marketplace (`/plugin`, **Marketplaces** tab). To update by hand, the user runs
+`claude plugin marketplace update netscoot` and then `claude plugin update netscoot@netscoot` in a
+shell, and starts a new session. A netscoot module the user installed for their own scripts is
+separate, and the skills do not use it.

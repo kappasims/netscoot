@@ -147,15 +147,30 @@ language and run the commands above:
 
 An analysis skill, `netscoot-analyze` (inventory, consistency and reference checks), and a management
 skill, `netscoot-manage` (update policy, journal and git alias), round out the set. Install them as a
-Claude Code plugin, which brings its own copy of the module, so no separate install is needed:
+Claude Code plugin, which brings its own copy of the module, so no separate install is needed. In a
+terminal session:
 
 ```text
 /plugin marketplace add kappasims/netscoot
 /plugin install netscoot@netscoot
 ```
 
-To update, run `claude plugin update netscoot@netscoot` in a shell, or open `/plugin` in a session
-and choose Update now on the Installed tab. The plugin version is the netscoot release it carries.
+In the desktop app, add the marketplace from a terminal first
+(`claude plugin marketplace add kappasims/netscoot`), then install netscoot from
+**+ > Plugins > Add plugin**.
+
+Claude Code updates plugins from marketplaces outside Anthropic's own only when you turn that on, so
+turn it on once: in `/plugin`, open the **Marketplaces** tab, select netscoot, and choose
+**Enable auto-update**. To update by hand, run these in a shell:
+
+```bash
+claude plugin marketplace update netscoot
+claude plugin update netscoot@netscoot
+```
+
+An update applies to new sessions, and to a running terminal session after `/reload-plugins`. The
+desktop app reads the same settings, so its next session loads the new version. The plugin version is
+the netscoot release it carries.
 
 ### Moving
 
@@ -344,9 +359,9 @@ Otherwise `Test-NetscootUpdate` checks GitHub for a newer release and `Update-Ne
 re-running the installer) applies it in place.
 
 The Claude Code plugin carries its own copy of the module, from the same release as its skills, and
-the skills load that copy. So a plugin update (`claude plugin update netscoot@netscoot`, Update now
-on the Installed tab of `/plugin`, or Claude Code's automatic plugin updates) updates the skills and
-the code together, and Claude never runs skills against an older module. The plugin does not need the
+the skills load that copy. So a plugin update, by hand or automatic (see [Usage](#usage) for turning
+automatic updates on), updates the skills and the code together, and Claude never runs skills against
+an older module. The plugin does not need the
 module installed, and it leaves an installed module alone.
 
 > Updating from a release before 2.6.1: the in-box `Test-NetscootUpdate` / `Update-Netscoot` cannot
