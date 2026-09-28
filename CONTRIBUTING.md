@@ -99,9 +99,11 @@ The plugin is the `src/` folder: the module folders, the skills in `src/skills/`
 `src/.claude-plugin/plugin.json` with its icon. Each skill loads
 `${CLAUDE_PLUGIN_ROOT}/Netscoot/Netscoot.psd1`, the module from the same commit, so the skills and the
 code they describe never drift apart. Build and CI tooling, tests and docs stay outside `src/`, so
-they are not part of the plugin. The marketplace file at the repository root installs the plugin
-from `src/` on `master`, so users get only released code, and a release stamps the release version
-into `plugin.json` alongside the manifests. A skill change therefore reaches users with the next release,
+they are not part of the plugin. The marketplace file at the repository root lists the plugin as
+`./src`, which resolves on the branch the marketplace was added from. `master` is the default branch,
+so `/plugin marketplace add kappasims/netscoot` gives users only released code, and
+`kappasims/netscoot#3.0-beta` gives the beta. A release stamps the release version into `plugin.json`
+alongside the manifests. A skill change therefore reaches users with the next release,
 and `-Task Release` counts a skill change as a reason to release. `-Task CheckDocs` fails when the
 plugin version differs from the module version.
 

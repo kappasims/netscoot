@@ -13,6 +13,11 @@ obj/
 .claude/scheduled_tasks.lock
 # Per-user local Claude Code settings (machine-local; never committed)
 .claude/settings.local.json
+CLAUDE.md
+CLAUDE.local.md
+
+# Second checkouts (git worktrees) kept beside the main one
+/.wt-*/
 
 # Generated UX transcript (machine-specific temp paths; regenerate with Show-CommandUx.ps1)
 tools/ux-flow.md
