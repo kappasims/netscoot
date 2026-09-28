@@ -117,7 +117,9 @@ Describe 'Invoke-Netscoot (top-level cross-namespace routing)' -Tag 'Integration
         try {
             $txt = Join-Path $root 'notes.txt'
             Set-Content -LiteralPath $txt -Value 'x'
-            Invoke-Netscoot -Path $txt -Destination (Join-Path $root 'x.txt') -ErrorVariable errs -ErrorAction SilentlyContinue
+            $errs = @(Invoke-Netscoot -Path $txt -Destination (Join-Path $root 'x.txt') -ErrorAction Continue 2>&1 |
+                    Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+            $errs | Should -HaveCount 1
             $errs[0].FullyQualifiedErrorId | Should -Match 'UnknownEngine'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }

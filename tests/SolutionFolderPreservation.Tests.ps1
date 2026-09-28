@@ -10,14 +10,15 @@ BeforeAll {
             $root = New-TempRoot -Prefix 'netscoot_fld'
             Push-Location $root
             try {
-                & git init -q
+                Invoke-Git -Arguments @('init', '-q')
                 New-ClassLibProject -Name Core -Directory (Join-Path $root (Join-Path 'src' 'Core')) | Out-Null
                 New-ConsoleProject -Name App -Directory (Join-Path $root (Join-Path 'src' 'App')) | Out-Null
-                & dotnet new sln -n Demo --format $Format | Out-Null
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', $Format)
                 $sln = (Get-ChildItem -LiteralPath $root -File -Include '*.sln', '*.slnx').FullName
-                & dotnet sln $sln add (Join-Path 'src' (Join-Path 'Core' 'Core.csproj')) --solution-folder src | Out-Null
-                & dotnet sln $sln add (Join-Path 'src' (Join-Path 'App' 'App.csproj')) --solution-folder src | Out-Null
-                & git add -A; & git commit -qm fixture | Out-Null
+                Invoke-Dotnet -Arguments @('sln', $sln, 'add', (Join-Path 'src' (Join-Path 'Core' 'Core.csproj')), '--solution-folder', 'src')
+                Invoke-Dotnet -Arguments @('sln', $sln, 'add', (Join-Path 'src' (Join-Path 'App' 'App.csproj')), '--solution-folder', 'src')
+                Invoke-Git -Arguments @('add', '-A')
+                Invoke-Git -Arguments @('commit', '-qm', 'fixture')
             } finally { Pop-Location }
             return $root
         }
@@ -30,11 +31,12 @@ BeforeAll {
             $root = New-TempRoot -Prefix 'netscoot_rt'
             Push-Location $root
             try {
-                & git init -q
+                Invoke-Git -Arguments @('init', '-q')
                 New-ClassLibProject -Name Core -Directory (Join-Path $root (Join-Path 'src' 'Core')) | Out-Null
-                & dotnet new sln -n Demo --format slnx | Out-Null
-                & dotnet sln Demo.slnx add (Join-Path 'src' (Join-Path 'Core' 'Core.csproj')) --in-root | Out-Null
-                & git add -A; & git commit -qm fixture | Out-Null
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', 'slnx')
+                Invoke-Dotnet -Arguments @('sln', 'Demo.slnx', 'add', (Join-Path 'src' (Join-Path 'Core' 'Core.csproj')), '--in-root')
+                Invoke-Git -Arguments @('add', '-A')
+                Invoke-Git -Arguments @('commit', '-qm', 'fixture')
             } finally { Pop-Location }
             return $root
         }
@@ -87,9 +89,12 @@ Describe 'Solution-folder preservation on move' -Tag 'Integration' {
             Move-DotnetProject -Project (Join-Path $root (Join-Path 'src' (Join-Path 'Core' 'Core.csproj'))) `
                 -Destination (Join-Path $root (Join-Path 'src' (Join-Path 'deep' 'Core'))) `
                 -RepositoryRoot $root -NoBuild -Confirm:$false | Out-Null
-            Get-MovedFolder -Root $root | Should -BeNullOrEmpty
             $sln = (Get-ChildItem -LiteralPath $root -File -Include '*.slnx').FullName
-            @((Read-Solution -SolutionFile $sln).Folders).Count | Should -Be 0
+            $parsed = Read-Solution -SolutionFile $sln
+            $core = @($parsed.Projects | Where-Object { $_.Stored -match 'deep[\\/]Core[\\/]Core\.csproj$' })
+            $core.Count | Should -Be 1 -Because 'the moved project must still be listed at its new path'
+            $core[0].Folder | Should -BeNullOrEmpty
+            @($parsed.Folders).Count | Should -Be 0
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 }

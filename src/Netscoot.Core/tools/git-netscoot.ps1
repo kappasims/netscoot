@@ -12,17 +12,9 @@ $ErrorActionPreference = 'Stop'
 
 # Netscoot.Core (which exports Invoke-Netscoot) is always required.
 if (-not (Get-Command Invoke-Netscoot -ErrorAction SilentlyContinue)) {
-    $coreManifest = [System.IO.Path]::Combine($PSScriptRoot, '..', 'Netscoot.Core.psd1')
-    if (Test-Path -LiteralPath $coreManifest) {
-        # Running from a clone: the sibling Shared module is not on the module path, so load it by
-        # path first (Core calls its helpers but declares no RequiredModules), then Core. When
-        # installed, the else branch imports by name and PowerShell auto-loads Shared on first use.
-        $sharedManifest = [System.IO.Path]::Combine($PSScriptRoot, '..', '..', 'NetscootShared', 'NetscootShared.psd1')
-        if (Test-Path -LiteralPath $sharedManifest) { Import-Module $sharedManifest -Force }
-        Import-Module $coreManifest -Force
-    } else {
-        Import-Module Netscoot.Core -ErrorAction Stop
-    }
+    # Core calls NetscootShared's helpers without declaring RequiredModules, so Shared loads first.
+    Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', '..', 'NetscootShared', 'NetscootShared.psd1')) -Force
+    Import-Module ([System.IO.Path]::Combine($PSScriptRoot, '..', 'Netscoot.Core.psd1')) -Force
 }
 
 # Parse git-style args: first two non-flag tokens are source/destination.

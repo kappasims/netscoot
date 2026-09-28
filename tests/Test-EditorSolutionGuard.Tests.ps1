@@ -9,7 +9,7 @@ BeforeAll {
     function New-GuardRepo {
         param([string]$SettingsJson, [string]$Gitignore, [switch]$NoSlnx)
         $root = New-TempRoot -Prefix 'netscoot_guard'
-        & git -C $root init -q
+        Invoke-Git -RepositoryRoot $root -Arguments @('init', '-q')
         if (-not $NoSlnx) { Set-Content -LiteralPath (Join-Path $root 'App.slnx') -Value '<Solution></Solution>' -Encoding UTF8 }
         if ($PSBoundParameters.ContainsKey('SettingsJson')) {
             New-Item -ItemType Directory -Path (Join-Path $root '.vscode') | Out-Null
@@ -127,9 +127,9 @@ Describe 'Test-EditorSolutionGuard' -Tag 'Integration' {
     It 'escalates Warning-level findings to non-terminating errors under -Strict' {
         $root = New-GuardRepo -SettingsJson '{ "dotnet.automaticallyCreateSolutionInWorkspace": true }' -Gitignore 'bin/'
         try {
-            Test-EditorSolutionGuard -RepositoryRoot $root -Strict -ErrorVariable errs -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
-            $errs | Should -Not -BeNullOrEmpty
-            ($errs.FullyQualifiedErrorId -join ',') | Should -Match 'EditorGuard'
+            $errs = @(Test-EditorSolutionGuard -RepositoryRoot $root -Strict -ErrorAction Continue -WarningAction SilentlyContinue 2>&1 |
+                    Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+            @($errs.FullyQualifiedErrorId -replace ',.*$') | Should -Be @('EditorGuardAutoCreateGuard', 'EditorGuardDefaultSolution')
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 

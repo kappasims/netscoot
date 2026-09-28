@@ -29,12 +29,12 @@ Describe 'Journal on-disk format (v2)' -Tag 'Integration' {
             $r = New-TempRoot -Prefix 'jfmt'
             Push-Location $r
             try {
-                & git init -q
+                Invoke-Git -RepositoryRoot $r -Arguments @('init', '-q')
                 New-ClassLibProject -Name Lib -Directory (Join-Path $r (Join-Path 'src' 'Lib')) | Out-Null
-                & dotnet new sln -n Demo | Out-Null
-                $sln = (Get-ChildItem -LiteralPath $r -File -Filter '*.sln').FullName
-                & dotnet sln $sln add (Join-Path $r (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) | Out-Null
-                & git add -A; & git commit -qm fixture | Out-Null
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', 'slnx')
+                Invoke-Dotnet -Arguments @('sln', 'Demo.slnx', 'add', (Join-Path $r (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))))
+                Invoke-Git -RepositoryRoot $r -Arguments @('add', '-A')
+                Invoke-Git -RepositoryRoot $r -Arguments @('commit', '-qm', 'fixture')
             } finally { Pop-Location }
             return $r
         }
@@ -71,12 +71,9 @@ Describe 'Journal on-disk format (v2)' -Tag 'Integration' {
     # Reset working tree + journal between tests so each It starts from the pristine committed
     # state. git reset --hard restores moved files; Clear-NetscootJournal drops the journal file.
     AfterEach {
-        Push-Location $script:Repo
-        try {
-            & git reset --hard HEAD 2>$null | Out-Null
-            & git clean -fd 2>$null | Out-Null
-        } finally { Pop-Location }
-        Clear-NetscootJournal -RepositoryRoot $script:Repo -Confirm:$false -ErrorAction SilentlyContinue
+        Invoke-Git -RepositoryRoot $script:Repo -Arguments @('reset', '--hard', 'HEAD')
+        Invoke-Git -RepositoryRoot $script:Repo -Arguments @('clean', '-fd')
+        Clear-NetscootJournal -RepositoryRoot $script:Repo -Confirm:$false
     }
 
     Context 'File shape' {

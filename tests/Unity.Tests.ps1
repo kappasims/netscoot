@@ -14,8 +14,9 @@ BeforeAll {
         Set-Content -LiteralPath (Join-Path $foo 'Bar.cs.meta') -Value "fileFormatVersion: 2`nguid: 1111111111111111aaaaaaaaaaaaaaaa" -Encoding UTF8
         # A folder's .meta is a SIBLING of the folder (Assets/Foo.meta), not inside it.
         Set-Content -LiteralPath (Join-Path (Split-Path $foo) 'Foo.meta') -Value "fileFormatVersion: 2`nguid: 2222222222222222bbbbbbbbbbbbbbbb" -Encoding UTF8
-        Push-Location $root
-        try { & git init -q; & git add -A; & git commit -qm fixture | Out-Null } finally { Pop-Location }
+        foreach ($gitArgs in @(@('init', '-q'), @('add', '-A'), @('commit', '-qm', 'fixture'))) {
+            Invoke-Git -RepositoryRoot $root -Arguments $gitArgs
+        }
         return $root
     }
 
@@ -31,8 +32,9 @@ BeforeAll {
             Set-Content -LiteralPath (Join-Path $dir "$name.asmdef.meta") -Value "fileFormatVersion: 2`nguid: $($name.PadRight(32,'0'))" -Encoding UTF8
             Set-Content -LiteralPath (Join-Path $assets "$name.meta") -Value "fileFormatVersion: 2`nguid: $(($name+'dir').PadRight(32,'0'))" -Encoding UTF8
         }
-        Push-Location $root
-        try { & git init -q; & git add -A; & git commit -qm fixture | Out-Null } finally { Pop-Location }
+        foreach ($gitArgs in @(@('init', '-q'), @('add', '-A'), @('commit', '-qm', 'fixture'))) {
+            Invoke-Git -RepositoryRoot $root -Arguments $gitArgs
+        }
         return $root
     }
 }
@@ -137,15 +139,19 @@ Describe 'Move-UnityAsset new parent folders' -Tag 'Integration' {
         try {
             $assets = Join-Path $root 'Assets'
             $bar = Join-Path $assets (Join-Path 'Foo' 'Bar.cs')
+            $dest = Join-Path $assets (Join-Path 'Plugins' (Join-Path 'Deep' 'Bar.cs'))
             Mock -ModuleName NetscootShared Test-GitAvailable { $false }
+            Mock -ModuleName Netscoot.Unity Move-PathTracked -ParameterFilter { $Source -eq "$bar.meta" -and $Destination -eq "$dest.meta" } {
+                throw 'simulated meta move failure'
+            }
             # Like the real Move-PathTracked, create the destination parent before moving.
-            Mock -ModuleName Netscoot.Unity Move-PathTracked {
-                if ($Source -like '*.meta') { throw 'simulated meta move failure' }
+            Mock -ModuleName Netscoot.Unity Move-PathTracked -ParameterFilter { ($Source -eq $bar -and $Destination -eq $dest) -or ($Source -eq $dest -and $Destination -eq $bar) } {
                 New-Item -ItemType Directory -Path (Split-Path -Parent $Destination) -Force | Out-Null
                 Move-Item -LiteralPath $Source -Destination $Destination
             }
-            { Move-UnityAsset -AssetPath $bar -Destination (Join-Path $assets (Join-Path 'Plugins' (Join-Path 'Deep' 'Bar.cs'))) -RepositoryRoot $root -Force -NoJournal -Confirm:$false } |
+            { Move-UnityAsset -AssetPath $bar -Destination $dest -RepositoryRoot $root -Force -NoJournal -Confirm:$false } |
                 Should -Throw -ExpectedMessage '*rolled back*'
+            Should -Invoke -ModuleName Netscoot.Unity Move-PathTracked -Times 1 -Exactly -ParameterFilter { $Source -eq $dest -and $Destination -eq $bar }
             $bar | Should -Exist
             (Join-Path $assets 'Plugins') | Should -Not -Exist
             (Join-Path $assets 'Plugins.meta') | Should -Not -Exist
@@ -161,7 +167,9 @@ Describe 'Move-UnityAsset new parent folders' -Tag 'Integration' {
             (Join-Path $assets (Join-Path 'Foo' 'Bar.cs')) | Should -Exist
             (Join-Path $assets 'Plugins') | Should -Not -Exist
             (Join-Path $assets 'Plugins.meta') | Should -Not -Exist
-            (& git -C $root status --porcelain) | Should -BeNullOrEmpty
+            $status = & git -C $root status --porcelain
+            $LASTEXITCODE | Should -Be 0
+            $status | Should -BeNullOrEmpty
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 

@@ -42,12 +42,16 @@ Describe 'Update policy' {
 
     It 'Test-NetscootUpdate -Auto is a no-op when the policy is Manual (default)' {
         Remove-Item Env:\NETSCOOT_AUTOUPDATE -ErrorAction SilentlyContinue
-        Test-NetscootUpdate -Auto | Should -BeNullOrEmpty
+        Mock -ModuleName Netscoot.Core Invoke-RestMethod {}
+        Test-NetscootUpdate -Auto -ErrorAction Stop | Should -BeNullOrEmpty
+        Should -Invoke -ModuleName Netscoot.Core Invoke-RestMethod -Times 0 -Exactly
     }
 
     It 'Test-NetscootUpdate -Auto is a no-op when the policy is Disabled' {
         $env:NETSCOOT_AUTOUPDATE = 'false'
-        Test-NetscootUpdate -Auto | Should -BeNullOrEmpty
+        Mock -ModuleName Netscoot.Core Invoke-RestMethod {}
+        Test-NetscootUpdate -Auto -ErrorAction Stop | Should -BeNullOrEmpty
+        Should -Invoke -ModuleName Netscoot.Core Invoke-RestMethod -Times 0 -Exactly
     }
 
     It 'Update-Netscoot refuses (no network) when the policy is Disabled' {
@@ -75,6 +79,7 @@ Describe 'Update policy' {
         }
         Mock -ModuleName Netscoot.Core Test-NetscootUpdate { $null }
         Update-Netscoot -Force -WarningAction SilentlyContinue | Out-Null
+        Should -Invoke -ModuleName Netscoot.Core Get-NetscootUpdatePolicy -Times 1 -Exactly
         Should -Invoke -ModuleName Netscoot.Core Test-NetscootUpdate -Times 1
     }
 

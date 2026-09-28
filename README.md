@@ -2418,13 +2418,15 @@ Update-Netscoot [[-Repository] <string>] [[-Channel] <string>] [-Force] [-WhatIf
 ```
 
 Checks GitHub for a newer release (via [Test-NetscootUpdate](#test-netscootupdate)) and, if the installed version is
-behind, runs the release's `install.ps1` to overwrite the modules on your module path. No git, no clone. Does nothing
-when already current unless `-Force`. Honors `-WhatIf`/`-Confirm`. After it runs, reload the module in the current
-session with `Import-Module Netscoot -Force`. Needs network access to GitHub. For Gallery installs, use
-`Update-Module Netscoot` (with `-AllowPrerelease` for betas) instead. This command updates installer/clone installs in
-place from the GitHub release, and replaces a Gallery install's folder with an installer copy. When the update policy is
-Disabled (see [Set-NetscootUpdatePolicy](#set-netscootupdatepolicy)), this refuses to update. `-Force` overrides a
-policy you set for yourself, never one an administrator set.
+behind, downloads the release's source archive and copies its module folders to the current user's module path, the same
+place `install.ps1` installs to. It runs nothing it downloads. No git, no clone. Does nothing when already current
+unless `-Force`. Honors `-WhatIf`/`-Confirm`. After it runs, reload the module in the current session with
+`Import-Module Netscoot -Force`. Needs network access to GitHub. For Gallery installs, use `Update-Module Netscoot`
+(with `-AllowPrerelease` for betas) instead. This command updates installer installs in place from the GitHub release,
+and replaces a Gallery install's folder with an installer copy. The Claude Code plugin carries its own copy of the
+module and updates it itself. This command never touches that copy. When the update policy is Disabled (see
+[Set-NetscootUpdatePolicy](#set-netscootupdatepolicy)), this refuses to update. `-Force` overrides a policy you set for
+yourself, never one an administrator set.
 
 ##### Parameters
 

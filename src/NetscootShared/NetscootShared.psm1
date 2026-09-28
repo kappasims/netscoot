@@ -6,7 +6,7 @@ $ErrorActionPreference = 'Stop'
 # (the .NET/MSBuild helpers). Every function defined here is exported so the engines can call it.
 # [IO.Path]::Combine (not multi-arg Join-Path) so this loads on Windows PowerShell 5.1 too.
 $loaded = foreach ($tier in 'Common', 'Dotnet') {
-    foreach ($f in (Get-ChildItem -Path ([System.IO.Path]::Combine($PSScriptRoot, $tier)) -Filter '*.ps1' -ErrorAction SilentlyContinue)) {
+    foreach ($f in (Get-ChildItem -Path ([System.IO.Path]::Combine($PSScriptRoot, $tier)) -Filter '*.ps1')) {
         . $f.FullName
         $f
     }

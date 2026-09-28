@@ -49,12 +49,13 @@ Describe 'Move-DotnetProject with a non-literal reference' -Tag 'Integration' {
         $root = New-TempDir
         Push-Location $root
         try {
-            & git init -q
+            Invoke-Git -Arguments @('init', '-q')
             New-ClassLibProject -Name Lib -Directory (Join-Path $root (Join-Path 'src' 'Lib')) | Out-Null
-            & dotnet new sln -n Demo --format slnx | Out-Null
-            & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) | Out-Null
+            Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', 'slnx')
+            Invoke-Dotnet -Arguments @('sln', 'Demo.slnx', 'add', (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))))
             Add-ProjectReference -ProjectFile (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) -Include '$(SharedDir)\Shared.csproj'
-            & git add -A; & git commit -qm fixture | Out-Null
+            Invoke-Git -Arguments @('add', '-A')
+            Invoke-Git -Arguments @('commit', '-qm', 'fixture')
 
             # -WhatIf: the warning is emitted before any mutation, so this is side-effect free.
             Move-DotnetProject -Project (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) `
@@ -71,10 +72,10 @@ Describe 'Repair-NetscootSolutionReferences and non-literal references' -Tag 'In
         $root = New-TempDir
         Push-Location $root
         try {
-            & git init -q
+            Invoke-Git -Arguments @('init', '-q')
             New-ClassLibProject -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
             Add-ProjectReference -ProjectFile (Join-Path $root (Join-Path 'Lib' 'Lib.csproj')) -Include '$(PluginDir)\Plugin.csproj'
-            $probs = Repair-NetscootSolutionReferences -RepositoryRoot $root
+            $probs = Repair-NetscootSolutionReferences -RepositoryRoot $root -ErrorAction Stop
             # The only csproj has just a non-literal reference, so there is nothing dangling.
             ($probs | Where-Object { $_.Kind -eq 'Reference' }) | Should -BeNullOrEmpty
         } finally { Pop-Location; Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

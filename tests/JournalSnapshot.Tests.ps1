@@ -23,12 +23,12 @@ Describe 'Snapshot dir lifecycle (v2)' -Tag 'Integration' {
             $r = New-TempRoot -Prefix 'jsnp'
             Push-Location $r
             try {
-                & git init -q
+                Invoke-Git -RepositoryRoot $r -Arguments @('init', '-q')
                 New-ClassLibProject -Name Lib -Directory (Join-Path $r (Join-Path 'src' 'Lib')) | Out-Null
-                & dotnet new sln -n Demo | Out-Null
-                $sln = (Get-ChildItem -LiteralPath $r -File -Filter '*.sln').FullName
-                & dotnet sln $sln add (Join-Path $r (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))) | Out-Null
-                & git add -A; & git commit -qm fixture | Out-Null
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', 'slnx')
+                Invoke-Dotnet -Arguments @('sln', 'Demo.slnx', 'add', (Join-Path $r (Join-Path 'src' (Join-Path 'Lib' 'Lib.csproj'))))
+                Invoke-Git -RepositoryRoot $r -Arguments @('add', '-A')
+                Invoke-Git -RepositoryRoot $r -Arguments @('commit', '-qm', 'fixture')
             } finally { Pop-Location }
             return $r
         }
@@ -44,12 +44,9 @@ Describe 'Snapshot dir lifecycle (v2)' -Tag 'Integration' {
     }
 
     AfterEach {
-        Push-Location $script:Repo
-        try {
-            & git reset --hard HEAD 2>$null | Out-Null
-            & git clean -fd 2>$null | Out-Null
-        } finally { Pop-Location }
-        Clear-NetscootJournal -RepositoryRoot $script:Repo -Confirm:$false -ErrorAction SilentlyContinue
+        Invoke-Git -RepositoryRoot $script:Repo -Arguments @('reset', '--hard', 'HEAD')
+        Invoke-Git -RepositoryRoot $script:Repo -Arguments @('clean', '-fd')
+        Clear-NetscootJournal -RepositoryRoot $script:Repo -Confirm:$false
     }
 
     It 'a successful move leaves no snapshot dir referenced by its committed entry (snapshot field is cleared on commit)' {
@@ -103,10 +100,8 @@ Describe 'Snapshot dir lifecycle (v2)' -Tag 'Integration' {
         param([string]$Content = 'snapshot', [timespan]$Age = [timespan]::FromHours(2))
         $d = Join-Path ([System.IO.Path]::GetTempPath()) ('netscoot_snap_' + [guid]::NewGuid().ToString('N').Substring(0, 8))
         New-Item -ItemType Directory -Path $d | Out-Null
-        # Register for session-end auto-cleanup if the auto-cleanup list exists (TestHelpers).
-        if (Get-Variable -Scope Global -Name NetscootTestCleanup -ErrorAction SilentlyContinue) {
-            [void]$global:NetscootTestCleanup.Add($d)
-        }
+        # Register for session-end auto-cleanup (TestHelpers).
+        [void]$global:NetscootTestCleanup.Add($d)
         Set-Content -LiteralPath (Join-Path $d 'f0') -Value $Content
         (Get-Item -LiteralPath $d).LastWriteTimeUtc = [datetime]::UtcNow - $Age
         $d

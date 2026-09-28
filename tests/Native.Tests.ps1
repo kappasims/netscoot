@@ -35,7 +35,9 @@ Describe 'Native project handling' -Tag 'Integration' {
     It 'Move-DotnetProject refuses a .vcxproj with a clear error' {
         $vcx = New-NativeFixture
         try {
-            Move-DotnetProject -Project $vcx -Destination (Join-Path (Split-Path $vcx) (Join-Path '..' ('moved'))) -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
+            $errs = @(Move-DotnetProject -Project $vcx -Destination (Join-Path (Split-Path $vcx) (Join-Path '..' ('moved'))) -ErrorAction Continue 2>&1 |
+                    Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+            $errs | Should -HaveCount 1
             $errs[0].FullyQualifiedErrorId | Should -Match 'NativeProjectNotSupported'
         } finally { Remove-Item -LiteralPath (Split-Path (Split-Path $vcx)) -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -126,8 +128,9 @@ Global
 	EndGlobalSection
 EndGlobal
 '@
-            Push-Location $root
-            try { & git init -q; & git add -A; & git commit -qm fixture | Out-Null } finally { Pop-Location }
+            foreach ($gitArgs in @(@('init', '-q'), @('add', '-A'), @('commit', '-qm', 'fixture'))) {
+                Invoke-Git -RepositoryRoot $root -Arguments $gitArgs
+            }
             return $root
         }
     }

@@ -34,8 +34,9 @@ function New-TempRoot {
     $d = Join-Path ([System.IO.Path]::GetTempPath()) ($Prefix + '_' + [guid]::NewGuid().ToString('N').Substring(0, 8))
     New-Item -ItemType Directory -Path $d | Out-Null
     if (($PSVersionTable.PSEdition -eq 'Core') -and -not $IsWindows) {
-        $real = (& realpath $d 2>$null)
-        if ($LASTEXITCODE -eq 0 -and $real) { $d = ("$real").Trim() }
+        $real = (& realpath $d)
+        if ($LASTEXITCODE -ne 0 -or -not $real) { throw "realpath failed ($LASTEXITCODE) for $d" }
+        $d = ("$real").Trim()
     }
     [void]$global:NetscootTestCleanup.Add($d)
     return $d
@@ -50,11 +51,7 @@ if (-not $env:NETSCOOT_JOURNAL_HOME) {
     $env:NETSCOOT_JOURNAL_HOME = New-TempRoot -Prefix 'dnm-jhome'
 }
 
-# Fixtures `git init` + `git commit` a starting state. A bare CI runner has no git identity, so the
-# commit fails with "empty ident name" - the move still works (git mv stages the index), but the
-# output is noisy and any fixture relying on a real HEAD runs degraded. Set an identity for the test
-# process via GIT_* env vars (authoritative, bypasses the config requirement) without mutating the
-# machine's global git config. Only fill what is unset, so a developer's real identity is respected.
+# Fixture commits need a git identity, so give the test process a fixed one unless GIT_* already names one.
 foreach ($kv in @(
         @('GIT_AUTHOR_NAME', 'netscoot tests'), @('GIT_AUTHOR_EMAIL', 'tests@netscoot.invalid'),
         @('GIT_COMMITTER_NAME', 'netscoot tests'), @('GIT_COMMITTER_EMAIL', 'tests@netscoot.invalid'))) {
@@ -67,7 +64,8 @@ function New-ClassLibProject {
     param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$Directory)
     & dotnet new classlib -n $Name -o $Directory -f net10.0 | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "dotnet new classlib failed ($LASTEXITCODE) for $Name in $Directory" }
-    Remove-Item -LiteralPath (Join-Path $Directory 'obj') -Recurse -Force -ErrorAction SilentlyContinue
+    $obj = Join-Path $Directory 'obj'
+    if (Test-Path -LiteralPath $obj) { Remove-Item -LiteralPath $obj -Recurse -Force }
     return (Join-Path $Directory "$Name.csproj")
 }
 
@@ -76,7 +74,8 @@ function New-ConsoleProject {
     param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$Directory)
     & dotnet new console -n $Name -o $Directory -f net10.0 | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "dotnet new console failed ($LASTEXITCODE) for $Name in $Directory" }
-    Remove-Item -LiteralPath (Join-Path $Directory 'obj') -Recurse -Force -ErrorAction SilentlyContinue
+    $obj = Join-Path $Directory 'obj'
+    if (Test-Path -LiteralPath $obj) { Remove-Item -LiteralPath $obj -Recurse -Force }
     return (Join-Path $Directory "$Name.csproj")
 }
 

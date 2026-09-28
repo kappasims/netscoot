@@ -16,7 +16,7 @@ function Find-Solutions {
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$Root)
     $nested = Get-NestedWorktreePath -Root $Root   # linked worktrees hold duplicate copies
-    Get-ChildItem -LiteralPath $Root -Recurse -File -ErrorAction SilentlyContinue |
+    Get-TreeItem -Root $Root -File |
         Where-Object { $_.Extension -in '.sln', '.slnx' -and $_.FullName -notmatch '[\\/](bin|obj|\.vs|\.git)[\\/]' -and -not (Test-PathUnderAny -Path $_.FullName -Dirs $nested) }
 }
 

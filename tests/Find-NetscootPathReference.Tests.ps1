@@ -88,7 +88,7 @@ Describe 'Find-NetscootPathReference' -Tag 'Integration' {
         $root = New-RefFixture
         Push-Location $root
         try {
-            & git init -q   # so Get-RepositoryRoot resolves to $root via .git, deterministically
+            Invoke-Git -Arguments @('init', '-q')   # so Get-RepositoryRoot resolves to $root via .git, deterministically
             # Simulate "after the rename": the old project path is gone from disk.
             Remove-Item -LiteralPath (Join-Path $root (Join-Path 'lib' ('Foo.csproj'))) -Force
 

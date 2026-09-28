@@ -10,7 +10,7 @@ Purpose (full overview: the [netscoot README](https://github.com/kappasims/netsc
 that fixes what it would otherwise break. PowerShell has no Visual Studio to reconcile a relocated
 file, so netscoot rewrites the script paths a move breaks, changing only the path text.
 
-These cmdlets are **cross-platform** (PowerShell 7 on Windows/Linux/macOS, and Windows
+These cmdlets are **cross-platform** (PowerShell 7.2+ on Windows/Linux/macOS, and Windows
 PowerShell 5.1). They need no dotnet CLI, and git is optional (without it, a move falls back to a
 plain `Move-Item`). The hazard is **relative references that break when a file moves**. Unlike a
 .NET project, there is no manifest/CLI that reconciles every kind:

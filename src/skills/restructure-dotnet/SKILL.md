@@ -13,7 +13,7 @@ first-party tooling where one exists (`dotnet sln`, `dotnet reference`, `git mv`
 edits where none does (a solution's stored paths, `<Import>` paths). You never hand-edit `.sln`,
 `.slnx`, or `.csproj`/`.fsproj`/`.vbproj`, because hand-typed paths and GUIDs drift.
 
-Cross-platform: PowerShell 7 on Windows/Linux/macOS, or Windows PowerShell 5.1. It needs the dotnet
+Cross-platform: PowerShell 7.2+ on Windows/Linux/macOS, or Windows PowerShell 5.1. It needs the dotnet
 CLI, and git is optional (without it, a move falls back to a plain `Move-Item`). Load the netscoot
 module that ships with this plugin:
 `Import-Module "${CLAUDE_PLUGIN_ROOT}/Netscoot/Netscoot.psd1"`. Never auto-install: if a

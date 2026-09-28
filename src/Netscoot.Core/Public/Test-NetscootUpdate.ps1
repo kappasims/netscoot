@@ -72,14 +72,13 @@ function Test-NetscootUpdate {
 
     # The version of the module that exports this function (all netscoot manifests share it).
     $installed = $MyInvocation.MyCommand.Module.Version
-    if (-not $installed) { $installed = (Get-Module Netscoot.Core | Select-Object -First 1).Version }
 
     # The full installed identity is ModuleVersion + any umbrella PSData.Prerelease (e.g. 3.0.0 +
     # 'beta1' -> 3.0.0-beta1), so a beta install correctly compares against newer betas / the stable.
     # Guarded member access: the umbrella module may not be loaded (Core-only sessions), and StrictMode
     # turns a missing PrivateData/PSData property into a terminating error otherwise.
     $installedPre = $null
-    $umbrella = Get-Module Netscoot -ErrorAction SilentlyContinue | Select-Object -First 1
+    $umbrella = Get-Module Netscoot | Select-Object -First 1
     if ($umbrella -and $umbrella.PrivateData -is [hashtable] -and $umbrella.PrivateData.ContainsKey('PSData')) {
         $psData = $umbrella.PrivateData['PSData']
         if ($psData -is [hashtable] -and $psData.ContainsKey('Prerelease')) { $installedPre = $psData['Prerelease'] }
@@ -88,6 +87,7 @@ function Test-NetscootUpdate {
     if (-not [string]::IsNullOrWhiteSpace("$installedPre")) { $installedFull = "$installed-$installedPre" }
 
     $release = $null
+    $cause = 'the response had no release tag'
     if ($Channel -eq 'Beta') {
         # Beta tracks prereleases too. /releases returns an array (newest-first by publish date); pick
         # the newest by SemVer precedence (Compare-NetscootSemVer), which correctly ranks prereleases.
@@ -96,7 +96,7 @@ function Test-NetscootUpdate {
         try {
             $list = Invoke-RestMethod -Uri $uri -Headers @{ 'User-Agent' = 'Netscoot'; 'Accept' = 'application/vnd.github+json' } -ErrorAction Stop
         } catch {
-            Write-Verbose "Release check request failed: $($_.Exception.Message)"   # reported by the null-check below
+            $cause = $_.Exception.Message
         }
         foreach ($r in @($list)) {
             if ([string]::IsNullOrWhiteSpace("$($r.tag_name)")) { continue }
@@ -105,21 +105,19 @@ function Test-NetscootUpdate {
             }
         }
     } else {
-        # Stable: /repos/<owner>/<name>/releases/latest - NOT /repositories/, which is the numeric-
-        # repo-id endpoint and 404s for an owner/name string (the 404 was swallowed and surfaced as a
-        # generic "could not get release", so every update check failed regardless of network state).
-        # /releases/latest never returns a prerelease, so Stable never sees beta tags.
+        # Stable: /repos/<owner>/<name>/releases/latest, which never returns a prerelease, so Stable
+        # never sees beta tags.
         $uri = "https://api.github.com/repos/$Repository/releases/latest"
         try {
             $release = Invoke-RestMethod -Uri $uri -Headers @{ 'User-Agent' = 'Netscoot'; 'Accept' = 'application/vnd.github+json' } -ErrorAction Stop
         } catch {
-            Write-Verbose "Release check request failed: $($_.Exception.Message)"   # reported by the null-check below
+            $cause = $_.Exception.Message
         }
     }
 
     if ($null -eq $release -or [string]::IsNullOrWhiteSpace("$($release.tag_name)")) {
         $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
-                [System.Exception]::new("Could not get the latest release from $uri (offline, rate-limited, or no release yet)."),
+                [System.Exception]::new("Could not get the latest release from ${uri}: $cause"),
                 'UpdateCheckFailed', [System.Management.Automation.ErrorCategory]::ConnectionError, $uri))
         return
     }
@@ -128,8 +126,8 @@ function Test-NetscootUpdate {
     $latest = $null
     if ($tag -match '(\d+\.\d+\.\d+)') { $latest = [version]$Matches[1] }
 
-    # SemVer-aware compare on the FULL identities (prerelease-inclusive), replacing the old core-only
-    # -gt. An update is available when the release outranks what's installed.
+    # SemVer compare on the full identities, prerelease included. An update is available when the
+    # release outranks what's installed.
     $available = $false
     if ($null -ne $latest -and $null -ne $installed) {
         $available = (Compare-NetscootSemVer -Reference $tag -Difference $installedFull) -gt 0

@@ -14,9 +14,8 @@ $ErrorActionPreference = 'Stop'
 #   is populated, and the manifest's FunctionsToExport matches what is actually exported (no
 #   "exports functions the root module does not define" warning). As nested modules they also unload
 #   automatically when `Remove-Module Netscoot` runs - only the -Global Shared needs explicit cleanup
-#   (see OnRemove). Native stays conditional (Windows-only, best-effort) precisely because its
-#   functions are only re-exported inside the guarded try below - manifest NestedModules would load
-#   it unconditionally and fail the whole import on a non-Windows / missing-C++ host.
+#   (see OnRemove). Native stays conditional (Windows-only) because it is imported only behind the
+#   platform check below. Manifest NestedModules would load it on every host.
 #
 # [IO.Path]::Combine (not multi-arg Join-Path) keeps this loading on Windows PowerShell 5.1.
 
@@ -28,21 +27,20 @@ function script:Test-IsWindowsHost {
 
 function script:Resolve-EnginePath {
     # The engine manifest path: bundled single-package layout (a subfolder of this module), then the
-    # dev/source layout (a sibling); $null means fall back to importing by module name.
+    # dev/source layout (a sibling).
     param([Parameter(Mandatory)][string]$Name)
     $bundled = [System.IO.Path]::Combine($PSScriptRoot, $Name, "$Name.psd1")
     if (Test-Path $bundled) { return $bundled }
     $sibling = [System.IO.Path]::Combine($PSScriptRoot, '..', $Name, "$Name.psd1")
     if (Test-Path $sibling) { return $sibling }
-    return $null
+    throw "Netscoot: the $Name module was not found at $bundled or $sibling."
 }
 
 function script:Import-Engine {
     # Import an engine NESTED (not -Global) and re-export its functions (and any aliases) from this
     # umbrella, so the cmdlets are owned by Netscoot.
     param([Parameter(Mandatory)][string]$Name)
-    $path = script:Resolve-EnginePath -Name $Name
-    $m = if ($path) { Import-Module $path -Force -PassThru } else { Import-Module $Name -Force -PassThru -ErrorAction Stop }
+    $m = Import-Module (script:Resolve-EnginePath -Name $Name) -Force -PassThru
     $fns = [string[]]@($m.ExportedFunctions.Keys)
     if ($fns.Count) { Export-ModuleMember -Function $fns }
     $aliases = [string[]]@($m.ExportedAliases.Keys)
@@ -50,21 +48,19 @@ function script:Import-Engine {
 }
 
 # Shared FIRST, and -Global: the engine functions resolve its helpers at runtime via the global scope.
-$sharedPath = script:Resolve-EnginePath -Name 'NetscootShared'
-if ($sharedPath) { Import-Module $sharedPath -Force -Global } else { Import-Module 'NetscootShared' -Force -Global -ErrorAction Stop }
+Import-Module (script:Resolve-EnginePath -Name 'NetscootShared') -Force -Global
 
 Import-Engine -Name 'Netscoot.Core'
 Import-Engine -Name 'Netscoot.Unity'
-# Native is capability-based: load it only on Windows, and best-effort - if it fails to load, the
-# rest of the toolkit still works (native moves are simply unavailable).
-if (Test-IsWindowsHost) {
-    try { Import-Engine -Name 'Netscoot.Native' }
-    catch { Write-Warning "Netscoot: the native C++ engine (Netscoot.Native) did not load; native (.vcxproj) moves are unavailable. $($_.Exception.Message)" }
-}
+# Native moves are Windows-only, so the native engine loads only on Windows.
+if (Test-IsWindowsHost) { Import-Engine -Name 'Netscoot.Native' }
 
 # The engines are nested, so they unload automatically with this umbrella. NetscootShared is -Global
 # (not tied to this module's lifecycle), so clean it up explicitly on removal - otherwise a plain
 # `Remove-Module Netscoot` would leave it resident.
 $ExecutionContext.SessionState.Module.OnRemove = {
-    if (Get-Module -Name NetscootShared) { Remove-Module -Name NetscootShared -Force -ErrorAction SilentlyContinue }
+    if (Get-Module -Name NetscootShared) {
+        try { Remove-Module -Name NetscootShared -Force -ErrorAction Stop }
+        catch { Write-Warning "Could not unload NetscootShared: $($_.Exception.Message)" }
+    }
 }

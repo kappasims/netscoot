@@ -14,8 +14,17 @@ function Get-ExternalTool {
     param([Parameter(Mandatory)][string]$Name)
     $cmd = Get-Command $Name -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
     if (-not $cmd) { return [pscustomobject]@{ Present = $false; Version = $null; Path = $null } }
-    $ver = $null
-    try { $ver = (& $Name --version 2>$null | Select-Object -First 1) } catch { Write-Verbose "version probe failed for ${Name}: $_" }
+    # Ignore keeps Windows PowerShell 5.1 from recording the probe's stderr as an error, and the exit code decides.
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = 'Ignore'
+    try { $out = @(& $Name --version 2>$null) }
+    finally { $ErrorActionPreference = $prev }
+    $ver = $out | Select-Object -First 1
+    if ($LASTEXITCODE -ne 0) {
+        # A dotnet host with no SDK installed is on PATH but fails --version.
+        Write-Warning "$Name is on PATH at $($cmd.Source), but '$Name --version' failed (exit $LASTEXITCODE)."
+        $ver = $null
+    }
     return [pscustomobject]@{ Present = $true; Version = "$ver".Trim(); Path = $cmd.Source }
 }
 

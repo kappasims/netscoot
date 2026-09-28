@@ -22,11 +22,9 @@ BeforeAll {
     }
 
     function Assert-MoverBindsPipedString {
-        param([string]$Name)
-        $errs = $null
-        './does/not/exist' | & $Name -Destination './elsewhere' -WhatIf -ErrorAction SilentlyContinue -ErrorVariable errs
-        @($errs | Where-Object { $_.FullyQualifiedErrorId -like 'ParameterArgumentTransformationError*' }).Count |
-            Should -Be 0 -Because 'a string path must bind'
+        param([string]$Name, [string]$NotFoundId)
+        { './does/not/exist' | & $Name -Destination './elsewhere' -WhatIf -ErrorAction Stop } |
+            Should -Throw -ErrorId "$NotFoundId,$Name"
     }
 
     function Assert-MoverRejectsPipedObject {
@@ -45,16 +43,8 @@ BeforeAll {
 
     function Assert-GatedBindsPipedString {
         param([string]$Name)
-        # A string must BIND. The cmdlet may then fail downstream on the fake path (not found),
-        # which is NOT a binding/transformation failure - the only thing this gate is about. So we
-        # tolerate a terminating downstream error and assert only that it is not a transform error.
-        $errs = $null; $caught = $null
-        try {
-            './does/not/exist' | & $Name -ErrorAction SilentlyContinue -ErrorVariable errs -WarningAction SilentlyContinue
-        } catch { $caught = $_ }
-        @($errs | Where-Object { $_.FullyQualifiedErrorId -like 'ParameterArgumentTransformationError*' }).Count |
-            Should -Be 0 -Because 'a string path must bind'
-        if ($caught) { $caught.FullyQualifiedErrorId | Should -Not -BeLike 'ParameterArgumentTransformationError*' }
+        # These cmdlets report nothing for a root that does not exist, so any error at all is a failure.
+        { './does/not/exist' | & $Name -ErrorAction Stop -WarningAction SilentlyContinue | Out-Null } | Should -Not -Throw
     }
 }
 
@@ -67,23 +57,21 @@ Describe 'Pipeline-input gate (PathInputTransform)' -Tag 'Integration' {
     }
 
     Context 'accepts a path STRING from the pipeline' {
-        # A string must BIND. The cmdlet may then emit a non-terminating "not found" error from its
-        # process block (the path is fake), but that is NOT a binding/transformation failure - which
-        # is the only thing this gate is responsible for. So we assert no transformation error fires.
+        # The fake path's own not-found error proves the string bound and reached the process block.
         It 'Move-DotnetProject binds a piped path string (no transformation error)' {
-            Assert-MoverBindsPipedString -Name 'Move-DotnetProject'
+            Assert-MoverBindsPipedString -Name 'Move-DotnetProject' -NotFoundId 'ProjectNotFound'
         }
         It 'Move-PowerShell binds a piped path string (no transformation error)' {
-            Assert-MoverBindsPipedString -Name 'Move-PowerShell'
+            Assert-MoverBindsPipedString -Name 'Move-PowerShell' -NotFoundId 'PathNotFound'
         }
         It 'Move-UnityAsset binds a piped path string (no transformation error)' {
-            Assert-MoverBindsPipedString -Name 'Move-UnityAsset'
+            Assert-MoverBindsPipedString -Name 'Move-UnityAsset' -NotFoundId 'AssetNotFound'
         }
         It 'Move-Solution binds a piped path string (no transformation error)' {
-            Assert-MoverBindsPipedString -Name 'Move-Solution'
+            Assert-MoverBindsPipedString -Name 'Move-Solution' -NotFoundId 'SolutionNotFound'
         }
         It 'Move-DotnetFile binds a piped path string (no transformation error)' {
-            Assert-MoverBindsPipedString -Name 'Move-DotnetFile'
+            Assert-MoverBindsPipedString -Name 'Move-DotnetFile' -NotFoundId 'FileNotFound'
         }
     }
 
@@ -92,12 +80,13 @@ Describe 'Pipeline-input gate (PathInputTransform)' -Tag 'Integration' {
             $root = New-TempRoot -Prefix 'gate'
             Push-Location $root
             try {
-                & git init -q
+                Invoke-Git -Arguments @('init', '-q')
                 $lib = New-ClassLibProject -Name Lib -Directory (Join-Path $root (Join-Path 'src' 'Lib'))
-                & dotnet new sln -n Demo --format slnx | Out-Null
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', 'slnx')
                 $sln = (Get-ChildItem -LiteralPath $root -File -Include '*.slnx').FullName
-                & dotnet sln $sln add $lib | Out-Null
-                & git add -A; & git commit -qm fixture | Out-Null
+                Invoke-Dotnet -Arguments @('sln', $sln, 'add', $lib)
+                Invoke-Git -Arguments @('add', '-A')
+                Invoke-Git -Arguments @('commit', '-qm', 'fixture')
 
                 $dest = Join-Path $root (Join-Path 'libs' 'Lib')
                 # Pipe the FileInfo from Get-ChildItem; the transform takes its .FullName.
@@ -112,10 +101,11 @@ Describe 'Pipeline-input gate (PathInputTransform)' -Tag 'Integration' {
             $root = New-TempRoot -Prefix 'gate'
             Push-Location $root
             try {
-                & git init -q
+                Invoke-Git -Arguments @('init', '-q')
                 $script = Join-Path $root 'helper.ps1'
                 Set-Content -LiteralPath $script -Value '# helper' -Encoding UTF8
-                & git add -A; & git commit -qm fixture | Out-Null
+                Invoke-Git -Arguments @('add', '-A')
+                Invoke-Git -Arguments @('commit', '-qm', 'fixture')
 
                 $dest = Join-Path $root (Join-Path 'shared' 'helper.ps1')
                 Get-Item -LiteralPath $script | Move-PowerShell -Destination $dest -Confirm:$false
@@ -149,10 +139,10 @@ Describe 'Pipeline-input gate (PathInputTransform)' -Tag 'Integration' {
 
         It 'the rejection message names the offending type and the supported shapes' {
             $rec = [pscustomobject]@{ Path = 'whatever' }
-            $msg = $null
-            try { $rec | Move-Solution -Destination './x' -WhatIf -ErrorAction Stop } catch { $msg = $_.Exception.Message }
-            $msg | Should -Match 'Unsupported pipeline input'
-            $msg | Should -Match 'FileSystemInfo'
+            $err = { $rec | Move-Solution -Destination './x' -WhatIf -ErrorAction Stop } |
+                Should -Throw -ErrorId 'ParameterArgumentTransformationError,Move-Solution' -PassThru
+            $err.Exception.Message | Should -Match 'Unsupported pipeline input'
+            $err.Exception.Message | Should -Match 'FileSystemInfo'
         }
     }
 
@@ -247,10 +237,8 @@ Describe 'Pipeline-input gate (PathInputTransform)' -Tag 'Integration' {
         }
         It 'Get-Item <dir> | Test-NetscootSolutionConsistency binds the directory item (no transformation error)' {
             $root = New-TempRoot -Prefix 'gate'
-            $errs = $null
-            Get-Item -LiteralPath $root | Test-NetscootSolutionConsistency -ErrorAction SilentlyContinue -ErrorVariable errs -WarningAction SilentlyContinue
-            @($errs | Where-Object { $_.FullyQualifiedErrorId -like 'ParameterArgumentTransformationError*' }).Count |
-                Should -Be 0 -Because 'a Get-Item directory must bind via its FullName'
+            { Get-Item -LiteralPath $root | Test-NetscootSolutionConsistency -ErrorAction Stop -WarningAction SilentlyContinue | Out-Null } |
+                Should -Not -Throw -Because 'a Get-Item directory must bind via its FullName'
         }
     }
 
@@ -261,10 +249,8 @@ Describe 'Pipeline-input gate (PathInputTransform)' -Tag 'Integration' {
                 Should -Throw -ErrorId 'ParameterArgumentTransformationError,Move-NativeProject'
         }
         It 'Move-NativeProject binds a piped string (no transformation error)' -Skip:(-not $script:IsWindowsHost) {
-            $errs = $null
-            './does/not/exist.vcxproj' | Move-NativeProject -Destination './elsewhere' -WhatIf -ErrorAction SilentlyContinue -ErrorVariable errs
-            @($errs | Where-Object { $_.FullyQualifiedErrorId -like 'ParameterArgumentTransformationError*' }).Count |
-                Should -Be 0 -Because 'a string path must bind'
+            { './does/not/exist.vcxproj' | Move-NativeProject -Destination './elsewhere' -WhatIf -ErrorAction Stop } |
+                Should -Throw -ErrorId 'ProjectNotFound,Move-NativeProject'
         }
     }
 }

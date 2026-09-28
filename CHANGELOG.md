@@ -12,8 +12,19 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   skills load it, so a plugin update updates the code too and no separate install is needed. The
   plugin installs only the module and its skills, has an icon, and its version is the release
   version.
+- `Update-Netscoot` installs the release from its source archive and runs nothing it downloads.
+- On macOS and Linux, netscoot needs PowerShell 7.2 or later, and says so instead of silently
+  skipping symlinked folders on older versions.
+- Failures netscoot used to pass over silently now show: a scan warns about each folder it could not
+  read, an unrecognized `NETSCOOT_JOURNAL` or `netscoot.journal` value warns, an unreadable file in
+  `Find-NetscootPathReference` is reported, and a failure to load a netscoot module stops the import
+  with the reason.
 
 ### Fixed
+
+- `Repair-NetscootJournal -ClearOrphanSnapshots` no longer reports snapshots as cleared when they
+  could not be deleted.
+- Importing netscoot no longer loads a second copy of the Unity or native engine.
 
 - The `restructure-dotnet`, `restructure-powershell` and `netscoot-manage` skills load with their
   descriptions, so Claude picks them up from what you ask. Before, their descriptions were dropped.

@@ -49,7 +49,7 @@ function Test-UnityMetaIntegrity {
         # Exclude Unity caches anchored at the scan root (not "Temp" anywhere - the OS temp
         # dir itself contains that segment), and anything at or under a Unity-hidden entry.
         $rootLen = $Root.TrimEnd('\', '/').Length
-        $entries = Get-ChildItem -LiteralPath $Root -Recurse -Force -ErrorAction SilentlyContinue |
+        $entries = Get-TreeItem -Root $Root -Force |
             Where-Object {
                 $rel = $_.FullName.Substring($rootLen)
                 $rel -notmatch '^[\\/](Library|Temp|obj)([\\/]|$)' -and

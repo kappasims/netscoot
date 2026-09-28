@@ -58,8 +58,8 @@ function Set-NetscootUpdatePolicy {
     }
 
     # Always update the current process so the new policy applies right away.
-    if ($null -eq $value) { Remove-Item Env:\NETSCOOT_AUTOUPDATE -ErrorAction SilentlyContinue }
-    else { Set-Item -Path Env:\NETSCOOT_AUTOUPDATE -Value $value }
+    # Assigning $null removes the variable.
+    $env:NETSCOOT_AUTOUPDATE = $value
 
     # Persist beyond the session for User/Machine; -Scope Process is session-only (nothing more to do).
     if ($Scope -ne 'Process') {

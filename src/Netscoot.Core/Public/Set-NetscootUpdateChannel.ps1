@@ -58,9 +58,8 @@ function Set-NetscootUpdateChannel {
         return Get-NetscootUpdateChannel
     }
 
-    # Always update the current process so the new channel applies right away.
-    if ($null -eq $value) { Remove-Item Env:\NETSCOOT_CHANNEL -ErrorAction SilentlyContinue }
-    else { Set-Item -Path Env:\NETSCOOT_CHANNEL -Value $value }
+    # Always update the current process so the new channel applies right away. Assigning $null removes the variable.
+    $env:NETSCOOT_CHANNEL = $value
 
     # Persist beyond the session for User/Machine; -Scope Process is session-only (nothing more to do).
     if ($Scope -ne 'Process') {

@@ -7,7 +7,7 @@
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Core', 'Desktop')
     # Single bundled package: the RootModule loads Shared -Global and imports each engine nested,
-    # re-exporting its cmdlets (native only on Windows, best-effort). This list is the export filter
+    # re-exporting its cmdlets (native only on Windows). This list is the export filter
     # for those re-exported cmdlets, and the PowerShell Gallery indexes it to list the cmdlets by name.
     # tests/UmbrellaSurface.Tests.ps1 checks it against the engines' exports (Shared plumbing excluded).
     # Move-NativeProject is Windows-only at runtime but part of the package.

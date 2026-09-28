@@ -10,8 +10,8 @@ BeforeAll {
             Push-Location $root
             try {
                 New-ClassLibProject -Name Lib -Directory (Join-Path $root 'Lib') | Out-Null
-                & dotnet new sln -n Demo --format slnx | Out-Null
-                & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'Lib' ('Lib.csproj'))) | Out-Null
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', 'slnx')
+                Invoke-Dotnet -Arguments @('sln', 'Demo.slnx', 'add', (Join-Path $root (Join-Path 'Lib' ('Lib.csproj'))))
             } finally { Pop-Location }
             return $root
         }
@@ -27,22 +27,24 @@ Describe 'Get-NetscootCapability' {
     }
 
     It 'reports no .slnx support for a 9.0.1xx SDK' {
-        Mock -ModuleName Netscoot.Core Get-ExternalTool { [pscustomobject]@{ Name = $Name; Present = $true; Version = '9.0.110' } }
+        Mock -ModuleName Netscoot.Core Get-ExternalTool -ParameterFilter { $Name -eq 'dotnet' } { [pscustomobject]@{ Name = $Name; Present = $true; Version = '9.0.110' } }
         (Get-NetscootCapability).DotnetSupportsSlnx | Should -BeFalse
     }
 
     It 'reports .slnx support for a 9.0.200 SDK' {
-        Mock -ModuleName Netscoot.Core Get-ExternalTool { [pscustomobject]@{ Name = $Name; Present = $true; Version = '9.0.200' } }
+        Mock -ModuleName Netscoot.Core Get-ExternalTool -ParameterFilter { $Name -eq 'dotnet' } { [pscustomobject]@{ Name = $Name; Present = $true; Version = '9.0.200' } }
         (Get-NetscootCapability).DotnetSupportsSlnx | Should -BeTrue
+        Should -Invoke -ModuleName Netscoot.Core Get-ExternalTool -Times 1 -Exactly -ParameterFilter { $Name -eq 'dotnet' }
     }
 }
 
 Describe 'Required-tool gating (dotnet)' {
     It 'aborts with a clear error when dotnet is missing' {
         Mock -ModuleName NetscootShared Test-DotnetAvailable { $false }
-        Move-DotnetProject -Project 'X:/nope/Foo.csproj' -Destination 'X:/dst' `
-            -ErrorVariable errs -ErrorAction SilentlyContinue | Out-Null
-        $errs[0].FullyQualifiedErrorId | Should -Match 'DotnetMissing'
+        $errs = @(Move-DotnetProject -Project 'X:/nope/Foo.csproj' -Destination 'X:/dst' `
+                -ErrorAction Continue 2>&1 | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+        $errs.Count | Should -Be 1
+        $errs[0].FullyQualifiedErrorId | Should -BeLike 'DotnetMissing*'
     }
 }
 
@@ -57,6 +59,7 @@ Describe 'Optional-tool fallback (git)' -Tag 'Integration' {
             $r.Performed | Should -BeTrue
             (Join-Path $dest 'Lib.csproj') | Should -Exist
             $lib | Should -Not -Exist
+            Should -Invoke -ModuleName NetscootShared Test-GitAvailable
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 }

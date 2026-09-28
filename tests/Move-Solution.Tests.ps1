@@ -10,12 +10,13 @@ BeforeAll {
             $root = New-TempRoot -Prefix 'netscoot_sln'
             Push-Location $root
             try {
-                & git init -q
+                Invoke-Git -Arguments @('init', '-q')
                 New-ClassLibProject -Name Lib -Directory (Join-Path $root (Join-Path 'src' ('Lib'))) | Out-Null
-                & dotnet new sln -n Demo --format $Format | Out-Null
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', $Format)
                 $sln = (Get-ChildItem -LiteralPath $root -File | Where-Object { $_.Extension -in '.sln', '.slnx' }).FullName
-                & dotnet sln $sln add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
-                & git add -A; & git commit -qm fixture | Out-Null
+                Invoke-Dotnet -Arguments @('sln', $sln, 'add', (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))))
+                Invoke-Git -Arguments @('add', '-A')
+                Invoke-Git -Arguments @('commit', '-qm', 'fixture')
             } finally { Pop-Location }
             return $root
         }
@@ -36,6 +37,7 @@ Describe 'Move-Solution' -Tag 'Integration' {
 
             # A wrong rebased path fails the listing. The build smoke lives in Move-DotnetProject.Tests.ps1.
             $listed = & dotnet sln $dest list
+            $LASTEXITCODE | Should -Be 0
             ($listed -join "`n") | Should -Match 'Lib\.csproj'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
@@ -53,6 +55,7 @@ Describe 'Move-Solution' -Tag 'Integration' {
 
             # A wrong rebased path fails the listing. The build smoke lives in Move-DotnetProject.Tests.ps1.
             $listed = & dotnet sln $dest list
+            $LASTEXITCODE | Should -Be 0
             ($listed -join "`n") | Should -Match 'Lib\.csproj'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }

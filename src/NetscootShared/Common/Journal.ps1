@@ -97,12 +97,21 @@ function Test-MoveJournalEnabled {
     # profile) regardless of any repository's git setting.
     $envBool = ConvertTo-JournalBool $env:NETSCOOT_JOURNAL
     if ($null -ne $envBool) { return $envBool }
-    if ($RepositoryRoot) {
-        try {
-            $cfg = "$(& git -C $RepositoryRoot config --get netscoot.journal 2>$null)"
-            $b = ConvertTo-JournalBool $cfg
-            if ($null -ne $b) { return $b }
-        } catch { Write-Verbose "git config probe failed: $_" }
+    if (-not [string]::IsNullOrWhiteSpace($env:NETSCOOT_JOURNAL)) {
+        Write-Warning "NETSCOOT_JOURNAL='$($env:NETSCOOT_JOURNAL)' is not one of on/off, true/false, yes/no, 1/0, so it is ignored."
+    }
+    if ($RepositoryRoot -and (Test-GitAvailable)) {
+        # Exit 1 means the key is unset. Ignore keeps Windows PowerShell 5.1 from recording the probe's stderr as an error, and the exit code decides.
+        $prev = $ErrorActionPreference
+        $ErrorActionPreference = 'Ignore'
+        try { $cfg = "$(& git -C $RepositoryRoot config --get netscoot.journal 2>$null)" }
+        finally { $ErrorActionPreference = $prev }
+        if ($LASTEXITCODE -notin 0, 1) { throw "git -C $RepositoryRoot config --get netscoot.journal failed with exit code $LASTEXITCODE" }
+        $b = ConvertTo-JournalBool $cfg
+        if ($null -ne $b) { return $b }
+        if (-not [string]::IsNullOrWhiteSpace($cfg)) {
+            Write-Warning "git config netscoot.journal='$cfg' is not one of on/off, true/false, yes/no, 1/0, so it is ignored."
+        }
     }
     return $true
 }
@@ -162,15 +171,13 @@ function Select-RecentJournalLine {
             if ([datetimeoffset]::TryParse($m.Groups[1].Value, [ref]$dto)) { $ts = $dto.UtcDateTime }
         }
 
-        # Fallback: a reordered or odd line - parse it. ConvertFrom-Json may hand the timestamp back
-        # as a string OR an already-parsed [datetime]; normalize either to a UTC instant.
+        # A line the fast path could not read: parse it. ConvertFrom-Json returns the timestamp as a
+        # string or an already-parsed [datetime], so normalize either to a UTC instant.
         if ($null -eq $ts) {
-            try {
-                $t = ($line | ConvertFrom-Json).timestamp
-                if ($t -is [datetime]) { $ts = if ($t.Kind -eq 'Local') { $t.ToUniversalTime() } else { [datetime]::SpecifyKind($t, [System.DateTimeKind]::Utc) } }
-                elseif ($t -is [datetimeoffset]) { $ts = $t.UtcDateTime }
-                elseif ($t) { $dto = [datetimeoffset]::MinValue; if ([datetimeoffset]::TryParse([string]$t, [ref]$dto)) { $ts = $dto.UtcDateTime } }
-            } catch { $ts = $null }
+            $t = ($line | ConvertFrom-Json).timestamp
+            if ($t -is [datetime]) { $ts = if ($t.Kind -eq 'Local') { $t.ToUniversalTime() } else { [datetime]::SpecifyKind($t, [System.DateTimeKind]::Utc) } }
+            elseif ($t -is [datetimeoffset]) { $ts = $t.UtcDateTime }
+            elseif ($t) { $dto = [datetimeoffset]::MinValue; if ([datetimeoffset]::TryParse([string]$t, [ref]$dto)) { $ts = $dto.UtcDateTime } }
         }
 
         if ($ts -and $ts -lt $cutoff) { break }   # older than the age cap: this and all earlier drop
@@ -273,8 +280,7 @@ function Write-MoveJournalLines {
     # Lazy prune: skip the full read/rewrite unless the file actually outgrew the cap. First compact
     # (fold each id to its latest line, dropping superseded pending and rolled-back entries), then
     # apply the age/size caps to what remains.
-    $info = Get-Item -LiteralPath $path -ErrorAction SilentlyContinue
-    if ($info -and $info.Length -gt $script:JournalMaxBytes) {
+    if ((Get-Item -LiteralPath $path).Length -gt $script:JournalMaxBytes) {
         $all = @(Get-Content -LiteralPath $path | Where-Object { $_.Trim() })
         $kept = Select-RecentJournalLine -Lines @(Compress-MoveJournalLines -Lines $all)
         Set-Content -LiteralPath $path -Value $kept -Encoding utf8
@@ -335,8 +341,12 @@ function Get-InterruptedMove {
         [Parameter(Mandatory, ParameterSetName = 'All')][switch]$AllRepositories
     )
     $entries = if ($AllRepositories) {
-        Get-ChildItem -LiteralPath (Join-Path (Get-MoveJournalAppDataRoot) 'netscoot') -Filter '*.jsonl' -File -ErrorAction SilentlyContinue |
-            ForEach-Object { Read-MoveJournalState -Path $_.FullName }
+        # No store folder means no journal has been written yet.
+        $store = Join-Path (Get-MoveJournalAppDataRoot) 'netscoot'
+        if (Test-Path -LiteralPath $store) {
+            Get-ChildItem -LiteralPath $store -Filter '*.jsonl' -File |
+                ForEach-Object { Read-MoveJournalState -Path $_.FullName }
+        }
     } else {
         Read-MoveJournalState -RepositoryRoot $RepositoryRoot
     }

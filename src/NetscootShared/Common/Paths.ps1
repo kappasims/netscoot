@@ -7,6 +7,9 @@ function Resolve-SymlinkPath {
     # symlinked directory.
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$Full)
+    if (-not [System.IO.FileSystemInfo].GetMethod('ResolveLinkTarget', [type[]]@([bool]))) {
+        throw "netscoot on macOS and Linux needs PowerShell 7.2 or later to resolve symlinked folders (running $($PSVersionTable.PSVersion))."
+    }
     $sep = [System.IO.Path]::DirectorySeparatorChar
     $cur = "$sep"
     foreach ($part in ($Full.Split($sep))) {
@@ -14,8 +17,7 @@ function Resolve-SymlinkPath {
         $cand = [System.IO.Path]::Combine($cur, $part)
         if (Test-Path -LiteralPath $cand) {
             $item = Get-Item -LiteralPath $cand -Force
-            $link = $null
-            try { $link = $item.ResolveLinkTarget($true) } catch { $link = $null }
+            $link = $item.ResolveLinkTarget($true)
             $cur = if ($link) { $link.FullName } else { $item.FullName }
         } else {
             $cur = $cand   # nothing below here exists yet; keep as typed
@@ -37,6 +39,20 @@ function Resolve-FullPath {
     }
     if (Test-IsWindowsHost) { return $full }
     return (Resolve-SymlinkPath -Full $full)
+}
+
+function Get-TreeItem {
+    # Every item under a folder, recursively, with a warning for each path that could not be read.
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Root,
+        [switch]$File,
+        [switch]$Force
+    )
+    Get-ChildItem -LiteralPath $Root -Recurse -File:$File -Force:$Force -ErrorAction SilentlyContinue -ErrorVariable skipped
+    foreach ($e in $skipped) {
+        Write-Warning "Skipped $($e.TargetObject) while scanning ${Root}: $($e.Exception.Message)"
+    }
 }
 
 function Test-PathEqual {

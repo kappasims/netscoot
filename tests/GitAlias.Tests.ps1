@@ -9,11 +9,12 @@ BeforeAll {
             $root = New-TempRoot -Prefix 'netscoot_git'
             Push-Location $root
             try {
-                & git init -q
+                Invoke-Git -Arguments @('init', '-q')
                 New-ClassLibProject -Name Lib -Directory (Join-Path $root (Join-Path 'src' ('Lib'))) | Out-Null
-                & dotnet new sln -n Demo --format slnx | Out-Null
-                & dotnet sln Demo.slnx add (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Out-Null
-                & git add -A; & git commit -qm fixture | Out-Null
+                Invoke-Dotnet -Arguments @('new', 'sln', '-n', 'Demo', '--format', 'slnx')
+                Invoke-Dotnet -Arguments @('sln', 'Demo.slnx', 'add', (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))))
+                Invoke-Git -Arguments @('add', '-A')
+                Invoke-Git -Arguments @('commit', '-qm', 'fixture')
             } finally { Pop-Location }
             return $root
         }
@@ -26,9 +27,13 @@ Describe 'Register/Unregister-NetscootGitAlias' -Tag 'Integration' {
         Push-Location $root
         try {
             Register-NetscootGitAlias -Scope Local -Confirm:$false | Out-Null
-            (& git config --local --get alias.netscoot) | Should -Match 'git-netscoot\.ps1'
+            $alias = & git config --local --get alias.netscoot
+            $LASTEXITCODE | Should -Be 0
+            $alias | Should -Match 'git-netscoot\.ps1'
             Unregister-NetscootGitAlias -Scope Local -Confirm:$false | Out-Null
-            (& git config --local --get alias.netscoot) | Should -BeNullOrEmpty
+            $alias = & git config --local --get alias.netscoot
+            $LASTEXITCODE | Should -Be 1 -Because 'git config --get exits 1 when the key is unset'
+            $alias | Should -BeNullOrEmpty
         } finally { Pop-Location; Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
@@ -37,7 +42,9 @@ Describe 'Register/Unregister-NetscootGitAlias' -Tag 'Integration' {
         Push-Location $root
         try {
             Register-NetscootGitAlias -Scope Local -WhatIf | Out-Null
-            (& git config --local --get alias.netscoot) | Should -BeNullOrEmpty
+            $alias = & git config --local --get alias.netscoot
+            $LASTEXITCODE | Should -Be 1 -Because 'git config --get exits 1 when the key is unset'
+            $alias | Should -BeNullOrEmpty
         } finally { Pop-Location; Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 }
@@ -48,7 +55,8 @@ Describe 'git netscoot (end-to-end, universal cross-engine routing)' -Tag 'Integ
         Push-Location $root
         try {
             Register-NetscootGitAlias -Scope Local -Confirm:$false | Out-Null
-            & git -C $root netscoot src/Lib/Lib.csproj libs/Lib --nobuild 2>&1 | Out-Null
+            $out = & git -C $root netscoot src/Lib/Lib.csproj libs/Lib --nobuild 2>&1
+            $LASTEXITCODE | Should -Be 0 -Because ($out -join [Environment]::NewLine)
             (Join-Path $root (Join-Path 'libs' (Join-Path 'Lib' ('Lib.csproj')))) | Should -Exist
             (Join-Path $root (Join-Path 'src' (Join-Path 'Lib' ('Lib.csproj')))) | Should -Not -Exist
         } finally { Pop-Location; Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
@@ -61,9 +69,12 @@ Describe 'git netscoot (end-to-end, universal cross-engine routing)' -Tag 'Integ
         Set-Content (Join-Path $root (Join-Path 'Assets' (Join-Path 'Foo' ('Bar.cs.meta')))) "guid: 11112222333344445555666677778888"
         Push-Location $root
         try {
-            & git init -q; & git add -A; & git commit -qm fixture | Out-Null
+            Invoke-Git -Arguments @('init', '-q')
+            Invoke-Git -Arguments @('add', '-A')
+            Invoke-Git -Arguments @('commit', '-qm', 'fixture')
             Register-NetscootGitAlias -Scope Local -Confirm:$false | Out-Null
-            & git -C $root netscoot Assets/Foo/Bar.cs Assets/Moved/Bar.cs 2>&1 | Out-Null
+            $out = & git -C $root netscoot Assets/Foo/Bar.cs Assets/Moved/Bar.cs 2>&1
+            $LASTEXITCODE | Should -Be 0 -Because ($out -join [Environment]::NewLine)
             (Join-Path $root (Join-Path 'Assets' (Join-Path 'Moved' ('Bar.cs')))) | Should -Exist
             (Join-Path $root (Join-Path 'Assets' (Join-Path 'Moved' ('Bar.cs.meta')))) | Should -Exist     # .meta rode along
         } finally { Pop-Location; Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
@@ -77,9 +88,12 @@ Describe 'git netscoot (end-to-end, universal cross-engine routing)' -Tag 'Integ
         Set-Content (Join-Path $root (Join-Path 'app' ('main.ps1'))) '. "$PSScriptRoot\..\lib\helpers.ps1"'
         Push-Location $root
         try {
-            & git init -q; & git add -A; & git commit -qm fixture | Out-Null
+            Invoke-Git -Arguments @('init', '-q')
+            Invoke-Git -Arguments @('add', '-A')
+            Invoke-Git -Arguments @('commit', '-qm', 'fixture')
             Register-NetscootGitAlias -Scope Local -Confirm:$false | Out-Null
-            & git -C $root netscoot lib/helpers.ps1 shared/helpers.ps1 2>&1 | Out-Null
+            $out = & git -C $root netscoot lib/helpers.ps1 shared/helpers.ps1 2>&1
+            $LASTEXITCODE | Should -Be 0 -Because ($out -join [Environment]::NewLine)
             (Join-Path $root (Join-Path 'shared' ('helpers.ps1'))) | Should -Exist
             (Get-Content (Join-Path $root (Join-Path 'app' ('main.ps1'))) -Raw) | Should -Match 'shared[\\/]helpers\.ps1'
         } finally { Pop-Location; Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

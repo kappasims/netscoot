@@ -145,8 +145,9 @@ function Move-PowerShellModule {
             -UndoParams @{ ModulePath = $newDir; Destination = $moduleDir; Force = [bool]$Force } -NoJournal:$NoJournal
         $performed = $true
 
-        if (-not (Test-ModuleManifest -Path $newManifest -ErrorAction SilentlyContinue)) {
-            Write-Warning "Test-ModuleManifest reported problems for $newManifest"
+        Test-ModuleManifest -Path $newManifest -ErrorAction SilentlyContinue -ErrorVariable manifestErrors | Out-Null
+        foreach ($e in $manifestErrors) {
+            Write-Warning "Test-ModuleManifest reported a problem for ${newManifest}: $($e.Exception.Message)"
         }
     }
 

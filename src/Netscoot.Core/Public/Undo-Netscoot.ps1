@@ -166,7 +166,7 @@ function Undo-Netscoot {
                 $t = $_.timestamp; $ts = $null
                 if ($t -is [datetime]) { $ts = if ($t.Kind -eq 'Local') { $t.ToUniversalTime() } else { [datetime]::SpecifyKind($t, [System.DateTimeKind]::Utc) } }
                 elseif ($t -is [datetimeoffset]) { $ts = $t.UtcDateTime }
-                elseif ($t) { try { $ts = ([datetimeoffset]::Parse([string]$t)).UtcDateTime } catch { $ts = $null } }
+                elseif ($t) { $ts = ([datetimeoffset]::Parse([string]$t)).UtcDateTime }
                 $ts -and $ts -gt $afterUtc
             })
         if (-not $targets.Count) {
@@ -252,22 +252,16 @@ function Invoke-MoveJournalUndo {
 }
 
 function Test-PostUndoConsistency {
-    # Best-effort read-only sweep after an out-of-order reversal, to surface references the reversal
-    # may have left dangling. Reconciliation by engine differs; today this covers the .NET case
-    # (solution membership and ProjectReferences) via Repair-NetscootSolutionReferences in its read-only mode.
+    # Read-only sweep after an out-of-order reversal, to surface references the reversal may have
+    # left dangling. Reconciliation by engine differs; today this covers the .NET case (solution
+    # membership and ProjectReferences) via Repair-NetscootSolutionReferences in its read-only mode.
     # Findings are aggregated into a single warning with the one-line repair command; a clean sweep
-    # is noted quietly. Never throws - a missing tool or probe failure must not mask the undo itself.
+    # is noted quietly. The sweep needs the .NET SDK, so it is skipped on a host without one.
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$RepositoryRoot)
-    if (-not (Get-Command Repair-NetscootSolutionReferences -ErrorAction SilentlyContinue)) { return }
-    try {
-        # Read-only (no -Fix/-Prune): returns one object per dangling entry. Suppress its progress
-        # (info stream 6) and any "dotnet unavailable" error (stream 2) - this is a courtesy check.
-        $problems = @(Repair-NetscootSolutionReferences -RepositoryRoot $RepositoryRoot -ErrorAction SilentlyContinue 6>$null 2>$null)
-    } catch {
-        Write-Verbose "Post-undo consistency probe failed: $_"
-        return
-    }
+    if (-not (Test-DotnetAvailable)) { return }
+    # Read-only (no -Fix/-Prune): returns one object per dangling entry. Suppress its progress (info stream 6).
+    $problems = @(Repair-NetscootSolutionReferences -RepositoryRoot $RepositoryRoot 6>$null)
     if ($problems.Count) {
         $byKind = ($problems | Group-Object Resolution | Sort-Object Name | ForEach-Object { "$($_.Count) $($_.Name)" }) -join ', '
         Write-Warning "Post-undo consistency: $($problems.Count) reference(s) are now dangling ($byKind). Repair with: Repair-NetscootSolutionReferences -RepositoryRoot '$RepositoryRoot' -Fix"

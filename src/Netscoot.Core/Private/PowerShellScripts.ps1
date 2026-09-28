@@ -2,7 +2,7 @@ function Find-PowerShellFiles {
     # .ps1/.psm1 beneath a root.
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$Root)
-    Get-ChildItem -LiteralPath $Root -Recurse -File -ErrorAction SilentlyContinue |
+    Get-TreeItem -Root $Root -File |
         Where-Object { $_.Extension -in '.ps1', '.psm1' -and $_.FullName -notmatch '[\\/]\.git[\\/]' }
 }
 

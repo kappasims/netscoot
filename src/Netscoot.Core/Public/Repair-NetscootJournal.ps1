@@ -95,11 +95,11 @@ function Repair-NetscootJournal {
         $referenced = @(Get-InterruptedMove -AllRepositories | ForEach-Object { "$($_.snapshot)" } | Where-Object { $_ })
         $cutoff = [datetime]::UtcNow.AddHours(-1)
         $tmp = [System.IO.Path]::GetTempPath()
-        $orphans = @(Get-ChildItem -LiteralPath $tmp -Directory -Filter 'netscoot_snap_*' -ErrorAction SilentlyContinue |
+        $orphans = @(Get-ChildItem -LiteralPath $tmp -Directory -Filter 'netscoot_snap_*' |
                 Where-Object { $_.FullName -notin $referenced -and $_.LastWriteTimeUtc -lt $cutoff })
         foreach ($o in $orphans) {
             if ($Force -or $PSCmdlet.ShouldProcess($o.FullName, 'delete orphan recovery snapshot')) {
-                Remove-Item -LiteralPath $o.FullName -Recurse -Force -ErrorAction SilentlyContinue
+                Remove-Item -LiteralPath $o.FullName -Recurse -Force
             }
         }
         Write-Host "Cleared $($orphans.Count) orphan snapshot(s)." -ForegroundColor DarkGray
@@ -148,14 +148,20 @@ function Repair-NetscootJournal {
                 Write-Warning "Could not auto-reverse the move ($dst -> $src): the source already exists or the path is outside the repository. Files were restored from the snapshot; verify by hand."
             }
             # 3. Clean up: drop the snapshot and the journal entry.
-            if ($snapDir -and (Test-Path -LiteralPath $snapDir)) { Remove-Item -LiteralPath $snapDir -Recurse -Force -ErrorAction SilentlyContinue }
+            if ($snapDir -and (Test-Path -LiteralPath $snapDir)) {
+                try { Remove-Item -LiteralPath $snapDir -Recurse -Force -ErrorAction Stop }
+                catch { Write-Warning "Could not remove the snapshot folder ${snapDir}: $($_.Exception.Message)" }
+            }
             Remove-MoveJournalEntry -RepositoryRoot $repoFull -Id $e.id
             Write-Host "Rolled back $($e.command) (journal $($e.id))." -ForegroundColor Cyan
         } else {
             # -Discard
             if (-not ($Force -or $PSCmdlet.ShouldProcess($repoFull, "discard interrupted $($e.command) (keep the working tree as-is)"))) { continue }
             $snapDir = "$($e.snapshot)"
-            if ($snapDir -and (Test-Path -LiteralPath $snapDir)) { Remove-Item -LiteralPath $snapDir -Recurse -Force -ErrorAction SilentlyContinue }
+            if ($snapDir -and (Test-Path -LiteralPath $snapDir)) {
+                try { Remove-Item -LiteralPath $snapDir -Recurse -Force -ErrorAction Stop }
+                catch { Write-Warning "Could not remove the snapshot folder ${snapDir}: $($_.Exception.Message)" }
+            }
             Remove-MoveJournalEntry -RepositoryRoot $repoFull -Id $e.id
             Write-Host "Discarded interrupted $($e.command) (journal $($e.id))." -ForegroundColor DarkGray
         }

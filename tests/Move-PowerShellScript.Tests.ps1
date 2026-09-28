@@ -15,7 +15,11 @@ BeforeAll {
 Get-Greeting
 '@
         Push-Location $root
-        try { & git init -q; & git add -A; & git commit -qm fixture | Out-Null } finally { Pop-Location }
+        try {
+            Invoke-Git -Arguments @('init', '-q')
+            Invoke-Git -Arguments @('add', '-A')
+            Invoke-Git -Arguments @('commit', '-qm', 'fixture')
+        } finally { Pop-Location }
         return $root
     }
 }
@@ -35,6 +39,7 @@ Describe 'Move-PowerShellScript' -Tag 'Integration' {
 
             # Run main.ps1 in a child pwsh; the fixed dot-source must resolve.
             $out = & pwsh -NoProfile -File (Join-Path $root (Join-Path 'app' ('main.ps1')))
+            $LASTEXITCODE | Should -Be 0
             ($out -join '') | Should -Match 'hi'
         } finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
