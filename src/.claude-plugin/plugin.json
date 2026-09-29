@@ -1,7 +1,7 @@
 {
   "name": "netscoot",
   "displayName": "netscoot",
-  "version": "3.0.0-beta7",
+  "version": "3.0.0-beta8",
   "description": "A safer way for your agent to restructure .NET, PowerShell, Unity, and native C++ projects. Instead of the agent hand-editing solution and project files, netscoot uses each format's own tooling where one exists and otherwise changes only the paths. A move that fails is rolled back on a best-effort basis. Its analysis commands (solution consistency, dangling and hardcoded references) and repair commands (solution sync, broken references, interrupted moves) also work on their own.",
   "author": {
     "name": "kappasims",
