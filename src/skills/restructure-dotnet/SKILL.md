@@ -28,6 +28,20 @@ Every mover, `Sync-NetscootSolution` and `Repair-NetscootSolutionReferences -Fix
 and an agent's shell is non-interactive, so a real run without `-Confirm:$false` fails. Preview with
 `-WhatIf`, get the user's go-ahead, then run the same command with `-Confirm:$false`.
 
+## When dotnet is not on PATH
+
+A .NET command needs the .NET SDK. netscoot runs the dotnet stored with `Set-NetscootDotnetPath`
+when there is one, and the dotnet on PATH otherwise. With neither, the command stops with a
+`DotnetMissing` error and lists the installs it found. It cannot ask an agent a question, so do this:
+
+1. Run `(Get-NetscootCapability).DotnetInstalls` to list the installs on the machine.
+2. Show the user the list and ask which one to use. Do not pick for them.
+3. Run `Set-NetscootDotnetPath -Path '<path>' -Confirm:$false` with their choice.
+4. Run the original command again.
+
+The stored path is kept for later sessions. `Clear-NetscootDotnetPath` removes it. When the list is
+empty, give the user the install command and let them run it.
+
 ## Analyze/audit first (read-only)
 
 To understand a repository before touching it, use these. Do not parse solution/project files by
@@ -43,7 +57,8 @@ hand.
 - `Repair-NetscootSolutionReferences` (no flags) - report dangling solution entries / `<ProjectReference>`s.
 - `Find-NetscootPathReference` - build/CI/hook scripts that hardcode a path no move reconciles.
 - `Resolve-MoveEngine` - which engine a given path classifies to.
-- `Get-NetscootCapability` - whether git and dotnet are present, plus the platform.
+- `Get-NetscootCapability` - whether git and dotnet are present, where dotnet came from (stored
+  path or PATH), the .NET SDK installs found on the machine, plus the platform.
 - `Test-EditorSolutionGuard` - after consolidating to a single `.slnx`, checks that VS Code's C#
   Dev Kit will not silently re-mint a legacy `.sln` next to it (inspects `.vscode/settings.json`
   and `.gitignore`, and `-Strict` makes it CI-failing). Run it whenever you migrate `.sln` -> `.slnx`.

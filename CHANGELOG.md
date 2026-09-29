@@ -6,6 +6,18 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- dotnet no longer has to be on PATH. When it is missing, a .NET command finds the .NET SDK installs
+  on the machine and asks which one to use, then remembers the answer.
+  `Set-NetscootDotnetPath` stores a path directly and `Clear-NetscootDotnetPath` removes it.
+- `Get-NetscootCapability` reports where the dotnet in use came from, and lists the .NET SDK installs
+  found on the machine.
+
+### Changed
+
+- The command reference moved from the README to `docs/reference.md`.
+
 ## [3.0.0-beta7] - 2026-09-28
 
 ### Changed

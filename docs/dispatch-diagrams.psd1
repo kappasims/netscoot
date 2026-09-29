@@ -1,5 +1,5 @@
 @{
-    # Dispatch diagrams for the generated README reference.
+    # Dispatch diagrams for the generated reference (docs/reference.md).
     #
     # Some cmdlets route an input to a specialist by file extension / detected type. That routing
     # is a mapping, not prose, so the Docs task (build.ps1 -Task Docs) renders the diagram below as

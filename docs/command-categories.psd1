@@ -1,6 +1,6 @@
 @{
-    # Functional grouping for the README "Command reference" index tables. Every exported function
-    # must appear here exactly once; the CheckDocs gate fails on any uncategorized or ghost command.
+    # Functional grouping for the "Command reference" index tables in docs/reference.md. Every exported
+    # function must appear here exactly once; the CheckDocs gate fails on any uncategorized or ghost command.
     # Order is the render order. (We start functional; engine-specific tables may split out later.)
     Categories = @(
         @{
@@ -37,6 +37,7 @@
                 @{ Name = 'Update policy'; Commands = @('Get-NetscootUpdatePolicy', 'Set-NetscootUpdatePolicy') }
                 @{ Name = 'Update channel'; Commands = @('Get-NetscootUpdateChannel', 'Set-NetscootUpdateChannel') }
                 @{ Name = 'Git verb';      Commands = @('Register-NetscootGitAlias', 'Unregister-NetscootGitAlias') }
+                @{ Name = 'dotnet path';   Commands = @('Set-NetscootDotnetPath', 'Clear-NetscootDotnetPath') }
             )
         }
     )

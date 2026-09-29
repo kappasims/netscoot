@@ -1,5 +1,5 @@
 @{
-    # Output-type registry (typedefs) for the generated README reference.
+    # Output-type registry (typedefs) for the generated reference (docs/reference.md).
     #
     # Each cmdlet declares the type(s) it emits via [OutputType('Netscoot.X')]; the Docs task
     # (build.ps1 -Task Docs) looks the name up here and renders, in the command's Output section,
@@ -39,6 +39,17 @@
             @{ Name = 'DotnetSupportsSlnx'; Type = 'bool';                Note = '' }
             @{ Name = 'Git';                Type = 'Netscoot.ToolInfo'; Note = '' }
             @{ Name = 'Dotnet';             Type = 'Netscoot.ToolInfo'; Note = '' }
+            @{ Name = 'DotnetInstalls';     Type = 'Netscoot.DotnetInstall[]'; Note = 'the .NET SDK installs found on the machine' }
+        )
+    }
+
+    'Netscoot.DotnetInstall' = @{
+        Summary = 'One .NET SDK install found on the machine.'
+        Array   = $false
+        Fields  = @(
+            @{ Name = 'Version'; Type = 'string'; Note = 'the SDK version' }
+            @{ Name = 'Path';    Type = 'string'; Note = 'the dotnet executable' }
+            @{ Name = 'FoundIn'; Type = 'string'; Note = 'DOTNET_ROOT | Registry | an install_location file | DefaultFolder' }
         )
     }
 
@@ -46,9 +57,10 @@
         Summary = 'Presence and version of one external tool (git or dotnet).'
         Array   = $false
         Fields  = @(
-            @{ Name = 'Present'; Type = 'bool';   Note = 'found on PATH' }
+            @{ Name = 'Present'; Type = 'bool';   Note = 'found' }
             @{ Name = 'Version'; Type = 'string'; Note = '' }
             @{ Name = 'Path';    Type = 'string'; Note = '' }
+            @{ Name = 'Source';  Type = 'string'; Note = 'Stored | Path' }
         )
     }
 

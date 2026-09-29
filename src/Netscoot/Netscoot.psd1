@@ -12,6 +12,7 @@
     # tests/UmbrellaSurface.Tests.ps1 checks it against the engines' exports (Shared plumbing excluded).
     # Move-NativeProject is Windows-only at runtime but part of the package.
     FunctionsToExport    = @(
+        'Clear-NetscootDotnetPath',
         'Clear-NetscootJournal',
         'Find-NetscootPathReference',
         'Get-NetscootCapability',
@@ -34,6 +35,7 @@
         'Repair-NetscootJournal',
         'Repair-NetscootSolutionReferences',
         'Resolve-MoveEngine',
+        'Set-NetscootDotnetPath',
         'Set-NetscootJournal',
         'Set-NetscootUpdateChannel',
         'Set-NetscootUpdatePolicy',

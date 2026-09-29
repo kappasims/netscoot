@@ -131,9 +131,17 @@ namespace Netscoot
     {
         public string Platform;
         public string PSEdition;
-        public object Git;       // @{ Present; Version; Path } or null
-        public object Dotnet;    // @{ Present; Version; Path } or null
+        public object Git;       // @{ Present; Version; Path; Source } or null
+        public object Dotnet;    // @{ Present; Version; Path; Source } or null
         public bool   DotnetSupportsSlnx;
+        public DotnetInstall[] DotnetInstalls;
+    }
+
+    public class DotnetInstall
+    {
+        public string Version;
+        public string Path;
+        public string FoundIn;
     }
 
     public class PathReference
