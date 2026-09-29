@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [3.0.0-beta8] - 2026-09-29
+
 ### Added
 
 - dotnet no longer has to be on PATH. When it is missing, a .NET command finds the .NET SDK installs
@@ -382,7 +384,8 @@ See the release notes for the full pull-request list.
 
 DotnetMove 1.x history predates the rename. See the legacy DotnetMove releases.
 
-[Unreleased]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta7...HEAD
+[Unreleased]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta8...HEAD
+[3.0.0-beta8]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta7...v3.0.0-beta8
 [3.0.0-beta7]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta6...v3.0.0-beta7
 [3.0.0-beta6]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta5...v3.0.0-beta6
 [3.0.0-beta5]: https://github.com/kappasims/netscoot/compare/v3.0.0-beta4...v3.0.0-beta5
